@@ -7,6 +7,7 @@ import '../models/case_history_item.dart';
 import '../services/auth_service.dart';
 import '../services/export_service.dart';
 import '../services/session_history.dart';
+import '../services/case_service.dart';
 import '../widgets/case_history_dialog.dart';
 
 class ResultsScreen extends StatefulWidget {
@@ -21,6 +22,8 @@ class ResultsScreen extends StatefulWidget {
   final DateTime date;
   final String surgeryType;
   final String selectedAgent;
+  final double molecularMass;
+  final double liquidToVaporConstant;
   final double freshGasFlow;
   final double dialConcentration;
   final double timeMinutes;
@@ -45,6 +48,8 @@ class ResultsScreen extends StatefulWidget {
     required this.date,
     required this.surgeryType,
     required this.selectedAgent,
+    required this.molecularMass,
+    required this.liquidToVaporConstant,
     required this.freshGasFlow,
     required this.dialConcentration,
     required this.timeMinutes,
@@ -129,65 +134,60 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Future<void> _saveCase() async {
     if (_isSaved) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This case is already saved in this session.')),
+        const SnackBar(
+          content: Text('✅ This case is already saved'),
+          backgroundColor: Colors.green,
+        ),
       );
       return;
     }
 
     try {
-      // Get logged-in user email
-      final userEmail = await AuthService.getLoggedInEmail();
-      if (!mounted) return;
-      if (userEmail == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error: User not logged in'),
-            backgroundColor: Color(0xFFDC2626),
-          ),
-        );
-        return;
-      }
+      // Format date as YYYY-MM-DD
+      final dateStr = '${widget.date.year}-${widget.date.month.toString().padLeft(2, '0')}-${widget.date.day.toString().padLeft(2, '0')}';
+      
+      print('💾 Attempting to save case...');
+      print('👤 Patient: ${widget.patientName}');
+      print('📅 Date: $dateStr');
 
-      final caseData = {
-        'userEmail': userEmail,
-        'patientName': widget.patientName,
-        'idNumber': widget.idNumber,
-        'selectedAgent': widget.selectedAgent,
-        'biroFormula': widget.biroResult,
-        'dionFormula': widget.dionResult,
-        'inductionBiro': widget.inductionBiro,
-        'inductionDion': widget.inductionDion,
-        'maintenanceCalculations': widget.maintenanceCalculations,
-        'finalBiro': widget.biroResult,
-        'finalDion': widget.dionResult,
-        'weightBased': widget.weightBasedResult,
-        'density': widget.density,
-        'freshGasFlow': widget.freshGasFlow,
-        'dialConcentration': widget.dialConcentration,
-        'timeMinutes': widget.timeMinutes,
-        'initialWeight': widget.initialWeight ?? 0,
-        'finalWeight': widget.finalWeight ?? 0,
-        'surgeryType': widget.surgeryType,
-        'notes': _notesController.text.trim(),
-        // Induction Phase Data
-        'induction': {
-          'fgf': widget.inductionFGF,
-          'concentration': widget.inductionConcentration,
-          'time': widget.inductionTime,
-        },
-        // Maintenance Rows Data
-        'maintenance': widget.maintenanceRows,
-      };
-
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/add-case'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(caseData),
+      // Call the save case service
+      final result = await CaseService.saveCase(
+        patientName: widget.patientName,
+        patientId: widget.idNumber,
+        date: dateStr,
+        surgeryType: widget.surgeryType,
+        anestheticAgent: widget.selectedAgent,
+        molecularMass: widget.molecularMass.toStringAsFixed(2),
+        vaporConstant: widget.liquidToVaporConstant.toStringAsFixed(2),
+        density: widget.density.toStringAsFixed(2),
+        freshGasFlow: widget.freshGasFlow,
+        dialConcentration: widget.dialConcentration,
+        timeMinutes: widget.timeMinutes,
+        initialWeight: widget.initialWeight,
+        finalWeight: widget.finalWeight,
+        biroFormula: widget.biroResult,
+        dionFormula: widget.dionResult,
+        weightBased: widget.weightBasedResult,
+        notes: _notesController.text.trim(),
+        inductionFGF: widget.inductionFGF,
+        inductionConcentration: widget.inductionConcentration,
+        inductionTime: widget.inductionTime,
+        inductionBiro: widget.inductionBiro,
+        inductionDion: widget.inductionDion,
+        finalBiro: widget.biroResult,
+        finalDion: widget.dionResult,
+        maintenanceRows: widget.maintenanceRows
+            .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
+            .toList(),
+        maintenanceCalculations: widget.maintenanceCalculations
+            .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
+            .toList(),
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 201) {
+      if (result['success']) {
+        // Also save to local session history
         final savedAt = DateTime.now();
         final item = _buildCaseHistoryItem(savedAtOverride: savedAt);
         SessionHistory.saveCase(item);
@@ -199,24 +199,30 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Case saved successfully'),
+            content: Text('✅ Case saved successfully'),
             backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
+        print('✅ Case saved successfully');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to save case'),
-            backgroundColor: Color(0xFFDC2626),
+          SnackBar(
+            content: Text('❌ ${result['error'] ?? 'Failed to save case'}'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
           ),
         );
+        print('❌ Failed to save case: ${result['error']}');
       }
     } catch (e) {
       if (!mounted) return;
+      print('❌ Exception saving case: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving case: $e'),
+          content: Text('❌ Error: $e'),
           backgroundColor: const Color(0xFFDC2626),
+          duration: const Duration(seconds: 2),
         ),
       );
     }

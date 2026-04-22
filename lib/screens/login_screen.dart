@@ -5,6 +5,8 @@ import '../config/app_colors.dart';
 import '../config/app_spacing.dart';
 import '../services/auth_service.dart';
 import 'new_case_screen.dart';
+import 'forgot_password_screen.dart';
+import 'register_screen.dart';
 
 /// Login screen for healthcare app
 class LoginScreen extends StatefulWidget {
@@ -261,7 +263,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       TextButton(
                                         onPressed: () {
-                                          _showForgotPasswordModal(context);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const ForgotPasswordScreen(),
+                                            ),
+                                          );
                                         },
                                         style: TextButton.styleFrom(
                                           padding: EdgeInsets.zero,
@@ -338,9 +346,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                       TextButton(
                                         onPressed: () {
-                                          _showCreateAccountModal(
+                                          Navigator.push(
                                             context,
-                                            _userIdController,
+                                            MaterialPageRoute(
+                                              builder: (context) => const RegisterScreen(),
+                                            ),
                                           );
                                         },
                                         style: TextButton.styleFrom(
@@ -1056,17 +1066,8 @@ void _showResetPasswordModal(BuildContext parentContext, String email) {
           if (password.isEmpty) {
             return 'Password cannot be empty';
           }
-          if (password.length < 8) {
-            return 'Password must be at least 8 characters';
-          }
-          if (!password.contains(RegExp(r'[A-Z]'))) {
-            return 'Password must contain 1 uppercase letter';
-          }
-          if (!password.contains(RegExp(r'[a-z]'))) {
-            return 'Password must contain 1 lowercase letter';
-          }
-          if (!password.contains(RegExp(r'[0-9]'))) {
-            return 'Password must contain 1 number';
+          if (password.length < 6) {
+            return 'Password must be at least 6 characters';
           }
 
           // Confirm password validation
@@ -1195,6 +1196,7 @@ void _showResetPasswordModal(BuildContext parentContext, String email) {
                       nameController.text.trim(),
                       email,
                       passwordController.text.trim(),
+                      confirmPassword: confirmPasswordController.text.trim(),
                     );
 
                     if (!dialogContext.mounted) return;

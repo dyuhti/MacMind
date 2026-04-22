@@ -4,7 +4,7 @@ import '../services/auth_service.dart';
 import 'consumption_calculator_screen.dart';
 import 'login_screen.dart';
 import '../services/agent_constants_service.dart';
-import '../widgets/case_history_dialog.dart';
+import 'case_history_screen.dart';
 
 /// New Case Screen - Post-login form
 class NewCaseScreen extends StatefulWidget {
@@ -183,11 +183,15 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
   }
 
   Future<void> _openHistoryDialog() async {
-    await showCaseHistoryDialog(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CaseHistoryScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final constants = _agentConstants[_selectedAgent] ?? {
       'molecularMass': '--',
       'liquidToVaporConstant': '--',
@@ -197,6 +201,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFC),
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -243,11 +248,57 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: SafeArea(
+        minimum: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottomInset),
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: () {
+              if (_validateForm()) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ConsumptionCalculatorScreen(
+                      patientName: _patientNameController.text.trim(),
+                      idNumber: _idNumberController.text.trim(),
+                      date: _selectedDate,
+                      surgeryType: _surgeryTypeController.text.trim(),
+                      agent: _selectedAgent,
+                      lvConstant: double.tryParse(constants['molecularMass'] ?? '') ?? 0,
+                      liquidVaporConstant:
+                          double.tryParse(constants['liquidToVaporConstant'] ?? '') ?? 1,
+                      density: double.tryParse(constants['density'] ?? '') ?? 1,
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Next',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+        ),
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Column(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          children: [
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
@@ -506,56 +557,10 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
-
-                // Next Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_validateForm()) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ConsumptionCalculatorScreen(
-                              patientName: _patientNameController.text.trim(),
-                              idNumber: _idNumberController.text.trim(),
-                              date: _selectedDate,
-                              surgeryType: _surgeryTypeController.text.trim(),
-                              agent: _selectedAgent,
-                              lvConstant: double.tryParse(constants['molecularMass'] ?? '') ?? 0,
-                              liquidVaporConstant:
-                                  double.tryParse(constants['liquidToVaporConstant'] ?? '') ?? 1,
-                              density: double.tryParse(constants['density'] ?? '') ?? 1,
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Next',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );

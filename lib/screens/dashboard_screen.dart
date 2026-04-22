@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../config/app_spacing.dart';
 import 'login_screen.dart';
+import '../widgets/case_history_dialog.dart';
 
 /// Dashboard/Calculator screen
 class DashboardScreen extends StatefulWidget {
@@ -26,6 +27,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         backgroundColor: AppColors.background,
         actions: [
+          IconButton(
+            tooltip: 'View History',
+            icon: const Icon(Icons.history, color: Color(0xFF1F2937)),
+            onPressed: () => showCaseHistoryDialog(context),
+          ),
           if (widget.isGuest)
             TextButton.icon(
               onPressed: _handleLogout,

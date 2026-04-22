@@ -10,7 +10,7 @@ class ApiConfig {
   // Override URL with: `--dart-define=LOCAL_API_URL=http://10.0.2.2:5000`
   static const bool useLocalApi = bool.fromEnvironment(
     'USE_LOCAL_API',
-    defaultValue: false,
+    defaultValue: true,
   );
   static const String localApiUrl = String.fromEnvironment(
     'LOCAL_API_URL',

@@ -1,12 +1,9 @@
+import 'package:flutter/material.dart';
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
 import '../config/app_colors.dart';
-import '../config/api_config.dart';
 import '../models/case_history_item.dart';
-import '../services/auth_service.dart';
+import '../services/case_service.dart';
 import '../services/export_service.dart';
 
 Future<void> showCaseHistoryDialog(BuildContext context) async {
@@ -40,25 +37,13 @@ class _CaseHistoryDialogContentState extends State<_CaseHistoryDialogContent> {
 
   Future<List<CaseHistoryItem>> _fetchCases() async {
     try {
-      final userEmail = await AuthService.getLoggedInEmail();
-      if (userEmail == null || userEmail.isEmpty) {
+      final result = await CaseService.getAllCases();
+      if (result['success'] != true) {
         return <CaseHistoryItem>[];
       }
 
-      final encodedEmail = Uri.encodeComponent(userEmail);
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/cases/$encodedEmail'),
-        headers: const {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode != 200) {
-        return <CaseHistoryItem>[];
-      }
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is! List) {
-        return <CaseHistoryItem>[];
-      }
+      final decoded = result['cases'];
+      if (decoded is! List) return <CaseHistoryItem>[];
 
       return decoded
           .whereType<Map<String, dynamic>>()
@@ -87,37 +72,34 @@ class _CaseHistoryDialogContentState extends State<_CaseHistoryDialogContent> {
       if (value is num) {
         return value.toDouble();
       }
+      if (value is String) {
+        return double.tryParse(value.trim());
+      }
       return null;
     }
 
-    final createdAt = json['createdAt']?.toString();
+    final createdAt = (json['created_at'] ?? json['createdAt'])?.toString();
     final parsedDate = createdAt != null
         ? DateTime.tryParse(createdAt) ?? DateTime.now()
         : DateTime.now();
 
-    // Parse induction data (fallback to legacy flat fields)
-    final inductionDataDynamic = json['induction'];
-    final inductionData = inductionDataDynamic is Map
-      ? Map<String, dynamic>.from(inductionDataDynamic)
-      : null;
+    final legacyFGF = asDouble(json['fresh_gas_flow'] ?? json['freshGasFlow']);
+    final legacyConc = asDouble(json['dial_concentration'] ?? json['dialConcentration']);
+    final legacyTime = asDouble(json['time_minutes'] ?? json['timeMinutes']);
 
-    final legacyFGF = asDouble(json['freshGasFlow']);
-    final legacyConc = asDouble(json['dialConcentration']);
-    final legacyTime = asDouble(json['timeMinutes']);
-
-    final inductionFGF = inductionData != null
-      ? asDouble(inductionData['fgf'])
-      : legacyFGF;
-    final inductionConc = inductionData != null
-      ? asDouble(inductionData['concentration'])
-      : legacyConc;
-    final inductionTime = inductionData != null
-      ? asDouble(inductionData['time'])
-      : legacyTime;
-
-    // Parse maintenance rows data
+    // Parse maintenance rows data (can be List or JSON string)
     final maintenanceRows = <Map<String, double>>[];
-    final maintenanceDataDynamic = json['maintenance'];
+    var maintenanceDataDynamic = json['maintenance_rows'] ?? json['maintenance'];
+    
+    // If it's a JSON string, parse it
+    if (maintenanceDataDynamic is String) {
+      try {
+        maintenanceDataDynamic = jsonDecode(maintenanceDataDynamic);
+      } catch (_) {
+        maintenanceDataDynamic = [];
+      }
+    }
+    
     if (maintenanceDataDynamic is List) {
       for (final entry in maintenanceDataDynamic) {
         if (entry is Map) {
@@ -132,9 +114,20 @@ class _CaseHistoryDialogContentState extends State<_CaseHistoryDialogContent> {
       }
     }
 
-    // Parse row-wise calculation outputs
+    // Parse row-wise calculation outputs (can be List or JSON string)
     final maintenanceCalculations = <Map<String, double>>[];
-    final maintenanceCalcDynamic = json['maintenanceCalculations'];
+    var maintenanceCalcDynamic =
+        json['maintenance_calculations'] ?? json['maintenanceCalculations'];
+    
+    // If it's a JSON string, parse it
+    if (maintenanceCalcDynamic is String) {
+      try {
+        maintenanceCalcDynamic = jsonDecode(maintenanceCalcDynamic);
+      } catch (_) {
+        maintenanceCalcDynamic = [];
+      }
+    }
+    
     if (maintenanceCalcDynamic is List) {
       for (final entry in maintenanceCalcDynamic) {
         if (entry is Map) {
@@ -149,30 +142,32 @@ class _CaseHistoryDialogContentState extends State<_CaseHistoryDialogContent> {
     }
 
     return CaseHistoryItem(
-      patientName: (json['patientName'] ?? '').toString(),
-      idNumber: (json['idNumber'] ?? '').toString(),
+      patientName: (json['patient_name'] ?? json['patientName'] ?? '').toString(),
+      idNumber: (json['patient_id'] ?? json['idNumber'] ?? '').toString(),
       date: parsedDate,
-      surgeryType: (json['surgeryType'] ?? '').toString(),
-      agent: (json['selectedAgent'] ?? '').toString(),
+      surgeryType: (json['surgery_type'] ?? json['surgeryType'] ?? '').toString(),
+      agent: (json['anesthetic_agent'] ?? json['selectedAgent'] ?? '').toString(),
       freshGasFlow: legacyFGF,
       dialConcentration: legacyConc,
       timeMinutes: legacyTime,
-      initialWeight: asNullableDouble(json['initialWeight']),
-      finalWeight: asNullableDouble(json['finalWeight']),
-      birosFormulaMl: asDouble(json['biroFormula']).toDouble(),
-      dionsFormulaMl: asDouble(json['dionFormula']).toDouble(),
-      weightBasedMl: asDouble(json['weightBased']).toDouble(),
+      initialWeight: asNullableDouble(json['initial_weight'] ?? json['initialWeight']),
+      finalWeight: asNullableDouble(json['final_weight'] ?? json['finalWeight']),
+      birosFormulaMl: asDouble(json['biro_formula'] ?? json['biroFormula']).toDouble(),
+      dionsFormulaMl: asDouble(json['dion_formula'] ?? json['dionFormula']).toDouble(),
+      weightBasedMl: asDouble(json['weight_based'] ?? json['weightBased']).toDouble(),
       notes: (json['notes'] ?? '').toString(),
       savedAt: parsedDate,
-      inductionFGF: inductionFGF,
-      inductionConcentration: inductionConc,
-      inductionTime: inductionTime,
+      inductionFGF: asDouble(json['induction_fgf'] ?? json['inductionFGF']),
+      inductionConcentration: asDouble(
+        json['induction_concentration'] ?? json['inductionConcentration'],
+      ),
+      inductionTime: asDouble(json['induction_time'] ?? json['inductionTime']),
       maintenanceRows: maintenanceRows,
-      inductionBiro: asDouble(json['inductionBiro']),
-      inductionDion: asDouble(json['inductionDion']),
+      inductionBiro: asDouble(json['induction_biro'] ?? json['inductionBiro']),
+      inductionDion: asDouble(json['induction_dion'] ?? json['inductionDion']),
       maintenanceCalculations: maintenanceCalculations,
-      finalBiro: asDouble(json['finalBiro']),
-      finalDion: asDouble(json['finalDion']),
+      finalBiro: asDouble(json['final_biro'] ?? json['finalBiro']),
+      finalDion: asDouble(json['final_dion'] ?? json['finalDion']),
     );
   }
 
@@ -202,7 +197,7 @@ class _CaseHistoryDialogContentState extends State<_CaseHistoryDialogContent> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'All saved cases from MongoDB Atlas',
+                        'All saved cases from MySQL',
                         style: TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import 'results_screen.dart';
+import '../widgets/case_history_dialog.dart';
 
 /// Consumption Calculator Screen
 class ConsumptionCalculatorScreen extends StatefulWidget {
@@ -122,6 +123,17 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
       return;
     }
 
+    // Get molecular mass and liquid-to-vapor constant from agent constants
+    final constants = _agentConstantMap[widget.agent] ?? {
+      'molecularMass': widget.lvConstant,
+      'liquidToVaporConstant': widget.liquidVaporConstant,
+      'density': widget.density,
+    };
+
+    final molecularMass = constants['molecularMass'] ?? widget.lvConstant;
+    final liquidToVaporConstant =
+        constants['liquidToVaporConstant'] ?? widget.liquidVaporConstant;
+
     // Prepare induction data
     final inductionFGF = double.tryParse(_inductionFGFController.text.trim());
     final inductionConc = double.tryParse(_inductionConcController.text.trim());
@@ -161,6 +173,8 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
           idNumber: widget.idNumber,
           date: widget.date,
           surgeryType: widget.surgeryType,
+          molecularMass: molecularMass,
+          liquidToVaporConstant: liquidToVaporConstant,
           freshGasFlow: results.freshGasFlow,
           dialConcentration: results.dialConcentration,
           timeMinutes: results.timeMinutes,
@@ -508,6 +522,13 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'View History',
+            icon: const Icon(Icons.history, color: Color(0xFF1F2937)),
+            onPressed: () => showCaseHistoryDialog(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

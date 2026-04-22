@@ -51,38 +51,69 @@ class AuthService {
   }
 
   static Future<bool> login(String email, String password, {bool rememberMe = false}) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/login"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "password": password,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      // Save login status and email to shared preferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_isLoggedInKey, true);
-      await prefs.setString(_loggedInEmailKey, email);
-      await prefs.setBool(_rememberMeKey, rememberMe);
-      return true;
-    }
-    return false;
-  }
-
-  static Future<Map<String, dynamic>> register(
-      String fullName, String email, String password) async {
     try {
+      final url = Uri.parse("$baseUrl/api/auth/login");
+      print('🔐 Login Request: $url');
+      print('📧 Email: $email');
+      
       final response = await http.post(
-        Uri.parse("$baseUrl/register"),
+        url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "fullName": fullName,
           "email": email,
           "password": password,
         }),
       );
+      
+      print('📩 Login Response Status: ${response.statusCode}');
+      print('📩 Login Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // Save login status and email to shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_isLoggedInKey, true);
+        await prefs.setString(_loggedInEmailKey, email);
+        await prefs.setBool(_rememberMeKey, rememberMe);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Login Error: $e');
+      return false;
+    }
+  }
+
+  static Future<Map<String, dynamic>> register(
+      String fullName, String email, String password, {String? confirmPassword}) async {
+    try {
+      final url = Uri.parse("$baseUrl/api/auth/register");
+      print('📝 Register Request: $url');
+      print('👤 Full Name: $fullName');
+      print('📧 Email: $email');
+      
+      final requestBody = {
+        "full_name": fullName,
+        "email": email,
+        "password": password,
+      };
+      
+      // Add confirm_password if provided
+      if (confirmPassword != null) {
+        requestBody["confirm_password"] = confirmPassword;
+      } else {
+        requestBody["confirm_password"] = password;
+      }
+      
+      print('📤 Request Body: $requestBody');
+      
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(requestBody),
+      );
+
+      print('📩 Register Response Status: ${response.statusCode}');
+      print('📩 Register Response Body: ${response.body}');
 
       if (response.statusCode == 201) {
         return {"success": true};
@@ -92,18 +123,19 @@ class AuthService {
       try {
         final body = jsonDecode(response.body);
         if (body is Map<String, dynamic>) {
-          error = (body["error"] ?? body["message"])?.toString();
+          error = (body["message"] ?? body["error"])?.toString();
         }
       } catch (_) {
         // ignore JSON parsing issues
       }
 
-      error ??= response.statusCode == 409
-          ? "User already exists"
+      error ??= response.statusCode == 400
+          ? "Invalid input. Please check your details."
           : "Failed to create account";
 
       return {"success": false, "error": error};
-    } catch (_) {
+    } catch (e) {
+      print('❌ Register Error: $e');
       return {
         "success": false,
         "error": "Network error. Please check your connection and try again.",
