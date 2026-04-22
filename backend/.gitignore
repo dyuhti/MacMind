@@ -1,0 +1,53 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables (NEVER commit actual .env!)
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+mongo-data/
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+node_modules/
+.next/
+out/
