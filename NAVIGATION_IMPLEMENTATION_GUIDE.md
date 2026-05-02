@@ -29,9 +29,10 @@ You now have a complete, professionally-designed multi-step navigation flow for 
 - **Purpose:** Standalone functional screen
 - **Features:**
   - Cylinder type dropdown with auto-calculated factors
-  - Input fields: Pressure, Flow Rate
-  - Live calculation of cylinder duration
-  - Result card with formatted output
+  - Input fields: Pressure only
+  - Live calculation of total oxygen content
+  - Result card with navigation to the consumption table
+  - Consumption table screen with row highlight interaction
 
 ### **Screen B3: Formulas and Constants Module**
 - **File:** `lib/screens/formulas_and_constants_module_screen.dart`
