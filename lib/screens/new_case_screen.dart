@@ -269,11 +269,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     onTap: _openHistoryDialog,
                   ),
                   const SizedBox(width: 8),
-                  AppHeaderActionButton(
-                    icon: Icons.logout,
-                    tooltip: 'Logout',
-                    onTap: _logout,
-                  ),
+                  const AppHeaderProfileAvatar(),
                 ],
               ),
             ),

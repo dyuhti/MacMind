@@ -78,8 +78,9 @@ class HomeScreen extends StatelessWidget {
             left: false,
             right: false,
             child: AppHeader(
-              title: 'Select a Module',
-              subtitle: 'to get started',
+              subtitle: 'Good Morning, Dr',
+              title: 'Select a Module to get started',
+              
             ),
           ),
           Expanded(

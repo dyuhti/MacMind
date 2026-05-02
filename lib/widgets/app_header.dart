@@ -39,6 +39,36 @@ class AppHeaderActionButton extends StatelessWidget {
   }
 }
 
+class AppHeaderProfileAvatar extends StatelessWidget {
+  final String profileLabel;
+
+  const AppHeaderProfileAvatar({
+    super.key,
+    this.profileLabel = 'Dr',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        profileLabel,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 class AppHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -46,6 +76,7 @@ class AppHeader extends StatelessWidget {
   final bool showBack;
   final VoidCallback? onBack;
   final Widget? trailing;
+  final String profileLabel;
 
   const AppHeader({
     super.key,
@@ -55,6 +86,7 @@ class AppHeader extends StatelessWidget {
     this.showBack = false,
     this.onBack,
     this.trailing,
+    this.profileLabel = 'Dr',
   });
 
   @override
@@ -90,15 +122,17 @@ class AppHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (showBack || trailing != null)
-                Row(
-                  children: [
-                    if (showBack) _buildBackButton(context),
-                    const Spacer(),
-                    if (trailing != null) trailing!,
-                  ],
-                ),
-              if (showBack || trailing != null) const SizedBox(height: 16),
+              Row(
+                children: [
+                  if (showBack)
+                    _buildBackButton(context)
+                  else
+                    const SizedBox(width: 34, height: 34),
+                  const Spacer(),
+                  trailing ?? _buildProfileAvatar(),
+                ],
+              ),
+              const SizedBox(height: 16),
               Text(
                 title,
                 style: const TextStyle(
@@ -157,5 +191,9 @@ class AppHeader extends StatelessWidget {
         child: const Icon(Icons.arrow_back, color: Colors.white, size: 18),
       ),
     );
+  }
+
+  Widget _buildProfileAvatar() {
+    return AppHeaderProfileAvatar(profileLabel: profileLabel);
   }
 }
