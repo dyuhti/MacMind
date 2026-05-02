@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
 import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
-import 'clinical_tips_module_screen.dart';
+import 'formulas_and_constants_module_screen.dart';
 import 'new_case_screen.dart';
 import 'oxygen_cylinder_module_screen.dart';
 import 'volatile_anesthetic_module_screen.dart';
@@ -31,9 +31,9 @@ class HomeScreen extends StatelessWidget {
       iconBackground: MacMindColors.teal50,
     ),
     ModuleCard(
-      id: 'clinical_tips',
-      title: 'Clinical Tips',
-      subtitle: 'AI-powered anesthesia insights',
+      id: 'formulas_and_constants',
+      title: 'Formulas and Constants',
+      subtitle: 'Anesthesia reference formulas',
       icon: Icons.lightbulb_outline,
       color: MacMindColors.amber400,
       iconBackground: MacMindColors.amber50,
@@ -75,11 +75,11 @@ class HomeScreen extends StatelessWidget {
           ),
         );
         break;
-      case 'clinical_tips':
+      case 'formulas_and_constants':
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const ClinicalTipsModuleScreen(),
+            builder: (_) => const FormulasAndConstantsModuleScreen(),
           ),
         );
         break;

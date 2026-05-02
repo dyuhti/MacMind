@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
 import '../config/app_colors.dart';
 import '../services/auth_service.dart';
@@ -151,218 +150,223 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppHeader(
-                title: 'Create Account',
-                subtitle: 'Get started',
-                showBack: true,
-                onBack: () => Navigator.pop(context),
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 2,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+      body: Column(
+        children: [
+          SafeArea(
+            top: false,
+            left: false,
+            right: false,
+            child: AppHeader(
+              title: 'Create Account',
+              subtitle: 'Get started',
+              showBack: true,
+              onBack: () => Navigator.pop(context),
+              trailing: const SizedBox(),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Text(
-                        'Full Name',
-                        style: TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _fullNameController,
-                        enabled: !_isLoading,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Inter',
-                        ),
-                        decoration: _inputDecoration('Enter your full name', icon: Icons.person_outline),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Email Address',
-                        style: TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _emailController,
-                        enabled: !_isLoading,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Inter',
-                        ),
-                        decoration: _inputDecoration('Enter your email', icon: Icons.email_outlined),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Password',
-                        style: TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _passwordController,
-                        enabled: !_isLoading,
-                        obscureText: !_passwordVisible,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Inter',
-                        ),
-                        decoration: _inputDecoration(
-                          'Enter your password',
-                          icon: Icons.lock_outline,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _passwordVisible ? Icons.visibility : Icons.visibility_off,
-                              size: 18,
-                              color: const Color(0xFF9CA3AF),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _passwordVisible = !_passwordVisible;
-                              });
-                            },
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Full Name',
+                          style: TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Inter',
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Confirm Password',
-                        style: TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _fullNameController,
+                          enabled: !_isLoading,
+                          style: const TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Inter',
+                          ),
+                          decoration: _inputDecoration('Enter your full name', icon: Icons.person_outline),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        enabled: !_isLoading,
-                        obscureText: !_confirmPasswordVisible,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Inter',
-                        ),
-                        decoration: _inputDecoration(
-                          'Re-enter your password',
-                          icon: Icons.lock_outline,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                              size: 18,
-                              color: const Color(0xFF9CA3AF),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _confirmPasswordVisible = !_confirmPasswordVisible;
-                              });
-                            },
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Email Address',
+                          style: TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Inter',
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleRegister,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            disabledBackgroundColor: Colors.grey.shade400,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _emailController,
+                          enabled: !_isLoading,
+                          keyboardType: TextInputType.emailAddress,
+                          style: const TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Inter',
                           ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : const Text(
-                                  'Create Account',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
+                          decoration: _inputDecoration('Enter your email', icon: Icons.email_outlined),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: GestureDetector(
-                          onTap: _isLoading ? null : () => Navigator.pop(context),
-                          child: Text.rich(
-                            TextSpan(
-                              text: 'Already have an account? ',
-                              style: const TextStyle(
-                                color: Color(0xFF6B7280),
-                                fontSize: 14,
-                                fontFamily: 'Inter',
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Password',
+                          style: TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _passwordController,
+                          enabled: !_isLoading,
+                          obscureText: !_passwordVisible,
+                          style: const TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Inter',
+                          ),
+                          decoration: _inputDecoration(
+                            'Enter your password',
+                            icon: Icons.lock_outline,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _passwordVisible ? Icons.visibility : Icons.visibility_off,
+                                size: 18,
+                                color: const Color(0xFF9CA3AF),
                               ),
-                              children: [
-                                TextSpan(
-                                  text: 'Login',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                              onPressed: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Confirm Password',
+                          style: TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          enabled: !_isLoading,
+                          obscureText: !_confirmPasswordVisible,
+                          style: const TextStyle(
+                            color: Color(0xFF1F2937),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: 'Inter',
+                          ),
+                          decoration: _inputDecoration(
+                            'Re-enter your password',
+                            icon: Icons.lock_outline,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                                size: 18,
+                                color: const Color(0xFF9CA3AF),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _confirmPasswordVisible = !_confirmPasswordVisible;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleRegister,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              disabledBackgroundColor: Colors.grey.shade400,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      fontFamily: 'Inter',
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: GestureDetector(
+                            onTap: _isLoading ? null : () => Navigator.pop(context),
+                            child: Text.rich(
+                              TextSpan(
+                                text: 'Already have an account? ',
+                                style: const TextStyle(
+                                  color: Color(0xFF6B7280),
+                                  fontSize: 14,
+                                  fontFamily: 'Inter',
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Login',
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

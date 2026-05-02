@@ -12,7 +12,7 @@ You now have a complete, professionally-designed multi-step navigation flow for 
 - **File:** `lib/screens/home_screen.dart`
 - **Purpose:** Entry point after login
 - **Features:**
-  - 3 main module cards (Volatile, Oxygen, Clinical Tips)
+  - 3 main module cards (Volatile, Oxygen, Formulas and Constants)
   - Professional card design with icons, titles, subtitles
   - Clean navigation to module-specific screens
   - Legacy "New Case" button for backward compatibility
@@ -33,11 +33,11 @@ You now have a complete, professionally-designed multi-step navigation flow for 
   - Live calculation of cylinder duration
   - Result card with formatted output
 
-### **Screen B3: Clinical Tips Module**
-- **File:** `lib/screens/clinical_tips_module_screen.dart`
+### **Screen B3: Formulas and Constants Module**
+- **File:** `lib/screens/formulas_and_constants_module_screen.dart`
 - **Purpose:** AI-powered clinical insights
 - **Features:**
-  - 6 pre-curated clinical tips
+  - 6 pre-curated formulas and constants
   - Color-coded cards with icons and badges
   - Professional design matching medical standards
 
@@ -64,7 +64,7 @@ HomeScreen (Screen A)
     ├─→ Oxygen Cylinder Module (Screen B2)
     │   └─→ Calculate Duration [Standalone]
     │
-    ├─→ Clinical Tips Module (Screen B3)
+    ├─→ Formulas and Constants Module (Screen B3)
     │   └─→ View Tips [Standalone]
     │
     └─→ Legacy "New Case" Button
@@ -78,7 +78,7 @@ HomeScreen (Screen A)
 ### **Colors Used:**
 - **Primary (Volatile):** `#4A90E2` - Soft Blue
 - **Oxygen:** `#10B981` - Green
-- **Clinical Tips:** `#F59E0B` - Amber
+- **Formulas and Constants:** `#F59E0B` - Amber
 - **Additional:** Purple, Red, Cyan for tip variety
 
 ### **Typography:**
@@ -140,7 +140,7 @@ flutter run
 - ✅ HomeScreen (Module selection)
 - ✅ VolatileAnestheticModuleScreen (Options)
 - ✅ OxygenCylinderModuleScreen (Functional)
-- ✅ ClinicalTipsModuleScreen (Info display)
+- ✅ FormulasAndConstantsModuleScreen (Info display)
 - ✅ ConsumptionCalculatorScreen (Calculation - via proper flow)
 
 ---
@@ -227,7 +227,7 @@ lib/screens/
 ├── home_screen.dart ✨ NEW
 ├── volatile_anesthetic_module_screen.dart ✨ NEW
 ├── oxygen_cylinder_module_screen.dart ✨ NEW
-├── clinical_tips_module_screen.dart ✨ NEW
+├── formulas_and_constants_module_screen.dart ✨ NEW
 ├── consumption_calculator_screen.dart (Existing - no changes)
 ├── new_case_screen.dart (Existing)
 ├── login_screen.dart (Updated)
@@ -250,7 +250,7 @@ lib/config/
 - [ ] HomeScreen displays all 3 modules
 - [ ] Volatile Module navigation works
 - [ ] Oxygen Cylinder calculation works
-- [ ] Clinical Tips display correctly
+- [ ] Formulas and Constants display correctly
 - [ ] Calculator accessible through proper flow
 - [ ] All transitions are smooth
 
@@ -279,7 +279,7 @@ lib/config/
 1. **Test the complete flow** on your Android device
 2. **Customize module colors** if needed
 3. **Implement Economy Calculator** screen
-4. **Add more clinical tips** to the database
+4. **Add more formulas and constants** to the database
 5. **Deploy** to production once tested
 
 ---
