@@ -28,6 +28,9 @@ def create_app(config_name='development'):
     
     # Initialize SQLAlchemy database
     db.init_app(app)
+
+    # Import models before creating tables so SQLAlchemy registers every table.
+    from app import models  # noqa: F401
     
     # Initialize CORS
     CORS(app, origins=app.config['CORS_ORIGINS'])
@@ -45,11 +48,13 @@ def create_app(config_name='development'):
     from app.routes.auth import auth_bp
     from app.routes.calculator import calculator_bp
     from app.routes.cases import cases_bp
+    from app.routes.profile import profile_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(calculator_bp, url_prefix='/api/calculator')
     app.register_blueprint(cases_bp, url_prefix='/api/cases')
+    app.register_blueprint(profile_bp, url_prefix='/api')
     
     # Error handlers
     @app.errorhandler(404)
