@@ -3,6 +3,7 @@ import '../widgets/app_header.dart';
 import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
 import 'new_case_screen.dart';
+import 'economy_calculator_screen.dart';
 
 /// Screen B: Volatile Anesthetic Module
 /// User selects between Calculation or Economy Calculator
@@ -21,9 +22,11 @@ class VolatileAnestheticModuleScreen extends StatelessWidget {
   }
 
   void _navigateToEconomyCalculator(BuildContext context) {
-    // TODO: Implement Economy Calculator Screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Economy Calculator coming soon')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const EconomyCalculatorScreen(),
+      ),
     );
   }
 
