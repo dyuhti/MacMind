@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
+import '../widgets/app_header.dart';
 import '../services/auth_service.dart';
 import 'consumption_calculator_screen.dart';
 import 'login_screen.dart';
 import '../services/agent_constants_service.dart';
 import 'case_history_screen.dart';
+// macmind_design import removed (not used here)
 
 /// New Case Screen - Post-login form
 class NewCaseScreen extends StatefulWidget {
@@ -79,8 +81,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
             'liquidToVaporConstant': agent['liquidToVaporConstant']?.toString() ?? '--',
             'density': agent['density']?.toString() ?? '--',
           };
-        }
-
+          }
         if (mounted && fetched.isNotEmpty) {
           setState(() {
             _agentConstants
@@ -200,54 +201,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     final agents = _agentConstants.keys.toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFC),
+      backgroundColor: const Color(0xFFF5F7FA),
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
-          onPressed: _navigateBackToFreshLogin,
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'View History',
-            icon: const Icon(Icons.history, color: Color(0xFF1F2937)),
-            onPressed: _openHistoryDialog,
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            icon: const Icon(Icons.logout, color: Color(0xFF1F2937)),
-            onPressed: _logout,
-          ),
-        ],
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.note_add,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'New Case',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1F2937),
-                fontFamily: 'Inter',
-              ),
-            ),
-          ],
-        ),
-      ),
+      extendBodyBehindAppBar: false,
       bottomNavigationBar: SafeArea(
         minimum: EdgeInsets.fromLTRB(16, 8, 16, 16 + bottomInset),
         child: SizedBox(
@@ -294,13 +250,38 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
         ),
       ),
       body: SafeArea(
+        top: false,
         child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: EdgeInsets.zero,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            AppHeader(
+              title: 'New Case',
+              breadcrumb: 'Home • New Case',
+              showBack: true,
+              onBack: () => Navigator.pop(context),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppHeaderActionButton(
+                    icon: Icons.history,
+                    tooltip: 'View History',
+                    onTap: _openHistoryDialog,
+                  ),
+                  const SizedBox(width: 8),
+                  AppHeaderActionButton(
+                    icon: Icons.logout,
+                    tooltip: 'Logout',
+                    onTap: _logout,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
 
                 // Patient Information Section
                 Container(
@@ -558,7 +539,8 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                 ),
 
                 const SizedBox(height: 8),
-              ],
+                ],
+              ),
             ),
           ],
         ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/case_service.dart';
+import '../widgets/app_header.dart';
 import '../widgets/case_history_dialog.dart';
+import '../widgets/macmind_design.dart';
 
 class CasesListScreen extends StatefulWidget {
   const CasesListScreen({Key? key}) : super(key: key);
@@ -10,7 +12,6 @@ class CasesListScreen extends StatefulWidget {
 }
 
 class _CasesListScreenState extends State<CasesListScreen> {
-  late Future<Map<String, dynamic>> _casesFuture;
   List<dynamic> cases = [];
   bool isLoading = true;
   String? errorMessage;
@@ -28,7 +29,7 @@ class _CasesListScreenState extends State<CasesListScreen> {
       errorMessage = null;
     });
 
-    _casesFuture = CaseService.getAllCases().then((result) {
+    CaseService.getAllCases().then((result) {
       if (result['success']) {
         setState(() {
           cases = result['cases'] ?? [];
@@ -65,7 +66,7 @@ class _CasesListScreenState extends State<CasesListScreen> {
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
-      ),
+      )
     );
   }
 
@@ -99,35 +100,58 @@ class _CasesListScreenState extends State<CasesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('📋 Saved Cases'),
-        centerTitle: true,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => showCaseHistoryDialog(context),
-            tooltip: 'View History',
+      backgroundColor: const Color(0xFFF5F7FA),
+      extendBodyBehindAppBar: false,
+      body: Column(
+        children: [
+          SafeArea(
+            top: false,
+            left: false,
+            right: false,
+            child: AppHeader(
+              title: 'Saved Cases',
+              breadcrumb: 'Home • Records',
+              showBack: true,
+              onBack: () => Navigator.pop(context),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppHeaderActionButton(
+                    icon: Icons.history,
+                    tooltip: 'View History',
+                    onTap: () => showCaseHistoryDialog(context),
+                  ),
+                  const SizedBox(width: 8),
+                  AppHeaderActionButton(
+                    icon: Icons.refresh,
+                    tooltip: 'Refresh',
+                    onTap: _loadCases,
+                  ),
+                ],
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadCases,
-            tooltip: 'Refresh',
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              color: const Color(0xFFF5F7FA),
+              padding: const EdgeInsets.all(16),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  _loadCases();
+                  await Future.delayed(const Duration(seconds: 1));
+                },
+                child: isLoading
+                    ? _buildLoadingIndicator()
+                    : errorMessage != null
+                        ? _buildErrorWidget()
+                        : cases.isEmpty
+                            ? _buildEmptyWidget()
+                            : _buildCasesList(),
+              ),
+            ),
           ),
         ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _loadCases();
-          await Future.delayed(const Duration(seconds: 1));
-        },
-        child: isLoading
-            ? _buildLoadingIndicator()
-            : errorMessage != null
-                ? _buildErrorWidget()
-                : cases.isEmpty
-                    ? _buildEmptyWidget()
-                    : _buildCasesList(),
       ),
     );
   }
@@ -138,9 +162,15 @@ class _CasesListScreenState extends State<CasesListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(),
+          CircularProgressIndicator(color: MacMindColors.blue600),
           SizedBox(height: 16),
-          Text('Loading cases...'),
+          Text(
+            'Loading cases...',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              color: MacMindColors.gray600,
+            ),
+          ),
         ],
       ),
     );
@@ -152,9 +182,16 @@ class _CasesListScreenState extends State<CasesListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const Icon(Icons.error_outline, size: 48, color: MacMindColors.amber400),
           const SizedBox(height: 16),
-          Text('❌ $errorMessage'),
+          Text(
+            errorMessage ?? 'Failed to load cases',
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              color: MacMindColors.gray600,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _loadCases,
@@ -172,16 +209,24 @@ class _CasesListScreenState extends State<CasesListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.folder_open, size: 48, color: Colors.grey),
+          const Icon(Icons.folder_open, size: 48, color: MacMindColors.gray400),
           const SizedBox(height: 16),
           const Text(
             'No cases yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'DM Sans',
+              color: MacMindColors.textDark,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
             'Create a new case to get started',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(
+              color: MacMindColors.gray600,
+              fontFamily: 'DM Sans',
+            ),
           ),
         ],
       ),
@@ -191,7 +236,7 @@ class _CasesListScreenState extends State<CasesListScreen> {
   /// Build cases list
   Widget _buildCasesList() {
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       itemCount: cases.length,
       itemBuilder: (context, index) {
         final case_data = cases[index];
@@ -202,118 +247,113 @@ class _CasesListScreenState extends State<CasesListScreen> {
 
   /// Build individual case card
   Widget _buildCaseCard(Map<String, dynamic> caseData, int index) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with patient name and delete button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: MacMindColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: MacMindColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: MacMindColors.shadow,
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         caseData['patient_name'] ?? 'Unknown',
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'DM Sans',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: MacMindColors.textDark,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
                       Text(
                         'ID: ${caseData['patient_id'] ?? 'N/A'}',
                         style: const TextStyle(
-                          color: Colors.grey,
+                          fontFamily: 'DM Sans',
+                          color: MacMindColors.gray600,
                           fontSize: 12,
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      _buildDetailRow('🏥 Surgery', caseData['surgery_type'] ?? 'N/A'),
+                      _buildDetailRow('💊 Agent', caseData['anesthetic_agent'] ?? 'N/A'),
+                      _buildDetailRow('📅 Date', caseData['date'] ?? 'N/A'),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline, color: MacMindColors.amber400),
                   onPressed: () => _deleteCase(caseData['id'], index),
                   tooltip: 'Delete case',
                 ),
               ],
             ),
-            const Divider(),
-            const SizedBox(height: 8),
-            // Surgery details
-            _buildDetailRow('🏥 Surgery', caseData['surgery_type'] ?? 'N/A'),
-            _buildDetailRow('💊 Agent', caseData['anesthetic_agent'] ?? 'N/A'),
-            _buildDetailRow('📅 Date', caseData['date'] ?? 'N/A'),
             const SizedBox(height: 12),
-            // Technical details in smaller text
+            const Divider(color: MacMindColors.border, height: 1),
+            const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Molecular Mass',
-                        style: TextStyle(fontSize: 10, color: Colors.grey),
-                      ),
-                      Text(
-                        caseData['molecular_mass'] ?? 'N/A',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _metric('Molecular Mass', caseData['molecular_mass'] ?? 'N/A'),
                 ),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Vapor Constant',
-                        style: TextStyle(fontSize: 10, color: Colors.grey),
-                      ),
-                      Text(
-                        caseData['vapor_constant'] ?? 'N/A',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _metric('Vapor Constant', caseData['vapor_constant'] ?? 'N/A'),
                 ),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Density',
-                        style: TextStyle(fontSize: 10, color: Colors.grey),
-                      ),
-                      Text(
-                        caseData['density'] ?? 'N/A',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _metric('Density', caseData['density'] ?? 'N/A'),
                 ),
               ],
             ),
           ],
         ),
+      );
+  }
+
+  Widget _metric(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: MacMindColors.gray400,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: MacMindColors.textDark,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -328,14 +368,21 @@ class _CasesListScreenState extends State<CasesListScreen> {
             flex: 2,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontWeight: FontWeight.w500,
+                color: MacMindColors.gray600,
+              ),
             ),
           ),
           Expanded(
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(
+                fontFamily: 'DM Sans',
+                color: MacMindColors.gray600,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -345,3 +392,5 @@ class _CasesListScreenState extends State<CasesListScreen> {
     );
   }
 }
+
+

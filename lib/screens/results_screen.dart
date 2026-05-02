@@ -1,14 +1,14 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../config/app_colors.dart';
-import '../config/api_config.dart';
+// api_config and http imports removed (unused)
 import '../models/case_history_item.dart';
 import '../services/auth_service.dart';
 import '../services/export_service.dart';
 import '../services/session_history.dart';
 import '../services/case_service.dart';
+import '../widgets/app_header.dart';
 import '../widgets/case_history_dialog.dart';
+// macmind_design removed (unused)
 
 class ResultsScreen extends StatefulWidget {
   final double biroResult;
@@ -265,45 +265,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.assignment,
-                color: Colors.white,
-                size: 20,
-              ),
+      backgroundColor: const Color(0xFFF5F7FA),
+      extendBodyBehindAppBar: false,
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+            AppHeader(
+              title: 'Results',
+              breadcrumb: 'Home • New Case • Results',
+              showBack: true,
+              onBack: () => Navigator.pop(context),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Results',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1F2937),
-                fontFamily: 'Inter',
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Column(
-          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
             _ResultCard(
               title: "Biro's Formula",
               subtitle: 'Using vapor-liquid constant',
@@ -322,7 +301,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               value: _formatMl(widget.weightBasedResult),
             ),
             const SizedBox(height: 18),
-            
+
             // NEW: Induction and Maintenance Details Section
             Container(
               width: double.infinity,
@@ -666,7 +645,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
               onPressed: () => showCaseHistoryDialog(context),
             ),
             const SizedBox(height: 24),
-          ],
+                ],
+              ),
+            ),
+            ],
+          ),
         ),
       ),
     );

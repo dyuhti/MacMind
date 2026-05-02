@@ -10,18 +10,18 @@ class ApiConfig {
   // Override URL with: `--dart-define=LOCAL_API_URL=http://192.168.0.191:5000`
   static const bool useLocalApi = bool.fromEnvironment(
     'USE_LOCAL_API',
-    defaultValue: false,
+    defaultValue: true,
   );
   static const String localApiUrl = String.fromEnvironment(
     'LOCAL_API_URL',
-    defaultValue: 'http://192.168.0.191:5000',
+    defaultValue: 'http://192.168.1.103:5000',
   );
 
   /// Get the appropriate base URL based on platform and build type
   static String get baseUrl {
-    // Use production unless user explicitly opts into local API.
-    // This allows release APK testing against a LAN backend with --dart-define.
-    if (!useLocalApi || kIsWeb) {
+    // Release and web builds should always use production.
+    // Debug/profile mobile builds can opt into local API via dart-define.
+    if (kReleaseMode || kIsWeb || !useLocalApi) {
       return productionBaseUrl;
     }
     return localApiUrl;

@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'config/app_theme.dart';
 import 'screens/splash_loader_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/new_case_screen.dart';
+import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
@@ -46,9 +46,10 @@ class MyApp extends StatelessWidget {
             return const SplashLoaderScreen();
           }
 
-          // If auto-login is enabled and prefs are valid, go directly to NewCaseScreen
+          // If auto-login is enabled and prefs are valid, go directly to HomeScreen
+          // This enforces the new multi-step navigation flow
           if (snapshot.hasData && snapshot.data == true) {
-            return const NewCaseScreen();
+            return const HomeScreen();
           }
 
           // Otherwise, show login screen

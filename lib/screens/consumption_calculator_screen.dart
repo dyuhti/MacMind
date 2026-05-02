@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import 'results_screen.dart';
-import '../widgets/case_history_dialog.dart';
+import '../widgets/app_header.dart';
+// case_history_dialog and macmind_design imports removed (unused)
 
 /// Consumption Calculator Screen
 class ConsumptionCalculatorScreen extends StatefulWidget {
@@ -488,276 +489,226 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.calculate,
-                color: Colors.white,
-                size: 20,
-              ),
+      backgroundColor: const Color(0xFFF5F7FA),
+      extendBodyBehindAppBar: false,
+      body: Column(
+        children: [
+          SafeArea(
+            top: false,
+            left: false,
+            right: false,
+            child: AppHeader(
+              title: 'Consumption Calculator',
+              breadcrumb: 'Home • New Case • Calculator',
+              showBack: true,
+              onBack: () => Navigator.pop(context),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Consumption Calculator',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1F2937),
-                fontFamily: 'Inter',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'View History',
-            icon: const Icon(Icons.history, color: Color(0xFF1F2937)),
-            onPressed: () => showCaseHistoryDialog(context),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Formula Inputs Section - Clinical Workflow
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF000000).withValues(alpha: 0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              color: const Color(0xFFF5F7FA),
+              padding: const EdgeInsets.all(16),
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Card Title
-                    const Text(
-                      'Formula Inputs',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
-                        fontFamily: 'Inter',
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF000000).withValues(alpha: 0.05),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // INDUCTION PHASE
-                    _buildPhaseSection(
-                      title: 'Induction',
-                      fgfController: _inductionFGFController,
-                      concController: _inductionConcController,
-                      timeController: _inductionTimeController,
-                      fgfError: _inductionFGFError,
-                      concError: _inductionConcError,
-                      timeError: _inductionTimeError,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // MAINTENANCE PHASE
-                    const Text(
-                      'Maintenance',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF374151),
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Maintenance Rows
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _maintenanceRows.length,
-                      separatorBuilder: (context, index) =>
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Formula Inputs',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildPhaseSection(
+                            title: 'Induction',
+                            fgfController: _inductionFGFController,
+                            concController: _inductionConcController,
+                            timeController: _inductionTimeController,
+                            fgfError: _inductionFGFError,
+                            concError: _inductionConcError,
+                            timeError: _inductionTimeError,
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Maintenance',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF374151),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return _buildMaintenanceRow(
-                          row: _maintenanceRows[index],
-                          rowIndex: index,
-                        );
-                      },
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _maintenanceRows.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return _buildMaintenanceRow(
+                                row: _maintenanceRows[index],
+                                rowIndex: index,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _maintenanceRows.add(
+                                    _MaintenanceRow(
+                                      fgfController: TextEditingController(),
+                                      concController: TextEditingController(),
+                                      timeController: TextEditingController(),
+                                    ),
+                                  );
+                                });
+                              },
+                              icon: const Icon(Icons.add, size: 22, color: Colors.white),
+                              label: const Text(
+                                'Add Row',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'Inter',
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 4,
+                                shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Add Row Button - Highly Visible CTA
-                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFDCE6F2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Weight-Based Method',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1F2937),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildFormField(
+                            label: 'Initial Weight (kg)',
+                            hint: 'Enter initial weight',
+                            controller: _initialWeightController,
+                            keyboardType: TextInputType.number,
+                            isError: _initialWeightError,
+                            errorMessage: _initialWeightError ? 'Initial weight must be greater than 0' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildFormField(
+                            label: 'Final Weight (kg)',
+                            hint: 'Enter final weight',
+                            controller: _finalWeightController,
+                            keyboardType: TextInputType.number,
+                            isError: _finalWeightError,
+                            errorMessage: _finalWeightError ? 'Final weight must be greater than 0' : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _maintenanceRows.add(
-                              _MaintenanceRow(
-                                fgfController: TextEditingController(),
-                                concController: TextEditingController(),
-                                timeController: TextEditingController(),
-                              ),
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.add, size: 22, color: Colors.white),
-                        label: const Text(
-                          'Add Row',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Inter',
-                            color: Colors.white,
-                          ),
-                        ),
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _calculateConsumption,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          elevation: 4,
-                          shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Calculate',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Inter',
+                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Weight-Based Method Section
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFDCE6F2)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Weight-Based Method',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F2937),
-                        fontFamily: 'Inter',
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: _resetForm,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          'Reset',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Initial Weight
-                    _buildFormField(
-                      label: 'Initial Weight (kg)',
-                      hint: 'Enter initial weight',
-                      controller: _initialWeightController,
-                      keyboardType: TextInputType.number,
-                      isError: _initialWeightError,
-                      errorMessage: _initialWeightError ? 'Initial weight must be greater than 0' : null,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Final Weight
-                    _buildFormField(
-                      label: 'Final Weight (kg)',
-                      hint: 'Enter final weight',
-                      controller: _finalWeightController,
-                      keyboardType: TextInputType.number,
-                      isError: _finalWeightError,
-                      errorMessage: _finalWeightError ? 'Final weight must be greater than 0' : null,
-                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // Calculate Button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _calculateConsumption,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Calculate',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Reset Button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: _resetForm,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Reset',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import '../config/app_spacing.dart';
 import '../services/auth_service.dart';
-import 'new_case_screen.dart';
+import 'home_screen.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 
@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const NewCaseScreen()),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
       _showErrorSnackBar("Invalid email or password");
@@ -92,8 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     
     return Scaffold(
-      // Screen background: light medical blue-gray
-      backgroundColor: const Color(0xFFF7FAFC),
+      // Screen background: standardized light background
+      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

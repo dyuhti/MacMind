@@ -5,8 +5,6 @@ import '../config/app_colors.dart';
 import '../models/case_history_item.dart';
 import '../services/case_service.dart';
 import '../services/export_service.dart';
-import '../widgets/app_header.dart';
-// macmind_design not used directly in this file
 
 /// Full-page Case History Screen
 class CaseHistoryScreen extends StatefulWidget {
@@ -164,21 +162,27 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      extendBodyBehindAppBar: false,
-      body: Column(
-        children: [
-          AppHeader(
-            title: 'Case History',
-            breadcrumb: 'Home • New Case • History',
-            showBack: true,
-            onBack: () => Navigator.pop(context),
+      backgroundColor: const Color(0xFFF7FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Case History',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1F2937),
+            fontFamily: 'Inter',
           ),
-          Expanded(
-            child: SafeArea(
-              top: false,
-              child: Column(
-                children: [
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
             // Header with export button
             Padding(
               padding: const EdgeInsets.all(16),
@@ -291,10 +295,7 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
           ],
         ),
       ),
-    ),
-  ],
-),
-);
+    );
   }
 }
 
