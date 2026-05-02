@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
 
 /// Screen B: Clinical Tips Module
@@ -74,6 +75,12 @@ class ClinicalTipsModuleScreen extends StatelessWidget {
               breadcrumb: 'Home • Clinical Tips',
               showBack: true,
               onBack: () => Navigator.pop(context),
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
             ),
           ),
           Expanded(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
 import '../widgets/custom_button.dart' show PrimaryButton;
 
@@ -103,6 +104,12 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
               breadcrumb: 'Home • Oxygen Cylinder Module',
               showBack: true,
               onBack: () => Navigator.pop(context),
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
             ),
           ),
           Expanded(

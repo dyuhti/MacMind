@@ -6,6 +6,7 @@ import '../models/case_history_item.dart';
 import '../services/case_service.dart';
 import '../services/export_service.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 // macmind_design not used directly in this file
 
 /// Full-page Case History Screen
@@ -173,7 +174,13 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
             breadcrumb: 'Home • New Case • History',
             showBack: true,
             onBack: () => Navigator.pop(context),
-          ),
+            onProfileTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+            ),
           Expanded(
             child: SafeArea(
               top: false,

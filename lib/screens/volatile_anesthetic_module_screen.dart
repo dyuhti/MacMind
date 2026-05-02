@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
 import 'new_case_screen.dart';
 
@@ -33,7 +34,7 @@ class VolatileAnestheticModuleScreen extends StatelessWidget {
       extendBodyBehindAppBar: false,
       body: Column(
         children: [
-          const SafeArea(
+          SafeArea(
             top: false,
             left: false,
             right: false,
@@ -41,6 +42,12 @@ class VolatileAnestheticModuleScreen extends StatelessWidget {
               title: 'Volatile Anesthetic',
               breadcrumb: 'Home • Volatile Anesthetic',
               showBack: true,
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
             ),
           ),
           Expanded(

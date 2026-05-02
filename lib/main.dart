@@ -5,6 +5,8 @@ import 'screens/splash_loader_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
+import 'services/profile_service.dart';
+import 'services/user_session.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
@@ -31,6 +33,16 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Future<bool> _bootstrapApp() async {
+    final shouldAutoLogin = await AuthService.shouldAutoLogin();
+    if (!shouldAutoLogin) {
+      return false;
+    }
+
+    await ProfileService.hydrateUserSession();
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -39,7 +51,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       scrollBehavior: const AppScrollBehavior(),
       home: FutureBuilder<bool>(
-        future: AuthService.shouldAutoLogin(),
+        future: _bootstrapApp(),
         builder: (context, snapshot) {
           // While checking prefs, show splash loader
           if (snapshot.connectionState == ConnectionState.waiting) {

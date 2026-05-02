@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../services/auth_service.dart';
 import 'consumption_calculator_screen.dart';
 import 'login_screen.dart';
@@ -269,7 +270,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     onTap: _openHistoryDialog,
                   ),
                   const SizedBox(width: 8),
-                  const AppHeaderProfileAvatar(),
+                  AppHeaderProfileAvatar(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),

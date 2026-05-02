@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/user_session.dart';
 
 class AppHeaderActionButton extends StatelessWidget {
   final IconData icon;
@@ -41,15 +42,17 @@ class AppHeaderActionButton extends StatelessWidget {
 
 class AppHeaderProfileAvatar extends StatelessWidget {
   final String profileLabel;
+  final VoidCallback? onTap;
 
   const AppHeaderProfileAvatar({
     super.key,
     this.profileLabel = 'Dr',
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final child = Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
@@ -66,6 +69,11 @@ class AppHeaderProfileAvatar extends StatelessWidget {
         ),
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: child);
+    }
+    return child;
   }
 }
 
@@ -76,7 +84,8 @@ class AppHeader extends StatelessWidget {
   final bool showBack;
   final VoidCallback? onBack;
   final Widget? trailing;
-  final String profileLabel;
+  final VoidCallback? onProfileTap;
+  final String? profileLabel;
 
   const AppHeader({
     super.key,
@@ -86,8 +95,20 @@ class AppHeader extends StatelessWidget {
     this.showBack = false,
     this.onBack,
     this.trailing,
-    this.profileLabel = 'Dr',
+    this.profileLabel,
+    this.onProfileTap,
   });
+
+  /// Get avatar label: first letter of user name or 'U' as default
+  String _getAvatarLabel() {
+    if (profileLabel != null && profileLabel!.isNotEmpty) {
+      return profileLabel!;
+    }
+    if (UserSession.name != null && UserSession.name!.isNotEmpty) {
+      return UserSession.name![0].toUpperCase();
+    }
+    return 'U';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +215,6 @@ class AppHeader extends StatelessWidget {
   }
 
   Widget _buildProfileAvatar() {
-    return AppHeaderProfileAvatar(profileLabel: profileLabel);
+    return AppHeaderProfileAvatar(profileLabel: _getAvatarLabel(), onTap: onProfileTap);
   }
 }

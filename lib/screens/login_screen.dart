@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/app_header.dart';
 import '../config/app_colors.dart';
 import '../config/app_spacing.dart';
 import '../services/auth_service.dart';
@@ -89,10 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    
     return Scaffold(
-      // Screen background: standardized light background
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: LayoutBuilder(
@@ -100,291 +98,198 @@ class _LoginScreenState extends State<LoginScreen> {
             return SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: AnimatedPadding(
-                  duration: const Duration(milliseconds: 200),
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    mainAxisAlignment: keyboardHeight > 0 
-                        ? MainAxisAlignment.start 
-                        : MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Spacer for keyboard closed state
-                      if (keyboardHeight == 0)
-                        SizedBox(
-                          height: constraints.maxHeight * 0.05,
+                      AppHeader(
+                        title: 'Welcome Back',
+                        subtitle: 'Login to continue',
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        elevation: 2,
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                      
-                      // Centered content (header + login card)
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          // App logo
-                          Image.asset(
-                            'assets/images/macmind_logo.png',
-                            width: 140,
-                            height: 140,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const SizedBox(width: 140, height: 140);
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Title
-                          SizedBox(
-                            width: 320,
-                            child: Text(
-                              'MacMind',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1F2937), // text primary
-                                fontFamily: 'Inter',
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _CompactInputField(
+                                label: 'Email / User ID',
+                                hint: 'Enter your email or user ID',
+                                prefixIcon: Icons.person_outline,
+                                controller: _userIdController,
+                                keyboardType: TextInputType.emailAddress,
                               ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // Subtitle
-                          const Text(
-                            'Secure clinical case calculation',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xFF6B7280), // text secondary
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Login Card (340px width, max 500px height)
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 340,
-                              maxHeight: 500,
-                            ),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: const Color(0xFFDCE6F2), // border
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
+                              const SizedBox(height: 12),
+                              _CompactInputField(
+                                label: 'Password',
+                                hint: 'Enter your password',
+                                prefixIcon: Icons.lock_outline,
+                                controller: _passwordController,
+                                obscureText: true,
                               ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                              const SizedBox(height: 12),
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                runSpacing: 8,
                                 children: [
-                                  // Email / User ID
-                                  _CompactInputField(
-                                    label: 'Email / User ID',
-                                    hint: 'Enter your email or user ID',
-                                    prefixIcon: Icons.person_outline,
-                                    controller: _userIdController,
-                                    keyboardType: TextInputType.emailAddress,
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  // Password
-                                  _CompactInputField(
-                                    label: 'Password',
-                                    hint: 'Enter your password',
-                                    prefixIcon: Icons.lock_outline,
-                                    controller: _passwordController,
-                                    obscureText: true,
-                                  ),
-
-                                  const SizedBox(height: 12),
-
-                                  // Remember Me & Forgot Password
-                                  Wrap(
-                                    alignment: WrapAlignment.spaceBetween,
-                                    crossAxisAlignment: WrapCrossAlignment.center,
-                                    runSpacing: 6,
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() => _rememberMe = !_rememberMe);
-                                        },
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              width: 18,
-                                              height: 18,
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(4),
-                                                border: Border.all(
-                                                  color: AppColors.primary,
-                                                  width: 1.5,
-                                                ),
-                                                color: _rememberMe ? AppColors.primary : Colors.white,
-                                              ),
-                                              child: _rememberMe
-                                                  ? const Icon(
-                                                      Icons.check,
-                                                      size: 12,
-                                                      color: Colors.white,
-                                                    )
-                                                  : null,
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() => _rememberMe = !_rememberMe);
+                                    },
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 18,
+                                          height: 18,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: AppColors.primary,
+                                              width: 1.5,
                                             ),
-                                            const SizedBox(width: 8),
-                                            const Text(
-                                              'Remember me',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
-                                                color: Color(0xFF1F2937),
-                                                fontFamily: 'Inter',
-                                              ),
-                                            ),
-                                          ],
+                                            color: _rememberMe
+                                                ? AppColors.primary
+                                                : Colors.white,
+                                          ),
+                                          child: _rememberMe
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  size: 12,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
                                         ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const ForgotPasswordScreen(),
-                                            ),
-                                          );
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: const Size(0, 0),
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: const Text(
-                                          'Forgot password?',
+                                        const SizedBox(width: 8),
+                                        const Text(
+                                          'Remember me',
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
-                                            color: AppColors.primary,
-                                            decoration: TextDecoration.underline,
+                                            color: Color(0xFF1F2937),
                                             fontFamily: 'Inter',
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 18),
-
-                                  // Login Button
-                                  SizedBox(
-                                    height: 52,
-                                    child: ElevatedButton(
-                                      onPressed: _isLoading ? null : _handleLogin,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        disabledBackgroundColor: AppColors.disabled,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      child: _isLoading
-                                          ? const SizedBox(
-                                              height: 22,
-                                              width: 22,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<Color>(Colors.white),
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Login',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                                fontFamily: 'Inter',
-                                              ),
-                                            ),
+                                      ],
                                     ),
                                   ),
-
-                                  const SizedBox(height: 14),
-
-                                  // Create Account Link
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    crossAxisAlignment: WrapCrossAlignment.center,
-                                    runSpacing: 6,
-                                    children: [
-                                      const Text(
-                                        "Don't have an account? ",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w400,
-                                          color: Color(0xFF6B7280),
-                                          fontFamily: 'Inter',
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const ForgotPasswordScreen(),
                                         ),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(0, 0),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: const Text(
+                                      'Forgot password?',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.primary,
+                                        decoration: TextDecoration.underline,
+                                        fontFamily: 'Inter',
                                       ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => const RegisterScreen(),
-                                            ),
-                                          );
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: const Size(0, 0),
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: const Text(
-                                          'Create Account',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppColors.primary,
-                                            decoration: TextDecoration.underline,
-                                            fontFamily: 'Inter',
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _handleLogin,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    disabledBackgroundColor: AppColors.disabled,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          height: 22,
+                                          width: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Login',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                            fontFamily: 'Inter',
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Center(
+                                child: Wrap(
+                                  alignment: WrapAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  runSpacing: 6,
+                                  children: [
+                                    const Text(
+                                      "Don't have an account? ",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xFF6B7280),
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const RegisterScreen(),
+                                          ),
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: const Size(0, 0),
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: const Text(
+                                        'Create Account',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
+                                          decoration: TextDecoration.underline,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-
-                      // Spacer for keyboard-aware bottom padding
-                      if (keyboardHeight > 0)
-                        SizedBox(height: keyboardHeight + 20)
-                      else
-                        SizedBox(
-                          height: constraints.maxHeight * 0.05,
                         ),
+                      ),
                     ],
                   ),
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_spacing.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../widgets/case_history_dialog.dart';
 import '../widgets/macmind_design.dart';
 import 'new_case_screen.dart';
@@ -35,6 +36,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               breadcrumb: 'Home • Calculator',
               showBack: true,
               onBack: () => Navigator.pop(context),
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

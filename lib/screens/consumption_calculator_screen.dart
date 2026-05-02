@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import 'results_screen.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 // case_history_dialog and macmind_design imports removed (unused)
 
 /// Consumption Calculator Screen
@@ -153,7 +154,7 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
         maintenanceRows.add({
           'rowNumber': (i + 1).toDouble(),
           'fgf': fgf,
-          'concentration': conc,
+          'conc': conc,
           'time': time,
         });
       }
@@ -182,7 +183,6 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
           density: results.density,
           initialWeight: results.initialWeight,
           finalWeight: results.finalWeight,
-          // New induction and maintenance data
           inductionFGF: inductionFGF ?? 0,
           inductionConcentration: inductionConc ?? 0,
           inductionTime: inductionTime ?? 0,
@@ -502,6 +502,12 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
               breadcrumb: 'Home • New Case • Calculator',
               showBack: true,
               onBack: () => Navigator.pop(context),
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ProfileScreen()),
+                );
+              },
             ),
           ),
           Expanded(

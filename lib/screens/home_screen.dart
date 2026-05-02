@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
 import 'clinical_tips_module_screen.dart';
 import 'new_case_screen.dart';
 import 'oxygen_cylinder_module_screen.dart';
 import 'volatile_anesthetic_module_screen.dart';
+import '../services/user_session.dart';
 
 /// Screen A: Home / Module Selection
 /// Entry point after login with 3 main modules
@@ -37,6 +39,23 @@ class HomeScreen extends StatelessWidget {
       iconBackground: MacMindColors.amber50,
     ),
   ];
+
+  /// Get time-based greeting
+  String _getTimeBasedGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  }
+
+  /// Build dynamic greeting with user name
+  String _buildGreeting() {
+    final greeting = _getTimeBasedGreeting();
+    final userName = (UserSession.name != null && UserSession.name!.isNotEmpty)
+        ? UserSession.name!
+        : "User";
+    return "$greeting, $userName";
+  }
 
   void _handleModuleSelection(BuildContext context, String moduleId) {
     switch (moduleId) {
@@ -73,14 +92,19 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F7FA),
       body: Column(
         children: [
-          const SafeArea(
+          SafeArea(
             top: false,
             left: false,
             right: false,
             child: AppHeader(
-              subtitle: 'Good Morning, Dr',
+              subtitle: _buildGreeting(),
               title: 'Select a Module to get started',
-              
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
             ),
           ),
           Expanded(
@@ -126,7 +150,15 @@ class HomeScreen extends StatelessWidget {
           color: Colors.white,
           child: MacMindBottomNav(
             selectedIndex: 0,
-            onTap: (_) {},
+            onTap: (index) {
+              // Safe navigation: open Profile screen when Profile tab tapped (index 3)
+              if (index == 3) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              }
+            },
           ),
         ),
       ),

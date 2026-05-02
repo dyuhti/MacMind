@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/case_service.dart';
 import '../widgets/app_header.dart';
+import 'profile_screen.dart';
 import '../widgets/case_history_dialog.dart';
 import '../widgets/macmind_design.dart';
 
@@ -113,6 +114,12 @@ class _CasesListScreenState extends State<CasesListScreen> {
               breadcrumb: 'Home • Records',
               showBack: true,
               onBack: () => Navigator.pop(context),
+              onProfileTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
