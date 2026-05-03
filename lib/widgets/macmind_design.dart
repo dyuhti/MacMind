@@ -402,7 +402,6 @@ class MacMindBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _NavItem('Home', Icons.home_outlined, Icons.home),
-      _NavItem('Modules', Icons.grid_view_outlined, Icons.grid_view),
       _NavItem('Records', Icons.description_outlined, Icons.description),
       _NavItem('Profile', Icons.person_outline, Icons.person),
     ];

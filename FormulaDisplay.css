@@ -1,0 +1,59 @@
+/* FormulaDisplay Component Styles */
+
+/* Fade in/out animation for the "Copied!" tooltip */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.animate-fade-in-out {
+  animation: fadeInOut 2s ease-in-out forwards;
+}
+
+/* Smooth transitions for button states */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+/* Formula text selection styling */
+p[role="region"] {
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+/* Focus visible for keyboard accessibility */
+button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Responsive padding adjustments for smaller screens */
+@media (max-width: 640px) {
+  div.relative {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  div.relative div:first-child {
+    padding-right: 3rem;
+    padding-left: 1rem;
+  }
+}

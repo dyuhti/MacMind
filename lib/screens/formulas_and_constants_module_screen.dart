@@ -206,58 +206,61 @@ class FormulasAndConstantsModuleScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Title without copy button
+              Text(
+                '$index. $title',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1F2937),
+                  fontFamily: 'DM Sans',
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Formula Box with Copy Button (Absolute Positioned)
+              Stack(
                 children: [
-                  Expanded(
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFD1D5DB)),
+                    ),
                     child: Text(
-                      '$index. $title',
+                      formula,
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1F2937),
-                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF111827),
+                        fontFamily: 'Courier New',
+                        letterSpacing: 0.3,
+                        height: 1.4,
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => _copyToClipboard(context, formula),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4A90E2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.content_copy,
-                        color: Colors.white,
-                        size: 18,
+                  // Copy Button - Gray, Top Right Corner
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => _copyToClipboard(context, formula),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6B7280),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.content_copy,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-
-              // Formula Box
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F4F8),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFD1D5DB)),
-                ),
-                child: Text(
-                  formula,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF111827),
-                    fontFamily: 'Courier New',
-                    letterSpacing: 0.3,
-                    height: 1.4,
-                  ),
-                ),
               ),
               const SizedBox(height: 12),
 
@@ -602,33 +605,34 @@ class FormulasAndConstantsModuleScreen extends StatelessWidget {
     );
   }
 
-  /// Build cylinder formula box with copy button
+  /// Build cylinder formula box with copy button (Gray, Top Right)
   Widget _buildCylinderFormulaBoxWithContext(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F4F8),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD1D5DB)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              'Available O2 (L) = Pressure (Bar) × Cylinder Factor',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111827),
-                fontFamily: 'Courier New',
-                letterSpacing: 0.3,
-                height: 1.4,
-              ),
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0F4F8),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFD1D5DB)),
+          ),
+          child: Text(
+            'Available O2 (L) = Pressure (Bar) × Cylinder Factor',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111827),
+              fontFamily: 'Courier New',
+              letterSpacing: 0.3,
+              height: 1.4,
             ),
           ),
-          const SizedBox(width: 8),
-          GestureDetector(
+        ),
+        // Copy Button - Gray, Top Right Corner
+        Positioned(
+          top: 8,
+          right: 8,
+          child: GestureDetector(
             onTap: () => _copyToClipboard(
               context,
               'Available O2 (L) = Pressure (Bar) × Cylinder Factor',
@@ -636,8 +640,8 @@ class FormulasAndConstantsModuleScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF4A90E2),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF6B7280),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: const Icon(
                 Icons.content_copy,
@@ -646,8 +650,8 @@ class FormulasAndConstantsModuleScreen extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

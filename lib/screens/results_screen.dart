@@ -7,6 +7,7 @@ import '../services/export_service.dart';
 import '../services/session_history.dart';
 import '../services/case_service.dart';
 import '../widgets/app_header.dart';
+import 'case_history_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/case_history_dialog.dart';
 // macmind_design removed (unused)
@@ -279,12 +280,32 @@ class _ResultsScreenState extends State<ResultsScreen> {
               breadcrumb: 'Home • New Case • Results',
               showBack: true,
               onBack: () => Navigator.pop(context),
-              onProfileTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppHeaderActionButton(
+                    icon: Icons.history,
+                    tooltip: 'View History',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CaseHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  AppHeaderProfileAvatar(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -644,12 +665,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
               label: 'Export Excel',
               icon: Icons.file_download_outlined,
               onPressed: _exportCurrentExcel,
-            ),
-            const SizedBox(height: 10),
-            _outlineActionButton(
-              label: 'View History',
-              icon: Icons.history_outlined,
-              onPressed: () => showCaseHistoryDialog(context),
             ),
             const SizedBox(height: 24),
                 ],

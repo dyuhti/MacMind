@@ -6,7 +6,9 @@ import '../services/auth_service.dart';
 import '../services/user_session.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onBack;
+
+  const ProfileScreen({super.key, this.onBack});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -304,7 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: 'Profile',
               subtitle: 'Manage your details',
               showBack: true,
-              onBack: () => Navigator.of(context).maybePop(),
+              onBack: widget.onBack ?? () => Navigator.of(context).maybePop(),
             ),
           ),
           Expanded(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/app_header.dart';
 import '../widgets/macmind_design.dart';
+import 'case_history_screen.dart';
 import 'profile_screen.dart';
 
 /// Economy Calculator Screen
@@ -16,6 +17,7 @@ class EconomyCalculatorScreen extends StatefulWidget {
 }
 
 class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
+  int _selectedIndex = 0;
   late final TextEditingController _durationController;
   late final TextEditingController _concentrationController;
 
@@ -102,78 +104,88 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     });
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  List<Widget> get _screens => [
+        _buildEconomyContent(),
+        CaseHistoryScreen(
+          onBack: () => _onItemTapped(0),
+          onProfileTap: () => _onItemTapped(2),
+        ),
+        ProfileScreen(onBack: () => _onItemTapped(0)),
+      ];
+
+  Widget _buildEconomyContent() {
+    return Column(
+      children: [
+        SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: AppHeader(
+            title: 'Economy Calculator',
+            breadcrumb: 'Home • Volatile Anesthetic • Economy',
+            showBack: true,
+            onProfileTap: () => _onItemTapped(2),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            color: const Color(0xFFF5F7FA),
+            padding: const EdgeInsets.all(16),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDurationInputField(),
+                const SizedBox(height: 16),
+                _buildConcentrationInputField(),
+                const SizedBox(height: 20),
+                _buildAgentSelectorDropdown(),
+                const SizedBox(height: 24),
+                _buildConsumptionAnalysisCard(),
+                const SizedBox(height: 24),
+                const MacMindInfoCard(
+                  icon: Icons.info_outline,
+                  child: Text(
+                    'Tap any point on the graph to see detailed values. Formula: Consumption (ml) = FGF × Concentration × Time × (MW / 2412)',
+                    style: TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 12,
+                      height: 1.5,
+                      color: MacMindColors.gray600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       extendBodyBehindAppBar: false,
-      body: Column(
-        children: [
-          SafeArea(
-            top: false,
-            left: false,
-            right: false,
-            child: AppHeader(
-              title: 'Economy Calculator',
-              breadcrumb: 'Home • Volatile Anesthetic • Economy',
-              showBack: true,
-              onProfileTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              color: const Color(0xFFF5F7FA),
-              padding: const EdgeInsets.all(16),
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDurationInputField(),
-                  const SizedBox(height: 16),
-                  _buildConcentrationInputField(),
-                  const SizedBox(height: 20),
-                  _buildAgentSelectorDropdown(),
-                  const SizedBox(height: 24),
-                  _buildConsumptionAnalysisCard(),
-                  const SizedBox(height: 24),
-                  const MacMindInfoCard(
-                    icon: Icons.info_outline,
-                    child: Text(
-                      'Tap any point on the graph to see detailed values. Formula: Consumption (ml) = FGF × Concentration × Time × (MW / 2412)',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        height: 1.5,
-                        color: MacMindColors.gray600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
       ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
           color: Colors.white,
           child: MacMindBottomNav(
-            selectedIndex: 0,
-            onTap: (index) {
-              if (index == 3) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              }
-            },
+            selectedIndex: _selectedIndex,
+            onTap: _onItemTapped,
           ),
         ),
       ),

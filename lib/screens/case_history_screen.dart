@@ -11,7 +11,10 @@ import 'profile_screen.dart';
 
 /// Full-page Case History Screen
 class CaseHistoryScreen extends StatefulWidget {
-  const CaseHistoryScreen({super.key});
+  final VoidCallback? onBack;
+  final VoidCallback? onProfileTap;
+
+  const CaseHistoryScreen({super.key, this.onBack, this.onProfileTap});
 
   @override
   State<CaseHistoryScreen> createState() => _CaseHistoryScreenState();
@@ -173,8 +176,8 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
             title: 'Case History',
             breadcrumb: 'Home • New Case • History',
             showBack: true,
-            onBack: () => Navigator.pop(context),
-            onProfileTap: () {
+            onBack: widget.onBack ?? () => Navigator.pop(context),
+            onProfileTap: widget.onProfileTap ?? () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ProfileScreen()),

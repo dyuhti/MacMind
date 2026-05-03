@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import 'results_screen.dart';
 import '../widgets/app_header.dart';
+import 'case_history_screen.dart';
 import 'profile_screen.dart';
 // case_history_dialog and macmind_design imports removed (unused)
 
@@ -502,12 +503,32 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
               breadcrumb: 'Home • New Case • Calculator',
               showBack: true,
               onBack: () => Navigator.pop(context),
-              onProfileTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ProfileScreen()),
-                );
-              },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppHeaderActionButton(
+                    icon: Icons.history,
+                    tooltip: 'View History',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CaseHistoryScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  AppHeaderProfileAvatar(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(

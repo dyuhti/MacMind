@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
+
+import '../services/user_session.dart';
 import '../widgets/app_header.dart';
-import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
+import 'case_history_screen.dart';
 import 'formulas_and_constants_module_screen.dart';
 import 'new_case_screen.dart';
 import 'oxygen_cylinder_module_screen.dart';
+import 'profile_screen.dart';
 import 'volatile_anesthetic_module_screen.dart';
-import '../services/user_session.dart';
 
 /// Screen A: Home / Module Selection
 /// Entry point after login with 3 main modules
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
 
   static final List<ModuleCard> modules = [
     ModuleCard(
@@ -40,12 +49,27 @@ class HomeScreen extends StatelessWidget {
     ),
   ];
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  List<Widget> get _screens => [
+        _buildHomeTab(),
+        CaseHistoryScreen(
+          onBack: () => _onItemTapped(0),
+          onProfileTap: () => _onItemTapped(2),
+        ),
+        ProfileScreen(onBack: () => _onItemTapped(0)),
+      ];
+
   /// Get time-based greeting
   String _getTimeBasedGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    return "Good Evening";
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 
   /// Build dynamic greeting with user name
@@ -53,8 +77,8 @@ class HomeScreen extends StatelessWidget {
     final greeting = _getTimeBasedGreeting();
     final userName = (UserSession.name != null && UserSession.name!.isNotEmpty)
         ? UserSession.name!
-        : "User";
-    return "$greeting, $userName";
+        : 'User';
+    return '$greeting, $userName';
   }
 
   void _handleModuleSelection(BuildContext context, String moduleId) {
@@ -86,79 +110,73 @@ class HomeScreen extends StatelessWidget {
     }
   }
 
+  Widget _buildHomeTab() {
+    return Column(
+      children: [
+        SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: AppHeader(
+            subtitle: _buildGreeting(),
+            title: 'Select a Module to get started',
+            onProfileTap: () => _onItemTapped(2),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            color: const Color(0xFFF5F7FA),
+            padding: const EdgeInsets.all(16),
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const MacMindSectionLabel(text: 'Clinical Modules'),
+                const SizedBox(height: 12),
+                for (final module in modules) ...[
+                  MacMindModuleCard(
+                    icon: module.icon,
+                    iconBackground: module.iconBackground,
+                    iconColor: module.color,
+                    title: module.title,
+                    subtitle: module.subtitle,
+                    onTap: () => _handleModuleSelection(context, module.id),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                MacMindLegacyButton(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NewCaseScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      body: Column(
-        children: [
-          SafeArea(
-            top: false,
-            left: false,
-            right: false,
-            child: AppHeader(
-              subtitle: _buildGreeting(),
-              title: 'Select a Module to get started',
-              onProfileTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              color: const Color(0xFFF5F7FA),
-              padding: const EdgeInsets.all(16),
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  const MacMindSectionLabel(text: 'Clinical Modules'),
-                  const SizedBox(height: 12),
-                  for (final module in modules) ...[
-                    MacMindModuleCard(
-                      icon: module.icon,
-                      iconBackground: module.iconBackground,
-                      iconColor: module.color,
-                      title: module.title,
-                      subtitle: module.subtitle,
-                      onTap: () => _handleModuleSelection(context, module.id),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  MacMindLegacyButton(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NewCaseScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
       ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
           color: Colors.white,
           child: MacMindBottomNav(
-            selectedIndex: 0,
-            onTap: (index) {
-              // Safe navigation: open Profile screen when Profile tab tapped (index 3)
-              if (index == 3) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                );
-              }
-            },
+            selectedIndex: _selectedIndex,
+            onTap: _onItemTapped,
           ),
         ),
       ),
