@@ -8,7 +8,7 @@ import json
 
 
 class Case(db.Model):
-    """Case model for managing patient case data in MySQL"""
+    """Case model for managing patient case data with SQLAlchemy"""
     
     __tablename__ = 'cases'
     

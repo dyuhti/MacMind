@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive guide for the updated authentication system using SQLAlchemy and MySQL.
+This document provides a comprehensive guide for the updated authentication system using SQLAlchemy and PostgreSQL.
 
 ## Database Schema
 
@@ -34,8 +34,8 @@ Update your `.env` file with the following:
 FLASK_ENV=development
 PORT=5000
 
-# MySQL Database
-DATABASE_URL=mysql+pymysql://root:root123@localhost:3306/med_calci_app
+# PostgreSQL Database
+DATABASE_URL=postgresql+psycopg://root:root123@localhost:3306/med_calci_app
 
 # Security Keys
 SECRET_KEY=abc123supersecretkey
@@ -319,7 +319,7 @@ is_valid = verify_password("plaintext_password", hashed)
 **Solution:** Include Authorization header with Bearer token
 
 ### Issue: Database connection error
-**Solution:** Verify MySQL is running and DATABASE_URL in .env is correct
+**Solution:** Verify PostgreSQL is running and DATABASE_URL in .env is correct
 
 ## Files Modified
 
@@ -352,3 +352,5 @@ For issues or questions, refer to:
 - [Backend Architecture](ARCHITECTURE.md)
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
+
+

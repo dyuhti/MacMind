@@ -34,7 +34,7 @@
 - [x] Validates passwords match
 - [x] Checks for duplicate email
 - [x] Hashes password with bcrypt
-- [x] Inserts user into MySQL
+- [x] Inserts user into PostgreSQL
 - [x] Returns JSON: `{"success": true, "message": "...", "user": {...}, "token": "..."}`
 - [x] Proper error handling (try/except)
 - [x] DB session commit and rollback
@@ -188,7 +188,7 @@ All endpoints return standardized JSON:
 ## 🎉 Status: READY FOR PRODUCTION
 
 All requirements met:
-✅ MySQL schema updated
+✅ PostgreSQL schema updated
 ✅ User model implemented
 ✅ Register API completed
 ✅ Login API completed
@@ -265,3 +265,5 @@ Authorization: Bearer <token>
 
 **Last Updated:** April 22, 2026
 **Version:** 1.0.0 - Production Ready
+
+

@@ -1,12 +1,12 @@
 # 🏥 MacMind Medical Calculator Backend
 
-A production-ready Python Flask backend for the MacMind medical calculator mobile application. Provides secure user authentication, medication dosage calculations, and data persistence with MySQL.
+A production-ready Python Flask backend for the MacMind medical calculator mobile application. Provides secure user authentication, medication dosage calculations, and data persistence with PostgreSQL.
 
 ## ✨ Features
 
 - ✅ **User Authentication** - Secure registration and login with JWT tokens
 - ✅ **Medication Dosage Calculator** - Intelligent dosage computation with safety adjustments
-- ✅ **MySQL Integration** - Persistent user data and calculation history with SQLAlchemy ORM
+- ✅ **PostgreSQL Integration** - Persistent user data and calculation history with SQLAlchemy ORM
 - ✅ **CORS Enabled** - Compatible with Flutter and web clients
 - ✅ **Error Handling** - Comprehensive error responses with proper HTTP status codes
 - ✅ **Security** - Password hashing with bcrypt, JWT token validation
@@ -21,7 +21,7 @@ A production-ready Python Flask backend for the MacMind medical calculator mobil
 Before starting, ensure you have:
 
 - **Python 3.8+** installed ([Download](https://www.python.org/downloads/))
-- **MySQL Server** (Free at [mysql.com](https://dev.mysql.com/downloads/) or use [XAMPP](https://www.apachefriends.org/), [WAMP](http://www.wampserver.com/), [MAMP](https://www.mamp.info/))
+- **PostgreSQL Server** (Free at [PostgreSQL.com](https://dev.PostgreSQL.com/downloads/) or use [XAMPP](https://www.apachefriends.org/), [WAMP](http://www.wampserver.com/), [MAMP](https://www.mamp.info/))
 - **pip** (Python package manager) - comes with Python
 - **Git** (for version control)
 - **Postman** or **cURL** (for API testing, optional)
@@ -70,29 +70,29 @@ pip install -r requirements.txt
    cp .env.example .env
    ```
 
-2. Update `.env` with your MySQL connection string:
+2. Update `.env` with your PostgreSQL connection string:
    ```env
-   DATABASE_URL=mysql+pymysql://root:password@localhost:3306/macmind
+   DATABASE_URL=postgresql+psycopg://root:password@localhost:3306/macmind
    ```
    Replace:
-   - `root` with your MySQL username
-   - `password` with your MySQL password
-   - `localhost` with your MySQL host
-   - `3306` with your MySQL port (default is 3306)
+   - `root` with your PostgreSQL username
+   - `password` with your PostgreSQL password
+   - `localhost` with your PostgreSQL host
+   - `3306` with your PostgreSQL port (default is 3306)
    - `macmind` with your database name
 
-### 4. Create MySQL Database (First Time)
+### 4. Create PostgreSQL Database (First Time)
 
 ```bash
-# Open MySQL command line
-mysql -u root -p
+# Open PostgreSQL command line
+PostgreSQL -u root -p
 
 # Enter your password and run:
 CREATE DATABASE IF NOT EXISTS macmind CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
 ```
 
-Or use MySQL Workbench / phpMyAdmin to create the database.
+Or use PostgreSQL Workbench / phpMyAdmin to create the database.
 
 ### 5. Start the Server
 
@@ -109,7 +109,7 @@ Expected output:
 🚀 Server starting on http://127.0.0.1:5000
 🔧 Environment: DEVELOPMENT
 🐛 Debug Mode: ON
-📦 Database: MySQL
+📦 Database: PostgreSQL
 🔐 CORS: Enabled
 
 ✅ Server is ready!
@@ -485,7 +485,7 @@ VALUES ('dr_smith', 'doctor@hospital.com', '$2b$12$...', 'HOSP_001');
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | MySQL connection string | `mysql+pymysql://user:pass@localhost:3306/macmind` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql+psycopg://user:pass@localhost:3306/macmind` |
 | `FLASK_ENV` | Environment type | `development` or `production` |
 
 ### Optional
@@ -598,34 +598,34 @@ print(response.json())
 pip install -r requirements.txt
 ```
 
-### Issue: "Can't connect to MySQL server" or "Access denied"
+### Issue: "Can't connect to PostgreSQL server" or "Access denied"
 
 **Troubleshooting:**
 1. Check DATABASE_URL in `.env`
-2. Verify MySQL server is running
+2. Verify PostgreSQL server is running
 3. Verify username and password are correct
 4. Ensure database exists:
    ```bash
-   mysql -u root -p
+   PostgreSQL -u root -p
    CREATE DATABASE macmind CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 
 **Test connection:**
 ```bash
-mysql -u root -p -h localhost -e "SELECT 1"
+PostgreSQL -u root -p -h localhost -e "SELECT 1"
 ```
 
 ### Issue: "(1045, "Access denied for user 'root'@'localhost'"
 
-**Solution:** Reset MySQL password or use correct credentials
-- Check DATABASE_URL format: `mysql+pymysql://username:password@localhost:3306/dbname`
-- If using localhost without password: `mysql+pymysql://root@localhost:3306/macmind`
+**Solution:** Reset PostgreSQL password or use correct credentials
+- Check DATABASE_URL format: `postgresql+psycopg://username:password@localhost:3306/dbname`
+- If using localhost without password: `postgresql+psycopg://root@localhost:3306/macmind`
 
 ### Issue: "Table 'macmind.users' doesn't exist"
 
 **Solution:** Database tables are created automatically on first run, but if needed:
 ```bash
-mysql -u root -p macmind < schema.sql
+PostgreSQL -u root -p macmind < schema.sql
 ```
 
 Or manually create:
@@ -715,7 +715,7 @@ git push heroku main
 
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [Flask-SQLAlchemy Documentation](https://flask-sqlalchemy.palletsprojects.com/)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
+- [PostgreSQL Documentation](https://dev.PostgreSQL.com/doc/)
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - [JWT Guide](https://jwt.io/introduction)
 - [REST API Best Practices](https://www.restfulapi.net/)
@@ -779,19 +779,19 @@ A: Set in `.env`:
 SQLALCHEMY_ECHO=true
 ```
 
-**Q: Can I migrate from MongoDB to MySQL?**
-A: Yes! The new version uses MySQL with SQLAlchemy ORM. Data won't migrate automatically, but the schema is cleaner and easier to maintain.
+**Q: Can I migrate from MongoDB to PostgreSQL?**
+A: Yes! The new version uses PostgreSQL with SQLAlchemy ORM. Data won't migrate automatically, but the schema is cleaner and easier to maintain.
 
-**Q: How do I connect to a remote MySQL database?**
+**Q: How do I connect to a remote PostgreSQL database?**
 A: Update DATABASE_URL in `.env`:
 ```env
-DATABASE_URL=mysql+pymysql://username:password@hostname.com:3306/macmind
+DATABASE_URL=postgresql+psycopg://username:password@hostname.com:3306/macmind
 ```
 
-**Q: How do I backup my MySQL database?**
-A: Use mysqldump:
+**Q: How do I backup my PostgreSQL database?**
+A: Use pg_dump:
 ```bash
-mysqldump -u root -p macmind > backup.sql
+pg_dump -u root -p macmind > backup.sql
 ```
 
 **Q: Can I modify the API endpoints?**
@@ -813,3 +813,5 @@ For issues or questions:
 
 Generated: 2024
 Version: 1.0
+
+

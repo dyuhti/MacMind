@@ -101,7 +101,7 @@ Expected output:
 🚀 Server starting on http://127.0.0.1:5000
 🔧 Environment: DEVELOPMENT
 🐛 Debug Mode: ON
-📦 Database: MySQL
+📦 Database: PostgreSQL
 🔐 CORS: Enabled
 
 ✅ Server is ready!
@@ -254,7 +254,7 @@ All dependencies are already in `requirements.txt`:
 - Flask-SQLAlchemy 3.0.5
 - bcrypt 4.0.1
 - PyJWT 2.8.1
-- PyMySQL 1.1.0
+- psycopg 1.1.0
 
 ## 🔍 What Was Removed
 
@@ -298,3 +298,5 @@ For issues:
 2. Run `python init_db.py test` to verify setup
 3. Run `python test_api.py` to test endpoints
 4. Check database connection in `.env`
+
+

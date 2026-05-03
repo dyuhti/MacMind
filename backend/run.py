@@ -44,7 +44,7 @@ if __name__ == '__main__':
     🚀 Server starting on http://{host}:{port}
     🔧 Environment: {flask_env.upper()}
     🐛 Debug Mode: {'ON' if debug else 'OFF'}
-    📦 Database: MySQL
+    📦 Database: SQLAlchemy (DATABASE_URL)
     🔐 CORS: Enabled
     🌐 Accepting connections from: ALL INTERFACES
     

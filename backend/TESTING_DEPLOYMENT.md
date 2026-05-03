@@ -8,9 +8,9 @@ Complete guide for testing your backend and deploying to production.
 
 ### Backend Testing
 
-- [ ] **MySQL Database Configured**
+- [ ] **PostgreSQL Database Configured**
   ```bash
-  mysql -u root -p -e "SELECT 1 FROM macmind.users LIMIT 1;"
+  PostgreSQL -u root -p -e "SELECT 1 FROM macmind.users LIMIT 1;"
   ```
 
 - [ ] **Environment Variables Set**
@@ -190,7 +190,7 @@ curl http://127.0.0.1:5000/api/auth/profile \
    Add in Render dashboard:
    ```
    FLASK_ENV=production
-   DATABASE_URL=mysql+pymysql://user:pass@host:3306/macmind
+   DATABASE_URL=postgresql+psycopg://user:pass@host:3306/macmind
    SECRET_KEY=<generate-using-secrets>
    JWT_SECRET_KEY=<generate-using-secrets>
    CORS_ORIGINS=https://yourdomain.com
@@ -230,7 +230,7 @@ curl http://127.0.0.1:5000/api/auth/profile \
 4. **Set Environment Variables**
    ```bash
    heroku config:set FLASK_ENV=production
-   heroku config:set DATABASE_URL=mysql+pymysql://user:pass@host:3306/macmind
+   heroku config:set DATABASE_URL=postgresql+psycopg://user:pass@host:3306/macmind
    heroku config:set SECRET_KEY=your-secret-key
    heroku config:set JWT_SECRET_KEY=your-jwt-secret-key
    ```
@@ -250,7 +250,7 @@ curl http://127.0.0.1:5000/api/auth/profile \
 #### Prerequisites
 - VPS or dedicated server
 - SSH access
-- MySQL server
+- PostgreSQL server
 - Python 3.8+
 
 #### Steps
@@ -263,7 +263,7 @@ curl http://127.0.0.1:5000/api/auth/profile \
 2. **Install Dependencies**
    ```bash
    sudo apt update
-   sudo apt install python3 python3-pip mysql-server nginx
+   sudo apt install python3 python3-pip PostgreSQL-server nginx
    ```
 
 3. **Clone Repository**
@@ -358,7 +358,7 @@ Before Going to Production:
 
 - [ ] **Set Strong Database Password**
   ```bash
-  mysql -u root -p
+  PostgreSQL -u root -p
   ALTER USER 'macmind'@'localhost' IDENTIFIED BY 'strong_password_here';
   FLUSH PRIVILEGES;
   ```
@@ -375,7 +375,7 @@ Before Going to Production:
 - [ ] **Setup Database Backups**
   ```bash
   # Daily backup script
-  mysqldump -u macmind -p macmind > /backups/macmind_$(date +%Y%m%d).sql
+  pg_dump -u macmind -p macmind > /backups/macmind_$(date +%Y%m%d).sql
   ```
 
 ---
@@ -412,10 +412,10 @@ heroku logs --tail
 
 ```bash
 # Check connections
-mysql -u root -p -e "SHOW PROCESSLIST;"
+PostgreSQL -u root -p -e "SHOW PROCESSLIST;"
 
 # Check table sizes
-mysql -u root -p -e "SELECT table_name, ROUND(((data_length + index_length) / 1024 / 1024), 2) 'Size in MB' FROM information_schema.tables WHERE table_schema='macmind';"
+PostgreSQL -u root -p -e "SELECT table_name, ROUND(((data_length + index_length) / 1024 / 1024), 2) 'Size in MB' FROM information_schema.tables WHERE table_schema='macmind';"
 ```
 
 ---
@@ -433,7 +433,7 @@ mysql -u root -p -e "SELECT table_name, ROUND(((data_length + index_length) / 10
 
 2. Check database connection:
    ```bash
-   mysql -u macmind -p -h your-host -e "SELECT 1;"
+   PostgreSQL -u macmind -p -h your-host -e "SELECT 1;"
    ```
 
 3. Check environment variables:
@@ -446,12 +446,12 @@ mysql -u root -p -e "SELECT table_name, ROUND(((data_length + index_length) / 10
 
 1. Verify database has users table:
    ```bash
-   mysql -u root -p macmind -e "SHOW TABLES;"
+   PostgreSQL -u root -p macmind -e "SHOW TABLES;"
    ```
 
 2. Check user exists:
    ```bash
-   mysql -u root -p macmind -e "SELECT * FROM users;"
+   PostgreSQL -u root -p macmind -e "SELECT * FROM users;"
    ```
 
 3. Verify JWT keys are set:
@@ -500,10 +500,10 @@ def login():
 
 ```bash
 # Add indexes
-mysql -u root -p macmind -e "ALTER TABLE users ADD INDEX idx_email (email);"
+PostgreSQL -u root -p macmind -e "ALTER TABLE users ADD INDEX idx_email (email);"
 
 # Analyze tables
-mysql -u root -p macmind -e "ANALYZE TABLE users;"
+PostgreSQL -u root -p macmind -e "ANALYZE TABLE users;"
 ```
 
 ---
@@ -536,7 +536,7 @@ curl -X POST https://your-backend-url/api/auth/login \
 ## 🎯 Deployment Checklist Summary
 
 - [ ] All tests pass locally (`python test_auth.py`)
-- [ ] MySQL database configured
+- [ ] PostgreSQL database configured
 - [ ] Environment variables set (production)
 - [ ] Security keys changed
 - [ ] SSL/HTTPS enabled
@@ -554,7 +554,7 @@ curl -X POST https://your-backend-url/api/auth/login \
 
 1. **Local issues:** Run `python test_auth.py`
 2. **Deployment issues:** Check platform docs (Render/Heroku)
-3. **Database issues:** Check `MYSQL_SETUP.md`
+3. **Database issues:** Check `POSTGRESQL_SETUP.md`
 4. **Flutter issues:** Check `FLUTTER_INTEGRATION.md`
 
 ---
@@ -562,3 +562,5 @@ curl -X POST https://your-backend-url/api/auth/login \
 **Congratulations! Your backend is production-ready!** 🚀
 
 Next: Monitor, optimize, and iterate based on user feedback.
+
+

@@ -79,30 +79,21 @@ else:
     print(response.json())
 
 # Test 4: Verify data in database
-print("\n💾 TEST 4: Verifying data in MySQL database...")
-import mysql.connector
+print("\n💾 TEST 4: Verifying data via SQLAlchemy...")
+from app import create_app
+from app.models.case import Case
 
 try:
-    conn = mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='root123',
-        database='med_calci_app'
-    )
-    
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute(f"SELECT * FROM cases WHERE id = {saved_case_id}")
-    row = cursor.fetchone()
-    
+    app = create_app('development')
+    with app.app_context():
+        row = Case.query.filter_by(id=saved_case_id).first()
+
     if row:
-        print(f"✅ Found in database: {row['patient_name']}")
-        print(f"   Agent: {row['anesthetic_agent']}")
-        print(f"   Molecular Mass: {row['molecular_mass']}")
+        print(f"✅ Found in database: {row.patient_name}")
+        print(f"   Agent: {row.anesthetic_agent}")
+        print(f"   Molecular Mass: {row.molecular_mass}")
     else:
         print(f"❌ Case {saved_case_id} not found in database")
-    
-    cursor.close()
-    conn.close()
 except Exception as e:
     print(f"⚠️ Database check failed: {e}")
 
@@ -113,6 +104,6 @@ print("\n🎯 Summary:")
 print(f"   ✅ Saved case ID: {saved_case_id}")
 print(f"   ✅ Patient: {case_data['patient_name']}")
 print(f"   ✅ Retrieved from API: ✓")
-print(f"   ✅ Found in MySQL: ✓")
+print(f"   ✅ Found via SQLAlchemy: ✓")
 print(f"   ✅ Flutter can now sync this data!")
 print("\n💡 Next: Test from Flutter by running the app on emulator")

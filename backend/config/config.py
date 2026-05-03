@@ -5,6 +5,22 @@ Handles database connection, environment variables, and app settings
 import os
 from datetime import timedelta
 
+
+def _normalize_database_url(url: str) -> str:
+    """Normalize DB URL for SQLAlchemy across providers and drivers."""
+    if not isinstance(url, str):
+        return url
+
+    # Legacy scheme used by some providers
+    if url.startswith('postgres://'):
+        url = url.replace('postgres://', 'postgresql://', 1)
+
+    # Use psycopg v3 explicitly when no driver is specified
+    if url.startswith('postgresql://') and not url.startswith('postgresql+'): 
+        url = url.replace('postgresql://', 'postgresql+psycopg://', 1)
+
+    return url
+
 class Config:
     """Base configuration class with common settings"""
     
@@ -16,21 +32,12 @@ class Config:
     # Prefer DATABASE_URL (e.g., from Render). Accept both postgres:// and postgresql://
     db_url = os.getenv(
         'DATABASE_URL',
-        'mysql+pymysql://root:root123@localhost:3306/med_calci_app'
+        'sqlite:///med_calci_app.db'
     )
-    # Some providers (Heroku) use the scheme 'postgres://', which SQLAlchemy
-    # does not accept in recent versions; normalize to 'postgresql://'
-    if isinstance(db_url, str) and db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    db_url = _normalize_database_url(db_url)
     SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
-    
-    # MySQL direct connection (for calculator.py)
-    MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
-    MYSQL_USER = os.getenv('MYSQL_USER', 'root')
-    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'root123')
-    MYSQL_DB = os.getenv('MYSQL_DB', 'med_calci_app')
     
     # JWT/Session settings
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
@@ -63,10 +70,9 @@ class TestingConfig(Config):
     # Allow testing DB override and normalize postgres scheme if needed
     db_url_test = os.getenv(
         'DATABASE_URL_TEST',
-        'mysql+pymysql://root:password@localhost:3306/macmind_test'
+        'sqlite:///med_calci_app_test.db'
     )
-    if isinstance(db_url_test, str) and db_url_test.startswith('postgres://'):
-        db_url_test = db_url_test.replace('postgres://', 'postgresql://', 1)
+    db_url_test = _normalize_database_url(db_url_test)
     SQLALCHEMY_DATABASE_URI = db_url_test
 
 

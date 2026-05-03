@@ -12,18 +12,18 @@ Your backend is now **fully functional** with:
 - **User Authentication** - Register, login, token verification
 - **Password Security** - bcrypt hashing (production-grade)
 - **JWT Tokens** - Secure authentication tokens
-- **MySQL Database** - Relational data storage with SQLAlchemy ORM
+- **PostgreSQL Database** - Relational data storage with SQLAlchemy ORM
 - **RESTful API** - Clean, documented endpoints
 - **Error Handling** - Proper HTTP status codes and messages
 - **CORS Enabled** - Works with Flutter and web clients
 
 ### ✅ Documentation Files
 1. **README.md** - Main backend documentation
-2. **MYSQL_SETUP.md** - MySQL installation guide
+2. **POSTGRESQL_SETUP.md** - PostgreSQL installation guide
 3. **API_TESTING.md** - cURL examples and testing guide
 4. **FLUTTER_INTEGRATION.md** - Flutter app integration guide
 5. **TESTING_DEPLOYMENT.md** - Testing and deployment checklist
-6. **MIGRATION_GUIDE.md** - MongoDB to MySQL migration info
+6. **MIGRATION_GUIDE.md** - MongoDB to PostgreSQL migration info
 
 ### ✅ Testing Tools
 1. **test_auth.py** - Automated test suite (6 tests)
@@ -34,11 +34,11 @@ Your backend is now **fully functional** with:
 
 ## 🚀 Quick Start (3 Steps)
 
-### 1️⃣ Setup MySQL
+### 1️⃣ Setup PostgreSQL
 
 ```bash
 # Create database
-mysql -u root -p
+PostgreSQL -u root -p
 CREATE DATABASE macmind CHARACTER SET utf8mb4;
 EXIT;
 
@@ -50,8 +50,8 @@ EXIT;
 ```bash
 cd backend
 
-# Update .env with MySQL credentials
-# DATABASE_URL=mysql+pymysql://root:password@localhost:3306/macmind
+# Update .env with PostgreSQL credentials
+# DATABASE_URL=postgresql+psycopg://root:password@localhost:3306/macmind
 
 # Install dependencies
 pip install -r requirements.txt
@@ -84,7 +84,7 @@ backend/
 │
 ├── 📚 Documentation/
 │   ├── README.md               # Main docs
-│   ├── MYSQL_SETUP.md          # MySQL guide
+│   ├── POSTGRESQL_SETUP.md          # PostgreSQL guide
 │   ├── API_TESTING.md          # Testing guide
 │   ├── FLUTTER_INTEGRATION.md  # Flutter guide
 │   ├── TESTING_DEPLOYMENT.md   # Deployment guide
@@ -235,7 +235,7 @@ Required in `.env`:
 ```env
 FLASK_ENV=development
 PORT=5000
-DATABASE_URL=mysql+pymysql://root:password@localhost:3306/macmind
+DATABASE_URL=postgresql+psycopg://root:password@localhost:3306/macmind
 SECRET_KEY=your-secret-key
 JWT_SECRET_KEY=your-jwt-secret-key
 CORS_ORIGINS=*
@@ -248,7 +248,7 @@ CORS_ORIGINS=*
 | Issue | Solution |
 |-------|----------|
 | "Connection refused" | Start server: `python run.py` |
-| "Can't connect to MySQL" | Check MySQL running and credentials |
+| "Can't connect to PostgreSQL" | Check PostgreSQL running and credentials |
 | "Test fails" | Check `.env` DATABASE_URL is correct |
 | "Flutter timeout" | Use `10.0.2.2` for emulator, local IP for device |
 | "CORS error" | Update CORS_ORIGINS in `.env` |
@@ -318,7 +318,7 @@ Your backend is working correctly if:
 ✅ cURL commands return expected responses
 ✅ Flutter app can register and login
 ✅ JWT tokens are returned and verified
-✅ MySQL database stores users correctly
+✅ PostgreSQL database stores users correctly
 
 ---
 
@@ -327,7 +327,7 @@ Your backend is working correctly if:
 | Need Help With | Read |
 |---|---|
 | Backend setup | `README.md` |
-| MySQL installation | `MYSQL_SETUP.md` |
+| PostgreSQL installation | `POSTGRESQL_SETUP.md` |
 | Testing API endpoints | `API_TESTING.md` |
 | Connecting Flutter app | `FLUTTER_INTEGRATION.md` |
 | Production deployment | `TESTING_DEPLOYMENT.md` |
@@ -361,7 +361,7 @@ Your MacMind backend is **fully functional** and ready to serve your Flutter app
 
 1. **API Questions** → See `API_TESTING.md`
 2. **Flutter Integration** → See `FLUTTER_INTEGRATION.md`
-3. **Database Issues** → See `MYSQL_SETUP.md`
+3. **Database Issues** → See `POSTGRESQL_SETUP.md`
 4. **Deployment Help** → See `TESTING_DEPLOYMENT.md`
 
 ---
@@ -376,3 +376,5 @@ Your MacMind backend is enterprise-ready with:
 - ✅ Easy deployment options
 
 **Next: Test your login flow with Flutter!** 📱
+
+

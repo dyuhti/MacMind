@@ -10,7 +10,7 @@ import string
 
 
 class User(db.Model):
-    """User model for managing user data in MySQL"""
+    """User model for managing user data with SQLAlchemy"""
     
     __tablename__ = 'users'
     

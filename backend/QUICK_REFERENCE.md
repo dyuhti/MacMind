@@ -113,7 +113,7 @@ curl -X POST http://127.0.0.1:5000/api/calculator/calculate \
 
 ```env
 FLASK_ENV=development
-DATABASE_URL=mysql+pymysql://root:password@localhost:3306/macmind
+DATABASE_URL=postgresql+psycopg://root:password@localhost:3306/macmind
 PORT=5000
 CORS_ORIGINS=*
 ```
@@ -150,7 +150,7 @@ backend/
 │
 └── docs/
     ├── README.md                 ← Main docs
-    ├── MYSQL_SETUP.md           ← MySQL guide
+    ├── POSTGRESQL_SETUP.md           ← PostgreSQL guide
     ├── API_TESTING.md           ← API tests
     ├── FLUTTER_INTEGRATION.md   ← Flutter guide
     └── TESTING_DEPLOYMENT.md    ← Deployment
@@ -166,7 +166,7 @@ backend/
 | Run tests | `python test_auth.py` |
 | Install deps | `pip install -r requirements.txt` |
 | List deps | `pip freeze` |
-| Connect to MySQL | `mysql -u root -p macmind` |
+| Connect to PostgreSQL | `PostgreSQL -u root -p macmind` |
 | View logs | `tail -f app.log` |
 | Stop server | `CTRL+C` |
 
@@ -176,9 +176,9 @@ backend/
 
 | Problem | Fix |
 |---------|-----|
-| Server won't start | Check `.env`, MySQL running |
+| Server won't start | Check `.env`, PostgreSQL running |
 | Tests fail | Run `python run.py` first |
-| MySQL connection error | Verify DATABASE_URL in `.env` |
+| PostgreSQL connection error | Verify DATABASE_URL in `.env` |
 | Flutter can't connect | Use `10.0.2.2` for emulator |
 | CORS error | Update CORS_ORIGINS in `.env` |
 
@@ -223,7 +223,7 @@ static Future<Map<String, dynamic>> login({
 
 - [ ] Backend starts without errors
 - [ ] `python test_auth.py` passes all 6 tests
-- [ ] MySQL database has `users` table
+- [ ] PostgreSQL database has `users` table
 - [ ] Can register user via cURL
 - [ ] Can login user via cURL
 - [ ] Token is returned and valid
@@ -278,7 +278,7 @@ static Future<Map<String, dynamic>> login({
 |----------|--------|
 | Where's my API? | `http://127.0.0.1:5000/api` |
 | How do I login? | POST `/auth/login` with email + password |
-| Where's the database? | MySQL at `localhost:3306` |
+| Where's the database? | PostgreSQL at `localhost:3306` |
 | How do I test? | Run `python test_auth.py` |
 | How do I deploy? | See `TESTING_DEPLOYMENT.md` |
 | Is it secure? | Yes, bcrypt + JWT + SQLAlchemy |
@@ -322,8 +322,8 @@ Update Flutter: `static const String productionBaseUrl = "https://your-app.onren
 # Full test flow
 python run.py & sleep 2 && python test_auth.py
 
-# Check MySQL
-mysql -u root -p -e "SELECT * FROM macmind.users;"
+# Check PostgreSQL
+PostgreSQL -u root -p -e "SELECT * FROM macmind.users;"
 
 # View all endpoints
 grep -r "@.*route" app/routes/
@@ -351,7 +351,7 @@ POST /api/calculator/quick-calculate ← Quick calc
 ## 🎓 Learning Resources
 
 - **API Docs** → See `API_TESTING.md`
-- **MySQL Help** → See `MYSQL_SETUP.md`
+- **PostgreSQL Help** → See `POSTGRESQL_SETUP.md`
 - **Flutter Guide** → See `FLUTTER_INTEGRATION.md`
 - **Deployment** → See `TESTING_DEPLOYMENT.md`
 - **Full README** → See `README.md`
@@ -367,3 +367,5 @@ Print and keep next to your desk for quick reference during development! 👍
 **Status: ✅ READY TO USE**
 
 Your backend is production-ready. Just start it and go! 🚀
+
+

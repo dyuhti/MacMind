@@ -1,6 +1,6 @@
-# 🔄 MongoDB → MySQL Migration Summary
+# 🔄 MongoDB → PostgreSQL Migration Summary
 
-This document outlines the changes made to migrate the MacMind backend from MongoDB to MySQL.
+This document outlines the changes made to migrate the MacMind backend from MongoDB to PostgreSQL.
 
 ## 📋 What Changed
 
@@ -11,8 +11,8 @@ This document outlines the changes made to migrate the MacMind backend from Mong
 
 **Added:**
 - `Flask-SQLAlchemy==3.0.5` - SQLAlchemy ORM with Flask integration
-- `PyMySQL==1.1.0` - Pure Python MySQL driver
-- `cryptography==41.0.4` - Required for secure MySQL connections
+- `psycopg==1.1.0` - Pure Python PostgreSQL driver
+- `cryptography==41.0.4` - Required for secure PostgreSQL connections
 
 ### 2. Database Configuration (config.py)
 
@@ -21,11 +21,11 @@ This document outlines the changes made to migrate the MacMind backend from Mong
 MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/macmind')
 ```
 
-**After (MySQL):**
+**After (PostgreSQL):**
 ```python
 SQLALCHEMY_DATABASE_URI = os.getenv(
     'DATABASE_URL',
-    'mysql+pymysql://root:password@localhost:3306/macmind'
+    'postgresql+psycopg://root:password@localhost:3306/macmind'
 )
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 ```
@@ -39,7 +39,7 @@ mongo_client = MongoClient(mongo_uri)
 db = mongo_client.macmind
 ```
 
-**After (MySQL with SQLAlchemy):**
+**After (PostgreSQL with SQLAlchemy):**
 ```python
 from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
@@ -87,7 +87,7 @@ MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/macmind
 
 **After:**
 ```env
-DATABASE_URL=mysql+pymysql://root:password@localhost:3306/macmind
+DATABASE_URL=postgresql+psycopg://root:password@localhost:3306/macmind
 ```
 
 ---
@@ -120,13 +120,13 @@ CREATE TABLE users (
 
 ---
 
-## ✨ Advantages of MySQL
+## ✨ Advantages of PostgreSQL
 
 1. **Structured Data** - Fixed schema with validation
 2. **Performance** - Better query optimization
 3. **Transactions** - ACID compliance
 4. **Relationships** - Foreign keys (for future tables)
-5. **Backup** - Simple mysqldump utility
+5. **Backup** - Simple pg_dump utility
 6. **Scalability** - Better for relational data
 7. **Cost** - Free, self-hosted or managed options
 8. **Familiarity** - SQL is widely known
@@ -166,10 +166,10 @@ with open('migration.sql', 'w') as f:
     f.write('\n'.join(sql_statements))
 ```
 
-### 3. Import into MySQL
+### 3. Import into PostgreSQL
 
 ```bash
-mysql -u root -p macmind < migration.sql
+PostgreSQL -u root -p macmind < migration.sql
 ```
 
 ### 4. Verify Data
@@ -193,7 +193,7 @@ SELECT * FROM users LIMIT 5;
 }
 ```
 
-**After (MySQL Integer ID):**
+**After (PostgreSQL Integer ID):**
 ```json
 {
   "user_id": 1,
@@ -212,7 +212,7 @@ The endpoints work the same, but user_id is now a simpler integer.
 - Query: `db.users.find({'email': 'x@y.com'})`
 - Scaling: Horizontal (sharding)
 
-### MySQL
+### PostgreSQL
 - Good for: Structured data, relationships
 - Query: `SELECT * FROM users WHERE email = 'x@y.com'`
 - Scaling: Vertical + read replicas
@@ -225,13 +225,13 @@ The endpoints work the same, but user_id is now a simpler integer.
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Create MySQL database
-mysql -u root -p
+# 2. Create PostgreSQL database
+PostgreSQL -u root -p
 CREATE DATABASE macmind CHARACTER SET utf8mb4;
 EXIT;
 
 # 3. Update .env
-# DATABASE_URL=mysql+pymysql://root:password@localhost:3306/macmind
+# DATABASE_URL=postgresql+psycopg://root:password@localhost:3306/macmind
 
 # 4. Start server (tables auto-created)
 python run.py
@@ -241,7 +241,7 @@ python run.py
 
 ## 📚 Files Modified
 
-- ✅ `requirements.txt` - Added SQLAlchemy, PyMySQL
+- ✅ `requirements.txt` - Added SQLAlchemy, psycopg
 - ✅ `config/config.py` - Updated database configuration
 - ✅ `app/__init__.py` - Replaced MongoDB with SQLAlchemy
 - ✅ `app/models/user.py` - Converted to SQLAlchemy ORM
@@ -252,7 +252,7 @@ python run.py
 
 ## 📝 New Files Created
 
-- ✨ `MYSQL_SETUP.md` - MySQL installation guide
+- ✨ `POSTGRESQL_SETUP.md` - PostgreSQL installation guide
 - ✨ `MIGRATION_GUIDE.md` - This file
 
 ---
@@ -261,8 +261,8 @@ python run.py
 
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - [Flask-SQLAlchemy Documentation](https://flask-sqlalchemy.palletsprojects.com/)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
-- [PyMySQL Documentation](https://pymysql.readthedocs.io/)
+- [PostgreSQL Documentation](https://dev.PostgreSQL.com/doc/)
+- [psycopg Documentation](https://psycopg.readthedocs.io/)
 
 ---
 
@@ -271,17 +271,19 @@ python run.py
 **Q: Will my old MongoDB data work?**
 A: Not directly. You'll need to migrate (see Migration Path above).
 
-**Q: Is MySQL faster than MongoDB?**
-A: Depends on use case. MySQL is better for relational data, MongoDB for documents.
+**Q: Is PostgreSQL faster than MongoDB?**
+A: Depends on use case. PostgreSQL is better for relational data, MongoDB for documents.
 
 **Q: Can I switch back to MongoDB?**
 A: Yes, but you'll need to update the models and configuration again.
 
 **Q: What about data that doesn't fit a schema?**
-A: Add new columns as needed, or use JSON column type in MySQL 5.7+.
+A: Add new columns as needed, or use JSON column type in PostgreSQL 5.7+.
 
 ---
 
 **Migration Complete! 🎉**
 
-The backend now uses MySQL with SQLAlchemy ORM for better structure, performance, and scalability.
+The backend now uses PostgreSQL with SQLAlchemy ORM for better structure, performance, and scalability.
+
+

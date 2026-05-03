@@ -75,7 +75,7 @@ Complete system architecture and data flow diagrams.
                              ▼
                           DATA LAYER
 ┌───────────────────────────────────────────────────────────────────────┐
-│                    MySQL Database (localhost:3306)                     │
+│                    PostgreSQL Database (localhost:3306)                     │
 │                                                                        │
 │  ┌────────────────────────────────────────────────────────────────┐  │
 │  │  macmind Database                                              │  │
@@ -250,7 +250,7 @@ Flask App                           Backend
 ## 🗄️ Database Schema
 
 ```
-MySQL Database: macmind
+PostgreSQL Database: macmind
 ───────────────────────
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -497,7 +497,7 @@ Client                          Flask App                Database
           ▼
    ┌──────────────────┐
    │  AWS RDS         │
-   │  (MySQL)         │
+   │  (PostgreSQL)         │
    │  Multi-AZ        │
    │  Backup enabled  │
    └──────────────────┘
@@ -530,14 +530,14 @@ Backend:
 🔹 Flask 2.3        - Web framework
 🔹 Python 3.8+      - Programming language
 🔹 SQLAlchemy 3.0   - ORM for database abstraction
-🔹 PyMySQL 1.1      - MySQL driver
+🔹 psycopg 1.1      - PostgreSQL driver
 🔹 bcrypt 4.0       - Password hashing
 🔹 PyJWT 2.8        - JWT token creation/validation
 🔹 Flask-CORS 4.0   - Cross-origin support
 
 Database:
 ────────
-🔹 MySQL 5.7/8.0    - Relational database
+🔹 PostgreSQL 5.7/8.0    - Relational database
 🔹 InnoDB engine    - Transaction support
 
 DevOps:
@@ -563,3 +563,5 @@ Performance:   ✅ Database indexes, efficient queries
 ---
 
 **Your architecture is enterprise-ready!** 🚀
+
+

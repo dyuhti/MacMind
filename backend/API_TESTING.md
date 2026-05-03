@@ -393,3 +393,4 @@ Authorization: Bearer <token>
 ---
 
 **Ready to test? Run: `python test_auth.py`** 🚀
+
