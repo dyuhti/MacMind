@@ -8,3 +8,4 @@ Werkzeug==2.3.7
 PyMySQL==1.1.0
 mysql-connector-python==8.0.33
 cryptography==41.0.4
+psycopg2-binary==2.9.9

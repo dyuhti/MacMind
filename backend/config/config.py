@@ -12,11 +12,17 @@ class Config:
     DEBUG = False
     TESTING = False
     
-    # Database (MySQL)
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    # Database (supports DATABASE_URL environment variable)
+    # Prefer DATABASE_URL (e.g., from Render). Accept both postgres:// and postgresql://
+    db_url = os.getenv(
         'DATABASE_URL',
         'mysql+pymysql://root:root123@localhost:3306/med_calci_app'
     )
+    # Some providers (Heroku) use the scheme 'postgres://', which SQLAlchemy
+    # does not accept in recent versions; normalize to 'postgresql://'
+    if isinstance(db_url, str) and db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     
@@ -54,10 +60,14 @@ class TestingConfig(Config):
     """Testing environment configuration"""
     DEBUG = True
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    # Allow testing DB override and normalize postgres scheme if needed
+    db_url_test = os.getenv(
         'DATABASE_URL_TEST',
         'mysql+pymysql://root:password@localhost:3306/macmind_test'
     )
+    if isinstance(db_url_test, str) and db_url_test.startswith('postgres://'):
+        db_url_test = db_url_test.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = db_url_test
 
 
 class ProductionConfig(Config):

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -10,45 +11,108 @@ class AuthService {
   static const String _loggedInEmailKey = "loggedInEmail";
   static const String _rememberMeKey = "rememberMe";
   static const String _tokenKey = "authToken";
+  
+  // HTTP client with connection pooling
+  static final http.Client _httpClient = http.Client();
+  
+  // Constants for retry logic
+  static const int _maxRetries = 3;
+  static const Duration _timeout = Duration(seconds: 30); // 30s for Render wake-up
+  static const Duration _initialRetryDelay = Duration(seconds: 2);
+  
+  /// Make HTTP POST request with automatic retry and timeout handling
+  static Future<http.Response> _postWithRetry(
+    Uri url, {
+    required Map<String, String> headers,
+    required String body,
+    int retryCount = 0,
+  }) async {
+    try {
+      print('📤 Attempt ${retryCount + 1}/$_maxRetries: POST $url');
+      
+      final response = await _httpClient
+          .post(url, headers: headers, body: body)
+          .timeout(_timeout, onTimeout: () {
+        print('⏱️ Request timeout after ${_timeout.inSeconds}s');
+        throw TimeoutException('Request timeout');
+      });
+      
+      print('✅ Response received: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      if (retryCount < _maxRetries - 1) {
+        // Calculate exponential backoff: 2s, 4s, 8s
+        final delay = _initialRetryDelay * (1 << retryCount);
+        print('⏳ Retrying in ${delay.inSeconds}s... ($e)');
+        await Future.delayed(delay);
+        return _postWithRetry(url, headers: headers, body: body, retryCount: retryCount + 1);
+      } else {
+        print('❌ All retries exhausted: $e');
+        rethrow;
+      }
+    }
+  }
 
   static Future<Map<String, dynamic>> sendOtp(String email) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/send-otp"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"email": email}),
-    );
-
-    if (response.statusCode == 200) {
-      return {"success": true};
-    }
-
     try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      return {"success": false, "error": body["error"] ?? "Failed to send OTP"};
-    } catch (_) {
-      return {"success": false, "error": "Failed to send OTP"};
+      final url = Uri.parse("$baseUrl/send-otp");
+      print('📧 SendOTP Request: $url');
+      
+      final response = await _postWithRetry(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email}),
+      );
+      
+      print('📩 SendOTP Response Status: ${response.statusCode}');
+      print('📩 SendOTP Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return {"success": true};
+      }
+
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        return {"success": false, "error": body["error"] ?? "Failed to send OTP"};
+      } catch (_) {
+        return {"success": false, "error": "Failed to send OTP"};
+      }
+    } catch (e) {
+      print('❌ SendOTP Error: $e');
+      return {"success": false, "error": "Network error: $e"};
     }
   }
 
   static Future<Map<String, dynamic>> verifyOtp(String email, String otp) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/verify-otp"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "otp": otp,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return {"success": true};
-    }
-
     try {
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      return {"success": false, "error": body["error"] ?? "Invalid OTP"};
-    } catch (_) {
-      return {"success": false, "error": "Invalid OTP"};
+      final url = Uri.parse("$baseUrl/verify-otp");
+      print('✔️ VerifyOTP Request: $url');
+      
+      final response = await _postWithRetry(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+          "otp": otp,
+        }),
+      );
+      
+      print('📩 VerifyOTP Response Status: ${response.statusCode}');
+      print('📩 VerifyOTP Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return {"success": true};
+      }
+
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        return {"success": false, "error": body["error"] ?? "Invalid OTP"};
+      } catch (_) {
+        return {"success": false, "error": "Invalid OTP"};
+      }
+    } catch (e) {
+      print('❌ VerifyOTP Error: $e');
+      return {"success": false, "error": "Network error: $e"};
     }
   }
 
@@ -58,7 +122,7 @@ class AuthService {
       print('🔐 Login Request: $url');
       print('📧 Email: $email');
       
-      final response = await http.post(
+      final response = await _postWithRetry(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
@@ -93,6 +157,12 @@ class AuthService {
           print('✅ Token stored: ${token.substring(0, 20)}...');
         }
         return true;
+      } else if (response.statusCode == 401) {
+        print('❌ Login failed: Invalid credentials');
+        return false;
+      } else {
+        print('❌ Login failed with status ${response.statusCode}');
+        return false;
       }
       return false;
     } catch (e) {
@@ -124,7 +194,7 @@ class AuthService {
       
       print('📤 Request Body: $requestBody');
       
-      final response = await http.post(
+      final response = await _postWithRetry(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(requestBody),
@@ -169,6 +239,8 @@ class AuthService {
 
       error ??= response.statusCode == 400
           ? "Invalid input. Please check your details."
+          : response.statusCode == 409
+          ? "Email already registered"
           : "Failed to create account";
 
       return {"success": false, "error": error};
@@ -176,37 +248,46 @@ class AuthService {
       print('❌ Register Error: $e');
       return {
         "success": false,
-        "error": "Network error. Please check your connection and try again.",
+        "error": "Network error: $e. Please check your connection and try again.",
       };
     }
   }
 
   static Future<Map<String, dynamic>> resetPassword(
       String email, String newPassword) async {
-    final response = await http.post(
-      Uri.parse("$baseUrl/reset-password"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "email": email,
-        "newPassword": newPassword,
-      }),
-    );
+    try {
+      final url = Uri.parse("$baseUrl/reset-password");
+      final response = await _postWithRetry(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": email,
+          "newPassword": newPassword,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      return {"success": true};
-    } else if (response.statusCode == 404) {
-      return {"success": false, "error": "Email not found"};
-    } else if (response.statusCode == 403) {
-      return {"success": false, "error": "OTP verification required"};
-    } else if (response.statusCode == 400) {
-      try {
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        return {"success": false, "error": body["error"] ?? "Failed to reset password"};
-      } catch (_) {
+      if (response.statusCode == 200) {
+        return {"success": true};
+      } else if (response.statusCode == 404) {
+        return {"success": false, "error": "Email not found"};
+      } else if (response.statusCode == 403) {
+        return {"success": false, "error": "OTP verification required"};
+      } else if (response.statusCode == 400) {
+        try {
+          final body = jsonDecode(response.body) as Map<String, dynamic>;
+          return {"success": false, "error": body["error"] ?? "Failed to reset password"};
+        } catch (_) {
+          return {"success": false, "error": "Failed to reset password"};
+        }
+      } else {
         return {"success": false, "error": "Failed to reset password"};
       }
-    } else {
-      return {"success": false, "error": "Failed to reset password"};
+    } catch (e) {
+      print('❌ Reset Password Error: $e');
+      return {
+        "success": false,
+        "error": "Network error: $e",
+      };
     }
   }
 

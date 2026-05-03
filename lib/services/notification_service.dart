@@ -1,5 +1,4 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'dart:typed_data';
 
 /// Service for managing local notifications and vibration alerts
@@ -59,15 +58,6 @@ class NotificationService {
 
   /// Show 5-minute warning notification with vibration
   Future<void> showWarningNotification() async {
-    // Vibrate
-    if (await Vibrate.canVibrate) {
-      Vibrate.vibrateWithPauses([
-        Duration(milliseconds: 500),
-        Duration(milliseconds: 250),
-        Duration(milliseconds: 500),
-      ]);
-    }
-
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'oxygen_timer_channel',
@@ -104,17 +94,6 @@ class NotificationService {
 
   /// Show final depletion notification with strong alert
   Future<void> showFinalNotification() async {
-    // Strong vibration alert
-    if (await Vibrate.canVibrate) {
-      Vibrate.vibrateWithPauses([
-        Duration(milliseconds: 500),
-        Duration(milliseconds: 300),
-        Duration(milliseconds: 500),
-        Duration(milliseconds: 300),
-        Duration(milliseconds: 500),
-      ]);
-    }
-
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'oxygen_timer_channel',

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'config/app_theme.dart';
+import 'config/api_config.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
@@ -28,6 +30,11 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 }
 
 void main() {
+  // Log startup configuration
+  print('🚀 MacMind App Starting...');
+  print('📡 API Base URL: ${ApiConfig.baseUrl}');
+  print('🔍 Is Release Mode: $kReleaseMode');
+  
   runApp(const MyApp());
 }
 
