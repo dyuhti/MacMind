@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'config/app_theme.dart';
-import 'screens/splash_loader_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
@@ -53,13 +52,13 @@ class MyApp extends StatelessWidget {
       home: FutureBuilder<bool>(
         future: _bootstrapApp(),
         builder: (context, snapshot) {
-          // While checking prefs, show splash loader
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SplashLoaderScreen();
+            return const Scaffold(
+              backgroundColor: Colors.white,
+              body: SizedBox.expand(),
+            );
           }
 
-          // If auto-login is enabled and prefs are valid, go directly to HomeScreen
-          // This enforces the new multi-step navigation flow
           if (snapshot.hasData && snapshot.data == true) {
             return const HomeScreen();
           }

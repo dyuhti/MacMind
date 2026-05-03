@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+
 import '../widgets/app_header.dart';
 import '../widgets/macmind_design.dart';
 import 'profile_screen.dart';
 
 /// Economy Calculator Screen
-/// Interactive cost analysis for a single anesthetic agent
+/// Clinically accurate anesthetic consumption calculator using molecular weight-based formula
 class EconomyCalculatorScreen extends StatefulWidget {
   const EconomyCalculatorScreen({super.key});
 
@@ -15,110 +16,90 @@ class EconomyCalculatorScreen extends StatefulWidget {
 }
 
 class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
-  late TextEditingController _durationController;
-  double _surgeryDuration = 60;
-  String _selectedAgent = "Isoflurane";
+  late final TextEditingController _durationController;
+  late final TextEditingController _concentrationController;
 
-  // Anesthetic agents data model
+  double _surgeryDuration = 60;
+  double _concentration = 2.0;
+  String _selectedAgent = 'Isoflurane';
+
   final Map<String, Map<String, dynamic>> agents = {
-    "Isoflurane": {"color": Colors.blue, "factor": 1.0},
-    "Sevoflurane": {"color": Colors.green, "factor": 1.1},
-    "Desflurane": {"color": Colors.purple, "factor": 1.2},
-    "Halothane": {"color": Colors.orange, "factor": 1.3},
+    'Isoflurane': {'color': Colors.blue, 'mw': 184.5, 'k': 184.5 / 2412},
+    'Sevoflurane': {'color': Colors.green, 'mw': 200.1, 'k': 200.1 / 2412},
+    'Desflurane': {'color': Colors.purple, 'mw': 168.0, 'k': 168.0 / 2412},
+    'Halothane': {'color': Colors.orange, 'mw': 197.4, 'k': 197.4 / 2412},
   };
 
-  // Fresh Gas Flow values (L/min)
-  final List<double> fgfValues = [
-    0,
-    0.5,
-    1,
-    1.5,
-    2,
-    2.5,
-    3,
-    3.5,
-    4,
-    4.5,
-    5,
-    5.5,
-    6
-  ];
+  final List<double> fgfValues = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
 
   @override
   void initState() {
     super.initState();
     _durationController = TextEditingController(text: '60');
+    _concentrationController = TextEditingController(text: '2.0');
   }
 
   @override
   void dispose() {
     _durationController.dispose();
+    _concentrationController.dispose();
     super.dispose();
   }
 
-  /// Calculate consumption based on FGF, duration, and agent factor
   double _calculateConsumption(
-      double fgf, double duration, double agentFactor) {
-    if (fgf == 0) return 0;
-    return fgf * duration * agentFactor;
+    double fgf,
+    double concentration,
+    double duration,
+    double k,
+  ) {
+    if (fgf == 0 || concentration == 0 || duration == 0) return 0;
+    return fgf * concentration * duration * k;
   }
 
-  /// Generate line chart data for selected agent
   List<FlSpot> _generateConsumptionData() {
     final selected = agents[_selectedAgent];
-    if (selected == null) return [];
+    // Do not plot if duration is 0 or concentration is below minimum threshold
+    if (selected == null || _surgeryDuration == 0 || _concentration < 0.1) {
+      return [];
+    }
 
-    double agentFactor = selected['factor'];
-
+    final double k = (selected['k'] as num).toDouble();
     return fgfValues
-        .asMap()
-        .entries
-        .map((entry) {
-          double fgf = entry.value;
-          double consumption =
-              _calculateConsumption(fgf, _surgeryDuration, agentFactor);
-          return FlSpot(fgf, consumption);
-        })
+        .map(
+          (fgf) => FlSpot(
+            fgf,
+            _calculateConsumption(fgf, _concentration, _surgeryDuration, k),
+          ),
+        )
         .toList();
   }
 
-  /// Get maximum consumption for Y-axis scaling
-  double _getMaxConsumption() {
-    final selected = agents[_selectedAgent];
-    if (selected == null) return 100;
-
-    double agentFactor = selected['factor'];
-    double max = 0;
-
-    for (double fgf in fgfValues) {
-      double consumption =
-          _calculateConsumption(fgf, _surgeryDuration, agentFactor);
-      if (consumption > max) {
-        max = consumption;
-      }
-    }
-    // Add 20% padding to max value
-    return max * 1.2;
-  }
-
-  /// Update surgery duration and trigger UI rebuild
   void _updateDuration(String value) {
     setState(() {
-      // Parse duration, default to 60 if invalid
       _surgeryDuration = double.tryParse(value) ?? 60;
-      if (_surgeryDuration <= 0) {
-        _surgeryDuration = 60;
+    });
+  }
+
+  void _updateConcentration(String value) {
+    setState(() {
+      final parsed = double.tryParse(value);
+      if (parsed == null || parsed.isNaN) {
+        _concentration = 2.0;
+      } else if (parsed <= 0) {
+        _concentration = 0.1; // Minimum safe concentration
+      } else if (parsed > 10) {
+        _concentration = 10; // Maximum clinically realistic
+      } else {
+        _concentration = parsed;
       }
     });
   }
 
-  /// Update selected agent and trigger UI rebuild
   void _updateAgent(String? value) {
-    if (value != null && agents.containsKey(value)) {
-      setState(() {
-        _selectedAgent = value;
-      });
-    }
+    if (value == null) return;
+    setState(() {
+      _selectedAgent = value;
+    });
   }
 
   @override
@@ -152,20 +133,18 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // Duration Input Field
                   _buildDurationInputField(),
+                  const SizedBox(height: 16),
+                  _buildConcentrationInputField(),
                   const SizedBox(height: 20),
-                  // Agent Selector Dropdown
                   _buildAgentSelectorDropdown(),
                   const SizedBox(height: 24),
-                  // Consumption Analysis Card
                   _buildConsumptionAnalysisCard(),
                   const SizedBox(height: 24),
-                  // Info Card
                   const MacMindInfoCard(
                     icon: Icons.info_outline,
                     child: Text(
-                      'Tap any point on the graph to see detailed values. Consumption is calculated as: FGF × Duration × Agent Factor',
+                      'Tap any point on the graph to see detailed values. Formula: Consumption (ml) = FGF × Concentration × Time × (MW / 2412)',
                       style: TextStyle(
                         fontFamily: 'DM Sans',
                         fontSize: 12,
@@ -201,7 +180,6 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     );
   }
 
-  /// Build duration input field
   Widget _buildDurationInputField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +242,93 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     );
   }
 
-  /// Build agent selector dropdown
+  Widget _buildConcentrationInputField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Agent Concentration (%)',
+          style: TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: _concentrationController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            onChanged: _updateConcentration,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              hintText: 'Enter concentration (e.g., 1–6%)',
+              hintStyle: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+              prefixIcon: const Icon(
+                Icons.opacity_outlined,
+                color: Colors.black38,
+                size: 20,
+              ),
+              suffixText: '%',
+              suffixStyle: const TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 13,
+                color: Colors.black54,
+              ),
+            ),
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        if (_concentration < 0.1) ...[
+          const SizedBox(height: 8),
+          const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Concentration must be at least 0.1%. Standard range is 1-6%.',
+                  style: TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 12,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildAgentSelectorDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,17 +374,19 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
               ),
             ),
             items: agents.keys
-                .map((agent) => DropdownMenuItem<String>(
-                      value: agent,
-                      child: Text(
-                        agent,
-                        style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 13,
-                          color: Colors.black87,
-                        ),
+                .map(
+                  (agent) => DropdownMenuItem<String>(
+                    value: agent,
+                    child: Text(
+                      agent,
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 13,
+                        color: Colors.black87,
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
             style: const TextStyle(
               fontFamily: 'DM Sans',
@@ -335,11 +401,29 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     );
   }
 
-  /// Build consumption analysis card with single line chart
   Widget _buildConsumptionAnalysisCard() {
-    double maxConsumption = _getMaxConsumption();
+    final dataPoints = _generateConsumptionData();
+    // Calculate maximum Y value from data for dynamic scaling
+    double maxY = dataPoints.isEmpty
+      ? 1.0
+      : dataPoints.map((e) => e.y).reduce((a, b) => a > b ? a : b);
+    // Calculate maximum X value so we can add right padding to avoid clipping
+    final double maxXValue = dataPoints.isEmpty
+      ? 6
+      : dataPoints.map((e) => e.x).reduce((a, b) => a > b ? a : b);
+    final double chartMaxX = maxXValue + 0.5;
+    // Add 20% padding for visual breathing room
+    maxY = maxY * 1.2;
+    // Ensure minimum Y scale for small values
+    if (maxY < 1) {
+      maxY = 1;
+    }
+    // Use adaptive interval: smaller for small ranges, normal for larger
+    final double interval = maxY < 10 ? maxY / 4 : maxY / 5;
     final selected = agents[_selectedAgent];
-    final selectedColor = selected?['color'] ?? Colors.blue;
+    final selectedColor = selected?['color'] as Color? ?? Colors.blue;
+    final mw = (selected?['mw'] as num?)?.toDouble() ?? 184.5;
+    final k = (selected?['k'] as num?)?.toDouble() ?? 0.076;
 
     return Card(
       elevation: 0,
@@ -388,146 +472,214 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              'Duration: ${_surgeryDuration.toStringAsFixed(0)} min',
-              style: const TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 13,
-                color: Colors.black54,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Duration: ${_surgeryDuration.toStringAsFixed(0)} min',
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+                Text(
+                  'Conc: ${_concentration.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                    fontFamily: 'DM Sans',
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: selectedColor.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'MW: ${mw.toStringAsFixed(1)} g/mol | K: ${k.toStringAsFixed(4)}',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: selectedColor,
+                ),
               ),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 320,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: true,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: const Color(0xFFE5E7EB),
-                        strokeWidth: 0.8,
-                      );
-                    },
-                    getDrawingVerticalLine: (value) {
-                      return FlLine(
-                        color: const Color(0xFFE5E7EB),
-                        strokeWidth: 0.8,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              value.toStringAsFixed(1),
-                              style: const TextStyle(
+            const SizedBox(height: 16),
+            Center(
+              child: SizedBox(
+                width: double.infinity,
+                height: 320,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 6,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: RotatedBox(
+                            quarterTurns: 3,
+                            child: const Text(
+                              'Consumption (ml)',
+                              style: TextStyle(
                                 fontFamily: 'DM Sans',
-                                fontSize: 12,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
                                 color: Colors.black87,
-                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      axisNameWidget: const Text(
-                        'Fresh Gas Flow (L/min)',
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          ),
                         ),
                       ),
-                      axisNameSize: 32,
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 50,
-                        getTitlesWidget: (value, meta) {
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            child: Text(
-                              value.toStringAsFixed(0),
-                              style: const TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 12,
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 40),
+                        child: LineChart(
+                          LineChartData(
+                            gridData: FlGridData(
+                              show: true,
+                              drawVerticalLine: true,
+                              horizontalInterval: maxY / 5,
+                              verticalInterval: 1,
+                              getDrawingHorizontalLine: (value) => FlLine(
+                                color: Colors.grey.withValues(alpha: 0.2),
+                                strokeWidth: 1,
+                              ),
+                              getDrawingVerticalLine: (value) => FlLine(
+                                color: Colors.grey.withValues(alpha: 0.2),
+                                strokeWidth: 1,
                               ),
                             ),
-                          );
-                        },
-                      ),
-                      axisNameWidget: const Text(
-                        'Consumption',
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                            titlesData: FlTitlesData(
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 40,
+                                  interval: 1,
+                                  getTitlesWidget: (value, meta) {
+                                    if (value % 1 != 0) {
+                                      return SideTitleWidget(axisSide: meta.axisSide, child: const SizedBox.shrink());
+                                    }
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      child: Text(
+                                        value.toInt().toString(),
+                                        style: const TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 11,
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                axisNameWidget: const Text(
+                                  'Fresh Gas Flow (L/min)',
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                axisNameSize: 32,
+                              ),
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 50,
+                                  interval: maxY / 5,
+                                  getTitlesWidget: (value, meta) {
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      child: Text(
+                                        value.toStringAsFixed(1),
+                                        style: const TextStyle(
+                                          fontFamily: 'DM Sans',
+                                          fontSize: 11,
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                axisNameWidget: const SizedBox.shrink(),
+                                axisNameSize: 32,
+                              ),
+                              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            borderData: FlBorderData(
+                              show: true,
+                              border: const Border(
+                                left: BorderSide(color: Colors.black, width: 2),
+                                bottom: BorderSide(color: Colors.black, width: 2),
+                                right: BorderSide.none,
+                                top: BorderSide.none,
+                              ),
+                            ),
+                            minX: 0,
+                            maxX: chartMaxX,
+                            minY: 0,
+                            maxY: maxY,
+                            clipData: FlClipData.none(),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: dataPoints,
+                                isCurved: true,
+                                color: selectedColor,
+                                barWidth: 3,
+                                isStrokeCapRound: true,
+                                dotData: FlDotData(
+                                  show: true,
+                                  getDotPainter: (spot, percent, barData, index) {
+                                    return FlDotCirclePainter(
+                                      radius: 5,
+                                      color: selectedColor,
+                                      strokeWidth: 2,
+                                      strokeColor: Colors.white,
+                                    );
+                                  },
+                                ),
+                                belowBarData: BarAreaData(show: false),
+                              ),
+                            ],
+                            lineTouchData: LineTouchData(
+                              enabled: true,
+                              touchTooltipData: LineTouchTooltipData(
+                                fitInsideHorizontally: true,
+                                fitInsideVertically: true,
+                                tooltipHorizontalAlignment: FLHorizontalAlignment.center,
+                                maxContentWidth: 140,
+                                tooltipMargin: 8,
+                                getTooltipItems: (touchedSpots) {
+                                  return touchedSpots.map((spot) {
+                                    return LineTooltipItem(
+                                      'FGF: ${spot.x.toStringAsFixed(1)}\n'
+                                      'Cons: ${spot.y.toStringAsFixed(1)} ml',
+                                      const TextStyle(
+                                        fontFamily: 'DM Sans',
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    );
+                                  }).toList();
+                                },
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                      axisNameSize: 32,
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                  ),
-                  borderData: FlBorderData(show: true),
-                  minX: 0,
-                  maxX: 6,
-                  minY: 0,
-                  maxY: maxConsumption,
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: _generateConsumptionData(),
-                      isCurved: true,
-                      color: selectedColor,
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: 5,
-                            color: selectedColor,
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          );
-                        },
-                      ),
-                      belowBarData: BarAreaData(show: false),
-                    ),
-                  ],
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    touchTooltipData: LineTouchTooltipData(
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            'FGF: ${spot.x.toStringAsFixed(2)} L/min\nConsumption: ${spot.y.toStringAsFixed(1)}',
-                            const TextStyle(
-                              fontFamily: 'DM Sans',
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          );
-                        }).toList();
-                      },
-                    ),
+                    ],
                   ),
                 ),
               ),
