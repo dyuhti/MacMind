@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
 import 'config/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
 import 'services/user_session.dart';
+import 'providers/case_provider.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
@@ -44,28 +46,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Anesthetic Consumption Calculator',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      scrollBehavior: const AppScrollBehavior(),
-      home: FutureBuilder<bool>(
-        future: _bootstrapApp(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              backgroundColor: Colors.white,
-              body: SizedBox.expand(),
-            );
-          }
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CaseProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Anesthetic Consumption Calculator',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        scrollBehavior: const AppScrollBehavior(),
+        home: FutureBuilder<bool>(
+          future: _bootstrapApp(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                backgroundColor: Colors.white,
+                body: SizedBox.expand(),
+              );
+            }
 
-          if (snapshot.hasData && snapshot.data == true) {
-            return const HomeScreen();
-          }
+            if (snapshot.hasData && snapshot.data == true) {
+              return const HomeScreen();
+            }
 
-          // Otherwise, show login screen
-          return const LoginScreen();
-        },
+            // Otherwise, show login screen
+            return const LoginScreen();
+          },
+        ),
       ),
     );
   }

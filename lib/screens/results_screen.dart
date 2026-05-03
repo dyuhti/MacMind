@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 // api_config and http imports removed (unused)
 import '../models/case_history_item.dart';
@@ -10,6 +11,7 @@ import '../widgets/app_header.dart';
 import 'case_history_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/case_history_dialog.dart';
+import '../providers/case_provider.dart';
 // macmind_design removed (unused)
 
 class ResultsScreen extends StatefulWidget {
@@ -104,8 +106,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
     return value.toStringAsFixed(1);
   }
 
-  CaseHistoryItem _buildCaseHistoryItem({DateTime? savedAtOverride}) {
+  CaseHistoryItem _buildCaseHistoryItem({DateTime? savedAtOverride, String? caseId}) {
     return CaseHistoryItem(
+      id: caseId,
       patientName: widget.patientName,
       idNumber: widget.idNumber,
       date: widget.date,
@@ -145,81 +148,166 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
 
     try {
+      final caseProvider = context.read<CaseProvider>();
+      final isEditMode = caseProvider.isEditMode;
+      final caseId = caseProvider.caseId;
+
       // Format date as YYYY-MM-DD
       final dateStr = '${widget.date.year}-${widget.date.month.toString().padLeft(2, '0')}-${widget.date.day.toString().padLeft(2, '0')}';
       
-      print('💾 Attempting to save case...');
+      print('💾 Attempting to ${isEditMode ? 'update' : 'save'} case...');
       print('👤 Patient: ${widget.patientName}');
       print('📅 Date: $dateStr');
+      if (isEditMode) print('🔄 Edit Mode - Case ID: $caseId');
 
-      // Call the save case service
-      final result = await CaseService.saveCase(
-        patientName: widget.patientName,
-        patientId: widget.idNumber,
-        date: dateStr,
-        surgeryType: widget.surgeryType,
-        anestheticAgent: widget.selectedAgent,
-        molecularMass: widget.molecularMass.toStringAsFixed(2),
-        vaporConstant: widget.liquidToVaporConstant.toStringAsFixed(2),
-        density: widget.density.toStringAsFixed(2),
-        freshGasFlow: widget.freshGasFlow,
-        dialConcentration: widget.dialConcentration,
-        timeMinutes: widget.timeMinutes,
-        initialWeight: widget.initialWeight,
-        finalWeight: widget.finalWeight,
-        biroFormula: widget.biroResult,
-        dionFormula: widget.dionResult,
-        weightBased: widget.weightBasedResult,
-        notes: _notesController.text.trim(),
-        inductionFGF: widget.inductionFGF,
-        inductionConcentration: widget.inductionConcentration,
-        inductionTime: widget.inductionTime,
-        inductionBiro: widget.inductionBiro,
-        inductionDion: widget.inductionDion,
-        finalBiro: widget.biroResult,
-        finalDion: widget.dionResult,
-        maintenanceRows: widget.maintenanceRows
-            .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
-            .toList(),
-        maintenanceCalculations: widget.maintenanceCalculations
-            .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
-            .toList(),
-      );
+      Map<String, dynamic> result;
+
+      if (isEditMode && caseId != null) {
+        // Update existing case
+        result = await CaseService.updateCase(
+          caseId: caseId,
+          patientName: widget.patientName,
+          patientId: widget.idNumber,
+          date: dateStr,
+          surgeryType: widget.surgeryType,
+          anestheticAgent: widget.selectedAgent,
+          molecularMass: widget.molecularMass.toStringAsFixed(2),
+          vaporConstant: widget.liquidToVaporConstant.toStringAsFixed(2),
+          density: widget.density.toStringAsFixed(2),
+          freshGasFlow: widget.freshGasFlow,
+          dialConcentration: widget.dialConcentration,
+          timeMinutes: widget.timeMinutes,
+          initialWeight: widget.initialWeight,
+          finalWeight: widget.finalWeight,
+          biroFormula: widget.biroResult,
+          dionFormula: widget.dionResult,
+          weightBased: widget.weightBasedResult,
+          notes: _notesController.text.trim(),
+          inductionFGF: widget.inductionFGF,
+          inductionConcentration: widget.inductionConcentration,
+          inductionTime: widget.inductionTime,
+          inductionBiro: widget.inductionBiro,
+          inductionDion: widget.inductionDion,
+          finalBiro: widget.biroResult,
+          finalDion: widget.dionResult,
+          maintenanceRows: widget.maintenanceRows
+              .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
+              .toList(),
+          maintenanceCalculations: widget.maintenanceCalculations
+              .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
+              .toList(),
+        );
+      } else {
+        // Create new case
+        result = await CaseService.saveCase(
+          patientName: widget.patientName,
+          patientId: widget.idNumber,
+          date: dateStr,
+          surgeryType: widget.surgeryType,
+          anestheticAgent: widget.selectedAgent,
+          molecularMass: widget.molecularMass.toStringAsFixed(2),
+          vaporConstant: widget.liquidToVaporConstant.toStringAsFixed(2),
+          density: widget.density.toStringAsFixed(2),
+          freshGasFlow: widget.freshGasFlow,
+          dialConcentration: widget.dialConcentration,
+          timeMinutes: widget.timeMinutes,
+          initialWeight: widget.initialWeight,
+          finalWeight: widget.finalWeight,
+          biroFormula: widget.biroResult,
+          dionFormula: widget.dionResult,
+          weightBased: widget.weightBasedResult,
+          notes: _notesController.text.trim(),
+          inductionFGF: widget.inductionFGF,
+          inductionConcentration: widget.inductionConcentration,
+          inductionTime: widget.inductionTime,
+          inductionBiro: widget.inductionBiro,
+          inductionDion: widget.inductionDion,
+          finalBiro: widget.biroResult,
+          finalDion: widget.dionResult,
+          maintenanceRows: widget.maintenanceRows
+              .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
+              .toList(),
+          maintenanceCalculations: widget.maintenanceCalculations
+              .map((row) => row.map((key, value) => MapEntry(key, value as dynamic)))
+              .toList(),
+        );
+      }
 
       if (!mounted) return;
 
       if (result['success']) {
         // Also save to local session history
         final savedAt = DateTime.now();
-        final item = _buildCaseHistoryItem(savedAtOverride: savedAt);
+        final item = _buildCaseHistoryItem(
+          savedAtOverride: savedAt,
+          caseId: isEditMode ? caseId : null,
+        );
         SessionHistory.saveCase(item);
 
-        setState(() {
-          _isSaved = true;
-          _savedAt = savedAt;
-        });
+        // Clear edit mode
+        if (isEditMode) {
+          caseProvider.clearCase();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Case saved successfully'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        print('✅ Case saved successfully');
+          setState(() {
+            _isSaved = true;
+            _savedAt = savedAt;
+          });
+
+          final successMessage = '✅ Case updated successfully';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(successMessage),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          print('✅ Case updated successfully');
+
+          // Pop back to caller and signal success so calling screens can refresh
+          if (mounted) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                Navigator.pop(context, true);
+              }
+            });
+          }
+        } else {
+          // Create new case flow: keep original behavior
+          setState(() {
+            _isSaved = true;
+            _savedAt = savedAt;
+          });
+
+          final successMessage = '✅ Case saved successfully';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(successMessage),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          if (mounted) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                Navigator.popUntil(context, ModalRoute.withName('/'));
+              }
+            });
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ ${result['error'] ?? 'Failed to save case'}'),
+            content: Text('❌ ${result['error'] ?? 'Failed to ${isEditMode ? 'update' : 'save'} case'}'),
             backgroundColor: const Color(0xFFDC2626),
             duration: const Duration(seconds: 2),
           ),
         );
-        print('❌ Failed to save case: ${result['error']}');
+        print('❌ Failed to ${isEditMode ? 'update' : 'save'} case: ${result['error']}');
       }
     } catch (e) {
       if (!mounted) return;
-      print('❌ Exception saving case: $e');
+      print('❌ Exception ${context.read<CaseProvider>().isEditMode ? 'updating' : 'saving'} case: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Error: $e'),

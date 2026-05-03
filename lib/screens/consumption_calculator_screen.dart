@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 import 'results_screen.dart';
 import '../widgets/app_header.dart';
 import 'case_history_screen.dart';
 import 'profile_screen.dart';
+import '../providers/case_provider.dart';
 // case_history_dialog and macmind_design imports removed (unused)
 
 /// Consumption Calculator Screen
@@ -17,6 +19,12 @@ class ConsumptionCalculatorScreen extends StatefulWidget {
   final double lvConstant;
   final double liquidVaporConstant;
   final double density;
+  final double inductionFGF;
+  final double inductionConcentration;
+  final double inductionTime;
+  final List<Map<String, double>> maintenanceRows;
+  final double? initialWeight;
+  final double? finalWeight;
 
   const ConsumptionCalculatorScreen({
     super.key,
@@ -28,6 +36,12 @@ class ConsumptionCalculatorScreen extends StatefulWidget {
     required this.lvConstant,
     required this.liquidVaporConstant,
     required this.density,
+    this.inductionFGF = 0.0,
+    this.inductionConcentration = 0.0,
+    this.inductionTime = 0.0,
+    this.maintenanceRows = const [],
+    this.initialWeight,
+    this.finalWeight,
   });
 
   @override
@@ -100,6 +114,41 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
         timeController: TextEditingController(),
       ),
     );
+
+    // Autofill induction data if provided (edit mode)
+    if (widget.inductionFGF > 0) {
+      _inductionFGFController.text = widget.inductionFGF.toString();
+    }
+    if (widget.inductionConcentration > 0) {
+      _inductionConcController.text = widget.inductionConcentration.toString();
+    }
+    if (widget.inductionTime > 0) {
+      _inductionTimeController.text = widget.inductionTime.toString();
+    }
+
+    // Autofill maintenance rows if provided (edit mode)
+    if (widget.maintenanceRows.isNotEmpty) {
+      for (int i = 0; i < widget.maintenanceRows.length && i < _maintenanceRows.length; i++) {
+        final row = widget.maintenanceRows[i];
+        if (row.containsKey('fgf') && row['fgf']! > 0) {
+          _maintenanceRows[i].fgfController.text = row['fgf'].toString();
+        }
+        if (row.containsKey('concentration') && row['concentration']! > 0) {
+          _maintenanceRows[i].concController.text = row['concentration'].toString();
+        }
+        if (row.containsKey('time') && row['time']! > 0) {
+          _maintenanceRows[i].timeController.text = row['time'].toString();
+        }
+      }
+    }
+
+    // Autofill weight fields if provided (edit mode)
+    if (widget.initialWeight != null) {
+      _initialWeightController.text = widget.initialWeight.toString();
+    }
+    if (widget.finalWeight != null) {
+      _finalWeightController.text = widget.finalWeight.toString();
+    }
   }
 
   @override
@@ -120,7 +169,7 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     super.dispose();
   }
 
-  void _calculateConsumption() {
+  Future<void> _calculateConsumption() async {
     final results = calculateResults();
     if (results == null) {
       return;
@@ -161,7 +210,7 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
       }
     }
 
-    Navigator.push(
+    final result = await Navigator.push<bool?>(
       context,
       MaterialPageRoute(
         builder: (context) => ResultsScreen(
@@ -191,6 +240,11 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
         ),
       ),
     );
+
+    // If results screen indicated an update, propagate the success upstream
+    if (result == true) {
+      if (mounted) Navigator.pop(context, true);
+    }
   }
 
   _CalculationResults? calculateResults() {

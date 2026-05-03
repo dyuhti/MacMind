@@ -1,4 +1,5 @@
 class CaseHistoryItem {
+  final String? id; // Unique case ID from backend
   final String patientName;
   final String idNumber;
   final DateTime date;
@@ -28,6 +29,7 @@ class CaseHistoryItem {
   final double finalDion;
 
   const CaseHistoryItem({
+    this.id,
     required this.patientName,
     required this.idNumber,
     required this.date,

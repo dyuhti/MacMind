@@ -242,6 +242,118 @@ def get_case(case_id):
         }), 500
 
 
+@calculator_bp.route('/cases/<int:case_id>', methods=['PUT', 'PATCH'])
+def update_case(case_id):
+    """
+    Update an existing case by ID
+
+    Expects JSON body with fields to update. Fields not provided will keep previous values.
+    Returns:
+        200: Case updated successfully
+        404: Case not found
+        500: Database error
+    """
+    try:
+        print(f"✏️ Update request received for case {case_id} - method={request.method}")
+        data = request.json or {}
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Ensure the case exists
+        cursor.execute("SELECT * FROM cases WHERE id = %s", (case_id,))
+        existing = cursor.fetchone()
+        if not existing:
+            cursor.close()
+            conn.close()
+            print(f"❌ Case {case_id} not found for update")
+            return jsonify({"success": False, "message": "Case not found"}), 404
+
+        import json as json_lib
+
+        # Build values using provided data or fall back to existing
+        updated_values = (
+            data.get('patient_name', existing.get('patient_name')),
+            data.get('patient_id', existing.get('patient_id')),
+            data.get('date', existing.get('date')),
+            data.get('surgery_type', existing.get('surgery_type')),
+            data.get('anesthetic_agent', existing.get('anesthetic_agent')),
+            data.get('molecular_mass', existing.get('molecular_mass')),
+            data.get('vapor_constant', existing.get('vapor_constant')),
+            data.get('density', existing.get('density')),
+            data.get('fresh_gas_flow', existing.get('fresh_gas_flow')),
+            data.get('dial_concentration', existing.get('dial_concentration')),
+            data.get('time_minutes', existing.get('time')),
+            data.get('initial_weight', existing.get('initial_weight')),
+            data.get('final_weight', existing.get('final_weight')),
+            data.get('notes', existing.get('notes')),
+            data.get('biro_formula', existing.get('biro_formula')),
+            data.get('dion_formula', existing.get('dion_formula')),
+            data.get('weight_based', existing.get('weight_based')),
+            data.get('induction_fgf', existing.get('induction_fgf')),
+            data.get('induction_concentration', existing.get('induction_concentration')),
+            data.get('induction_time', existing.get('induction_time')),
+            data.get('induction_biro', existing.get('induction_biro')),
+            data.get('induction_dion', existing.get('induction_dion')),
+            data.get('final_biro', existing.get('final_biro')),
+            data.get('final_dion', existing.get('final_dion')),
+            # maintenance rows/calculations stored as JSON strings in DB
+            json_lib.dumps(data.get('maintenance_rows')) if data.get('maintenance_rows') is not None else existing.get('maintenance_rows'),
+            json_lib.dumps(data.get('maintenance_calculations')) if data.get('maintenance_calculations') is not None else existing.get('maintenance_calculations'),
+        )
+
+        update_query = """
+        UPDATE cases SET
+            patient_name = %s,
+            patient_id = %s,
+            date = %s,
+            surgery_type = %s,
+            anesthetic_agent = %s,
+            molecular_mass = %s,
+            vapor_constant = %s,
+            density = %s,
+            fresh_gas_flow = %s,
+            dial_concentration = %s,
+            `time` = %s,
+            initial_weight = %s,
+            final_weight = %s,
+            notes = %s,
+            biro_formula = %s,
+            dion_formula = %s,
+            weight_based = %s,
+            induction_fgf = %s,
+            induction_concentration = %s,
+            induction_time = %s,
+            induction_biro = %s,
+            induction_dion = %s,
+            final_biro = %s,
+            final_dion = %s,
+            maintenance_rows = %s,
+            maintenance_calculations = %s
+        WHERE id = %s
+        """
+
+        # Append case_id to values
+        exec_values = updated_values + (case_id,)
+
+        print(f"📤 Executing update for case {case_id}")
+        cursor.execute(update_query, exec_values)
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        print(f"✅ Case {case_id} updated successfully")
+        return jsonify({"success": True, "message": "Case updated successfully", "case": {"id": case_id}}), 200
+
+    except mysql.connector.Error as err:
+        print(f"❌ Database error updating case: {err}")
+        return jsonify({"success": False, "message": f"Database error: {err}"}), 500
+    except Exception as e:
+        print(f"❌ Error updating case: {str(e)}")
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+
 @calculator_bp.route('/cases/<int:case_id>', methods=['DELETE'])
 def delete_case(case_id):
     """

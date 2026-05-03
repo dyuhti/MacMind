@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 import '../widgets/app_header.dart';
+import '../models/case_history_item.dart';
 import 'profile_screen.dart';
 import '../services/auth_service.dart';
 import 'consumption_calculator_screen.dart';
 import 'login_screen.dart';
 import '../services/agent_constants_service.dart';
 import 'case_history_screen.dart';
+import '../providers/case_provider.dart';
 // macmind_design import removed (not used here)
 
 /// New Case Screen - Post-login form
 class NewCaseScreen extends StatefulWidget {
-  const NewCaseScreen({super.key});
+  final CaseHistoryItem? caseData;
+
+  const NewCaseScreen({super.key, this.caseData});
 
   @override
   State<NewCaseScreen> createState() => _NewCaseScreenState();
@@ -62,6 +67,29 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     _idNumberController = TextEditingController();
     _surgeryTypeController = TextEditingController();
     _loadAgentConstants();
+    _loadEditData();
+  }
+
+  void _loadEditData() {
+    // Check if we're in edit mode
+    final caseProvider = context.read<CaseProvider>();
+    // Prefer explicit widget.caseData if provided, otherwise fall back to provider
+    final CaseHistoryItem? editCase = widget.caseData ?? (caseProvider.isEditMode ? caseProvider.currentCase : null);
+    if (editCase != null) {
+      final caseData = editCase;
+      _patientNameController.text = caseData.patientName;
+      _idNumberController.text = caseData.idNumber;
+      _surgeryTypeController.text = caseData.surgeryType;
+      _selectedAgent = caseData.agent;
+      _selectedDate = caseData.date;
+      
+      // Set error states to false initially
+      setState(() {
+        _patientNameError = false;
+        _idNumberError = false;
+        _surgeryTypeError = false;
+      });
+    }
   }
 
   Future<void> _loadAgentConstants() async {
@@ -211,9 +239,20 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_validateForm()) {
-                Navigator.push(
+                final caseProvider = context.read<CaseProvider>();
+                final isEditMode = caseProvider.isEditMode;
+                
+                // If editing, pass the induction data forward
+                final inductionFGF = isEditMode ? caseProvider.currentCase!.inductionFGF : 0.0;
+                final inductionConc = isEditMode ? caseProvider.currentCase!.inductionConcentration : 0.0;
+                final inductionTime = isEditMode ? caseProvider.currentCase!.inductionTime : 0.0;
+                final List<Map<String, double>> maintenanceRows = isEditMode
+                  ? caseProvider.currentCase!.maintenanceRows
+                  : <Map<String, double>>[];
+                
+                final result = await Navigator.push<bool?>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ConsumptionCalculatorScreen(
@@ -226,9 +265,19 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                       liquidVaporConstant:
                           double.tryParse(constants['liquidToVaporConstant'] ?? '') ?? 1,
                       density: double.tryParse(constants['density'] ?? '') ?? 1,
+                      inductionFGF: inductionFGF,
+                      inductionConcentration: inductionConc,
+                      inductionTime: inductionTime,
+                      maintenanceRows: maintenanceRows,
+                      initialWeight: isEditMode ? caseProvider.currentCase?.initialWeight : null,
+                      finalWeight: isEditMode ? caseProvider.currentCase?.finalWeight : null,
                     ),
                   ),
                 );
+
+                if (result == true) {
+                  if (mounted) Navigator.pop(context, true);
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -238,9 +287,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Next',
-              style: TextStyle(
+            child: Text(
+              context.watch<CaseProvider>().isEditMode ? 'Update' : 'Next',
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,

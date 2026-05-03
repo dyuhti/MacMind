@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/api_config.dart';
+import 'auth_service.dart';
 
 class CaseService {
   /// Save a patient case to backend
@@ -69,6 +70,12 @@ class CaseService {
         if (timeMinutes != null) 'time_minutes': timeMinutes,
         if (initialWeight != null) 'initial_weight': initialWeight,
         if (finalWeight != null) 'final_weight': finalWeight,
+        // Also include nested weight object for compatibility
+        if (initialWeight != null || finalWeight != null)
+          'weight': {
+            if (initialWeight != null) 'initialWeight': initialWeight,
+            if (finalWeight != null) 'finalWeight': finalWeight,
+          },
         if (biroFormula != null) 'biro_formula': biroFormula,
         if (dionFormula != null) 'dion_formula': dionFormula,
         if (weightBased != null) 'weight_based': weightBased,
@@ -86,12 +93,17 @@ class CaseService {
 
       print('📤 Request Body: ${jsonEncode(requestBody)}');
 
+      // Attach auth token if available (prevents backend sending HTML login pages)
+      final token = await AuthService.getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
       final response = await http.post(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: headers,
         body: jsonEncode(requestBody),
       );
 
@@ -99,17 +111,37 @@ class CaseService {
       print('📩 Save Case Response Body: ${response.body}');
 
       if (response.statusCode == 201) {
-        final jsonResponse = jsonDecode(response.body);
-        return {
-          'success': true,
-          'message': jsonResponse['message'] ?? 'Case saved successfully',
-          'caseId': jsonResponse['case']?['id'],
-        };
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          return {
+            'success': true,
+            'message': jsonResponse['message'] ?? 'Case saved successfully',
+            'caseId': jsonResponse['case']?['id'],
+          };
+        } catch (e) {
+          // Backend returned 201 but non-JSON body (rare) — return success with raw body
+          print('⚠️ Save case: 201 but invalid JSON response: $e');
+          return {
+            'success': true,
+            'message': 'Case saved (non-JSON response)',
+            'caseId': null,
+            'rawBody': response.body,
+          };
+        }
       } else {
-        final jsonResponse = jsonDecode(response.body);
+        // Avoid jsonDecode on error pages that may be HTML — include raw body in error
+        print('❌ Save failed with status ${response.statusCode}. Body preview: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+        String errMsg = 'Failed to save case (status ${response.statusCode})';
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          errMsg = jsonResponse['message']?.toString() ?? errMsg;
+        } catch (_) {
+          // If response is HTML, include first chars for debugging
+          errMsg = 'Server error: ${response.body}';
+        }
         return {
           'success': false,
-          'error': jsonResponse['message'] ?? 'Failed to save case',
+          'error': errMsg,
         };
       }
     } catch (e) {
@@ -207,6 +239,146 @@ class CaseService {
       }
     } catch (e) {
       print('❌ Error fetching case: $e');
+      return {
+        'success': false,
+        'error': 'Network error: $e',
+      };
+    }
+  }
+
+  /// Update an existing case by ID
+  /// 
+  /// Parameters:
+  ///   - caseId: The case ID to update
+  ///   - patientName, patientId, date, surgeryType, anestheticAgent, etc.
+  /// 
+  /// Returns: {success: true/false, error?: string}
+  static Future<Map<String, dynamic>> updateCase({
+    required String caseId,
+    required String patientName,
+    required String patientId,
+    required String date,
+    required String surgeryType,
+    required String anestheticAgent,
+    required String molecularMass,
+    required String vaporConstant,
+    required String density,
+    double? freshGasFlow,
+    double? dialConcentration,
+    double? timeMinutes,
+    double? initialWeight,
+    double? finalWeight,
+    double? biroFormula,
+    double? dionFormula,
+    double? weightBased,
+    String? notes,
+    double? inductionFGF,
+    double? inductionConcentration,
+    double? inductionTime,
+    double? inductionBiro,
+    double? inductionDion,
+    double? finalBiro,
+    double? finalDion,
+    List<Map<String, dynamic>>? maintenanceRows,
+    List<Map<String, dynamic>>? maintenanceCalculations,
+  }) async {
+    try {
+      final baseUrl = ApiConfig.baseUrl;
+      final url = Uri.parse('$baseUrl/api/calculator/cases/$caseId');
+
+      print('✏️ Update Case Request: $url');
+      print('🆔 Case ID: $caseId');
+
+      final requestBody = {
+        'patient_name': patientName,
+        'patient_id': patientId,
+        'date': date,
+        'surgery_type': surgeryType,
+        'anesthetic_agent': anestheticAgent,
+        'molecular_mass': molecularMass,
+        'vapor_constant': vaporConstant,
+        'density': density,
+        if (freshGasFlow != null) 'fresh_gas_flow': freshGasFlow,
+        if (dialConcentration != null) 'dial_concentration': dialConcentration,
+        if (timeMinutes != null) 'time_minutes': timeMinutes,
+        if (initialWeight != null) 'initial_weight': initialWeight,
+        if (finalWeight != null) 'final_weight': finalWeight,
+        // Also include nested weight object for compatibility
+        if (initialWeight != null || finalWeight != null)
+          'weight': {
+            if (initialWeight != null) 'initialWeight': initialWeight,
+            if (finalWeight != null) 'finalWeight': finalWeight,
+          },
+        if (biroFormula != null) 'biro_formula': biroFormula,
+        if (dionFormula != null) 'dion_formula': dionFormula,
+        if (weightBased != null) 'weight_based': weightBased,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (inductionFGF != null) 'induction_fgf': inductionFGF,
+        if (inductionConcentration != null) 'induction_concentration': inductionConcentration,
+        if (inductionTime != null) 'induction_time': inductionTime,
+        if (inductionBiro != null) 'induction_biro': inductionBiro,
+        if (inductionDion != null) 'induction_dion': inductionDion,
+        if (finalBiro != null) 'final_biro': finalBiro,
+        if (finalDion != null) 'final_dion': finalDion,
+        if (maintenanceRows != null) 'maintenance_rows': maintenanceRows,
+        if (maintenanceCalculations != null) 'maintenance_calculations': maintenanceCalculations,
+      };
+
+      print('📤 Update Request Body: ${jsonEncode(requestBody)}');
+
+      // Attach auth token if available
+      final token = await AuthService.getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: jsonEncode(requestBody),
+      );
+
+      print('📩 Update Case Response Status: ${response.statusCode}');
+      print('📩 Update Case Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          return {
+            'success': true,
+            'message': jsonResponse['message'] ?? 'Case updated successfully',
+            'caseId': jsonResponse['case']?['id'],
+          };
+        } catch (e) {
+          // 200 but body not JSON — backend may be misconfigured; return success with raw body
+          print('⚠️ Update case: 200 but invalid JSON response: $e');
+          return {
+            'success': true,
+            'message': 'Case updated (non-JSON response)',
+            'caseId': null,
+            'rawBody': response.body,
+          };
+        }
+      } else {
+        // Log and return raw body for debugging (may be HTML login page)
+        print('❌ Update failed with status ${response.statusCode}. Body begins: ${response.body.length > 200 ? response.body.substring(0,200) : response.body}');
+        String errMsg = 'Failed to update case (status ${response.statusCode})';
+        try {
+          final jsonResponse = jsonDecode(response.body);
+          errMsg = jsonResponse['message']?.toString() ?? errMsg;
+        } catch (_) {
+          // Non-JSON body (HTML) — include raw body for debugging
+          errMsg = 'Server error: ${response.body}';
+        }
+        return {
+          'success': false,
+          'error': errMsg,
+        };
+      }
+    } catch (e) {
+      print('❌ Error updating case: $e');
       return {
         'success': false,
         'error': 'Network error: $e',
