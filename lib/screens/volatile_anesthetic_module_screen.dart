@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/app_header.dart';
 import 'profile_screen.dart';
 import '../widgets/macmind_design.dart';
 import 'new_case_screen.dart';
 import 'economy_calculator_screen.dart';
+import '../providers/case_provider.dart';
 
 /// Screen B: Volatile Anesthetic Module
 /// User selects between Calculation or Economy Calculator
@@ -11,12 +13,15 @@ class VolatileAnestheticModuleScreen extends StatelessWidget {
   const VolatileAnestheticModuleScreen({super.key});
 
   void _navigateToCalculation(BuildContext context) {
+    // Clear any previous edit state before opening a fresh new case
+    context.read<CaseProvider>().startCreateMode();
+    
     // Navigate to NewCaseScreen (Screen A entry point)
     // This will then lead to ConsumptionCalculatorScreen (Screen C)
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const NewCaseScreen(),
+        builder: (_) => const NewCaseScreen(caseData: null),
       ),
     );
   }

@@ -372,7 +372,7 @@ class MacMindLegacyButton extends StatelessWidget {
               Icon(Icons.edit_outlined, size: 18, color: MacMindColors.gray400),
               SizedBox(width: 8),
               Text(
-                'New Case (Legacy)',
+                'New Case',
                 style: TextStyle(
                   fontFamily: 'DM Sans',
                   fontSize: 13,

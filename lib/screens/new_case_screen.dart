@@ -75,7 +75,9 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     final caseProvider = context.read<CaseProvider>();
     // Prefer explicit widget.caseData if provided, otherwise fall back to provider
     final CaseHistoryItem? editCase = widget.caseData ?? (caseProvider.isEditMode ? caseProvider.currentCase : null);
+    
     if (editCase != null) {
+      // EDIT MODE: Load provided case data
       final caseData = editCase;
       _patientNameController.text = caseData.patientName;
       _idNumberController.text = caseData.idNumber;
@@ -84,6 +86,20 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       _selectedDate = caseData.date;
       
       // Set error states to false initially
+      setState(() {
+        _patientNameError = false;
+        _idNumberError = false;
+        _surgeryTypeError = false;
+      });
+    } else {
+      // NEW CASE MODE: Explicitly clear all fields and reset to defaults
+      print('📝 New Case Mode - clearing all fields and resetting state');
+      _patientNameController.clear();
+      _idNumberController.clear();
+      _surgeryTypeController.clear();
+      _selectedAgent = 'Isoflurane';
+      _selectedDate = DateTime.now();
+      
       setState(() {
         _patientNameError = false;
         _idNumberError = false;

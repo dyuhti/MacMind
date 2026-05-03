@@ -162,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const NewCaseScreen(),
+        builder: (_) => const NewCaseScreen(caseData: null),
       ),
     );
   }

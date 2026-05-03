@@ -4,6 +4,7 @@ import '../config/app_colors.dart';
 import '../services/profile_service.dart';
 import '../services/auth_service.dart';
 import '../services/user_session.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -271,11 +272,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextButton(
               onPressed: () async {
                 Navigator.of(context).pop();
+                
+                // Logout from backend
+                print('🔐 Logging out user...');
                 await AuthService.logout();
+                print('✅ User logged out successfully');
+                
                 if (mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
+                  // Navigate to LoginScreen and remove all previous routes
+                  Navigator.pushAndRemoveUntil(
                     context,
-                    '/login',
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (route) => false,
                   );
                 }
