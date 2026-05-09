@@ -119,6 +119,7 @@ class AIService {
 
       final success = decoded['success'] == true;
       final rawInsights = decoded['insights'];
+      final backendMessage = decoded['message']?.toString();
 
       final insights = rawInsights is List
           ? rawInsights
@@ -130,7 +131,7 @@ class AIService {
 
       if (!success || insights.isEmpty) {
         print('AIService empty/unsuccessful insights for $type: $decoded');
-        return _failure(_fallbackMessage);
+        return _failure(backendMessage ?? _fallbackMessage);
       }
 
       return {'success': true, 'insights': insights};
