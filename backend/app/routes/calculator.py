@@ -6,15 +6,19 @@ from flask import Blueprint, request, jsonify
 import json as json_lib
 from app import db
 from app.models.case import Case
+from app.utils.decorators import require_token
 
 # Create blueprint for calculator routes
 calculator_bp = Blueprint('calculator', __name__)
 
 
 @calculator_bp.route('/cases', methods=['POST'])
-def save_case():
+@require_token
+def save_case(current_user):
     """
     Save a patient case to database
+    
+    Requires JWT authentication. Case is automatically associated with logged-in user.
     
     Request body:
         {
@@ -31,6 +35,7 @@ def save_case():
     Returns:
         201: Case saved successfully
         400: Invalid parameters or missing fields
+        401: Unauthorized (missing/invalid token)
         500: Database error
     """
     try:
@@ -46,8 +51,12 @@ def save_case():
             if field not in data:
                 return jsonify({"message": f"Missing field: {field}"}), 400
 
-        print(f"💾 Saving case: {data['patient_name']} ({data['patient_id']})")
+        # Extract user_id from authenticated user
+        user_id = int(current_user.get('user_id'))
+        
+        print(f"💾 Saving case: {data['patient_name']} ({data['patient_id']}) for user {user_id}")
         new_case = Case(
+            user_id=user_id,
             patient_name=data['patient_name'],
             patient_id=data['patient_id'],
             date=data['date'],
@@ -100,20 +109,28 @@ def save_case():
 
 
 @calculator_bp.route('/cases', methods=['GET'])
-def get_cases():
+@require_token
+def get_cases(current_user):
     """
-    Fetch all saved patient cases from database
+    Fetch all saved patient cases from database for authenticated user
+    
+    Requires JWT authentication. Returns only cases belonging to the logged-in user.
     
     Returns:
-        200: List of all cases ordered by latest first
+        200: List of user's cases ordered by latest first
+        401: Unauthorized (missing/invalid token)
         500: Database error
     """
     try:
-        print("📋 Fetching all cases...")
-        cases = Case.query.order_by(Case.created_at.desc()).all()
+        # Extract user_id from authenticated user
+        user_id = int(current_user.get('user_id'))
+        
+        print(f"📋 Fetching cases for user {user_id}...")
+        # Filter cases by user_id
+        cases = Case.query.filter_by(user_id=user_id).order_by(Case.created_at.desc()).all()
         cases_data = [c.to_dict() for c in cases]
 
-        print(f"✅ Retrieved {len(cases_data)} cases")
+        print(f"✅ Retrieved {len(cases_data)} cases for user {user_id}")
 
         return jsonify({
             "success": True,
@@ -132,23 +149,39 @@ def get_cases():
 
 
 @calculator_bp.route('/cases/<int:case_id>', methods=['GET'])
-def get_case(case_id):
+@require_token
+def get_case(case_id, current_user):
     """
     Fetch a specific case by ID
+    
+    Requires JWT authentication. User can only access their own cases.
     
     Args:
         case_id: Case ID (path parameter)
     
     Returns:
         200: Case details
+        401: Unauthorized (missing/invalid token)
+        403: Forbidden (case belongs to different user)
         404: Case not found
         500: Database error
     """
     try:
-        print(f"🔍 Fetching case {case_id}...")
+        # Extract user_id from authenticated user
+        user_id = int(current_user.get('user_id'))
+        
+        print(f"🔍 Fetching case {case_id} for user {user_id}...")
         case = Case.query.filter_by(id=case_id).first()
 
         if case:
+            # Verify ownership
+            if case.user_id != user_id:
+                print(f"❌ User {user_id} attempted to access case {case_id} belonging to user {case.user_id}")
+                return jsonify({
+                    "success": False,
+                    "message": "Unauthorized access to this case"
+                }), 403
+            
             print(f"✅ Case {case_id} found")
             return jsonify({
                 "success": True,
@@ -171,24 +204,37 @@ def get_case(case_id):
 
 
 @calculator_bp.route('/cases/<int:case_id>', methods=['PUT', 'PATCH'])
-def update_case(case_id):
+@require_token
+def update_case(case_id, current_user):
     """
     Update an existing case by ID
 
+    Requires JWT authentication. User can only update their own cases.
+    
     Expects JSON body with fields to update. Fields not provided will keep previous values.
     Returns:
         200: Case updated successfully
+        401: Unauthorized (missing/invalid token)
+        403: Forbidden (case belongs to different user)
         404: Case not found
         500: Database error
     """
     try:
-        print(f"✏️ Update request received for case {case_id} - method={request.method}")
+        # Extract user_id from authenticated user
+        user_id = int(current_user.get('user_id'))
+        
+        print(f"✏️ Update request received for case {case_id} from user {user_id} - method={request.method}")
         data = request.get_json() or {}
 
         existing = Case.query.filter_by(id=case_id).first()
         if not existing:
             print(f"❌ Case {case_id} not found for update")
             return jsonify({"success": False, "message": "Case not found"}), 404
+        
+        # Verify ownership
+        if existing.user_id != user_id:
+            print(f"❌ User {user_id} attempted to update case {case_id} belonging to user {existing.user_id}")
+            return jsonify({"success": False, "message": "Unauthorized access to this case"}), 403
 
         # Update only provided fields
         field_map = {
@@ -231,7 +277,7 @@ def update_case(case_id):
         print(f"📤 Executing update for case {case_id}")
         db.session.commit()
 
-        print(f"✅ Case {case_id} updated successfully")
+        print(f"✅ Case {case_id} updated successfully by user {user_id}")
         return jsonify({"success": True, "message": "Case updated successfully", "case": {"id": case_id}}), 200
 
     except Exception as e:
@@ -241,26 +287,42 @@ def update_case(case_id):
 
 
 @calculator_bp.route('/cases/<int:case_id>', methods=['DELETE'])
-def delete_case(case_id):
+@require_token
+def delete_case(case_id, current_user):
     """
     Delete a patient case
+    
+    Requires JWT authentication. User can only delete their own cases.
     
     Args:
         case_id: Case ID (path parameter)
     
     Returns:
         200: Case deleted successfully
+        401: Unauthorized (missing/invalid token)
+        403: Forbidden (case belongs to different user)
         404: Case not found
         500: Database error
     """
     try:
-        print(f"🗑️  Deleting case {case_id}...")
+        # Extract user_id from authenticated user
+        user_id = int(current_user.get('user_id'))
+        
+        print(f"🗑️  Deleting case {case_id} by user {user_id}...")
         case = Case.query.filter_by(id=case_id).first()
 
         if case:
+            # Verify ownership
+            if case.user_id != user_id:
+                print(f"❌ User {user_id} attempted to delete case {case_id} belonging to user {case.user_id}")
+                return jsonify({
+                    "success": False,
+                    "message": "Unauthorized access to this case"
+                }), 403
+            
             db.session.delete(case)
             db.session.commit()
-            print(f"✅ Case {case_id} deleted")
+            print(f"✅ Case {case_id} deleted by user {user_id}")
             return jsonify({
                 "success": True,
                 "message": "Case deleted successfully"
