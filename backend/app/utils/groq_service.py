@@ -61,7 +61,7 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
     }
 
     payload = {
-        'model': 'llama3-70b-8192',
+        'model': 'llama-3.1-8b-instant',
         'messages': [
             {'role': 'system', 'content': 'You are a concise medical AI assistant.'},
             {'role': 'user', 'content': prompt},
