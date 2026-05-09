@@ -42,13 +42,30 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   Future<bool> _bootstrapApp() async {
+    // Check if user should auto-login (has remember me flag)
     final shouldAutoLogin = await AuthService.shouldAutoLogin();
     if (!shouldAutoLogin) {
       return false;
     }
 
-    await ProfileService.hydrateUserSession();
-    return true;
+    // Verify token is still valid
+    final token = await AuthService.getToken();
+    if (token == null) {
+      // No token found, logout
+      await AuthService.logout();
+      return false;
+    }
+
+    // Attempt to hydrate user session from stored data
+    try {
+      await ProfileService.hydrateUserSession();
+      print('✅ Auto-login successful - token validated');
+      return true;
+    } catch (e) {
+      print('❌ Failed to hydrate user session: $e');
+      await AuthService.logout();
+      return false;
+    }
   }
 
   @override

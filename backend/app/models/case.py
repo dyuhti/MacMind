@@ -14,6 +14,7 @@ class Case(db.Model):
     
     # Columns
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     patient_name = db.Column(db.String(255), nullable=False)
     patient_id = db.Column(db.String(50), nullable=False)
     date = db.Column(db.String(50), nullable=False)
@@ -41,6 +42,9 @@ class Case(db.Model):
     maintenance_rows = db.Column(db.Text, nullable=True)
     maintenance_calculations = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationship to User
+    user = db.relationship('User', backref='cases')
     
     def __repr__(self):
         return f'<Case {self.patient_name} - {self.surgery_type}>'
@@ -99,7 +103,7 @@ class Case(db.Model):
         }
     
     @staticmethod
-    def create(patient_name, patient_id, date, surgery_type, anesthetic_agent,
+    def create(user_id, patient_name, patient_id, date, surgery_type, anesthetic_agent,
                molecular_mass, vapor_constant, density, fresh_gas_flow=None,
                dial_concentration=None, time_minutes=None, initial_weight=None,
                final_weight=None, biro_formula=None, dion_formula=None,
@@ -112,6 +116,7 @@ class Case(db.Model):
         Create a new case in the database
         
         Args:
+            user_id: ID of the user who created the case
             patient_name: Name of patient
             patient_id: Patient ID
             date: Date of case
@@ -125,8 +130,9 @@ class Case(db.Model):
             Dictionary with success status and case data or error message
         """
         try:
-            # Create new case instance
+            # Create new case instance with user association
             new_case = Case(
+                user_id=user_id,
                 patient_name=patient_name,
                 patient_id=patient_id,
                 date=date,
@@ -175,15 +181,21 @@ class Case(db.Model):
             }
     
     @staticmethod
-    def get_all():
+    def get_all(user_id=None):
         """
-        Fetch all cases from database
+        Fetch all cases from database, optionally filtered by user
+        
+        Args:
+            user_id: Optional user ID to filter cases by specific user
         
         Returns:
             List of case dictionaries sorted by latest first
         """
         try:
-            cases = Case.query.order_by(Case.created_at.desc()).all()
+            if user_id is not None:
+                cases = Case.query.filter_by(user_id=user_id).order_by(Case.created_at.desc()).all()
+            else:
+                cases = Case.query.order_by(Case.created_at.desc()).all()
             return {
                 'success': True,
                 'cases': [case.to_dict() for case in cases],
@@ -197,12 +209,13 @@ class Case(db.Model):
             }
     
     @staticmethod
-    def get_by_id(case_id):
+    def get_by_id(case_id, user_id=None):
         """
         Fetch a specific case by ID
         
         Args:
             case_id: Case ID
+            user_id: Optional user ID for ownership verification
         
         Returns:
             Case dictionary or None
@@ -210,6 +223,12 @@ class Case(db.Model):
         try:
             case = Case.query.filter_by(id=case_id).first()
             if case:
+                # If user_id is provided, verify ownership
+                if user_id is not None and case.user_id != user_id:
+                    return {
+                        'success': False,
+                        'error': 'Unauthorized access to this case'
+                    }
                 return {
                     'success': True,
                     'case': case.to_dict()
@@ -226,12 +245,13 @@ class Case(db.Model):
             }
     
     @staticmethod
-    def delete(case_id):
+    def delete(case_id, user_id=None):
         """
         Delete a case by ID
         
         Args:
             case_id: Case ID
+            user_id: Optional user ID for ownership verification
         
         Returns:
             Dictionary with success status
@@ -239,6 +259,12 @@ class Case(db.Model):
         try:
             case = Case.query.filter_by(id=case_id).first()
             if case:
+                # If user_id is provided, verify ownership
+                if user_id is not None and case.user_id != user_id:
+                    return {
+                        'success': False,
+                        'error': 'Unauthorized access to this case'
+                    }
                 db.session.delete(case)
                 db.session.commit()
                 return {
@@ -255,4 +281,66 @@ class Case(db.Model):
             return {
                 'success': False,
                 'error': f'Failed to delete case: {str(e)}'
+            }
+    
+    @staticmethod
+    def update(case_id, user_id, **fields):
+        """
+        Update a specific case by ID with ownership verification
+        
+        Args:
+            case_id: Case ID to update
+            user_id: User ID for ownership verification
+            **fields: Key-value pairs to update
+        
+        Returns:
+            Dictionary with success status and updated case data
+        """
+        try:
+            case = Case.query.filter_by(id=case_id).first()
+            if not case:
+                return {
+                    'success': False,
+                    'error': 'Case not found'
+                }
+            
+            # Verify ownership
+            if case.user_id != user_id:
+                return {
+                    'success': False,
+                    'error': 'Unauthorized access to this case'
+                }
+            
+            # Update allowed fields
+            allowed_fields = {
+                'patient_name', 'patient_id', 'date', 'surgery_type',
+                'anesthetic_agent', 'molecular_mass', 'vapor_constant',
+                'density', 'fresh_gas_flow', 'dial_concentration',
+                'time_minutes', 'initial_weight', 'final_weight',
+                'biro_formula', 'dion_formula', 'weight_based', 'notes',
+                'induction_fgf', 'induction_concentration', 'induction_time',
+                'induction_biro', 'induction_dion', 'final_biro',
+                'final_dion', 'maintenance_rows', 'maintenance_calculations'
+            }
+            
+            for field, value in fields.items():
+                if field in allowed_fields:
+                    # Handle JSON fields
+                    if field in ('maintenance_rows', 'maintenance_calculations'):
+                        setattr(case, field, json.dumps(value) if isinstance(value, list) else value)
+                    else:
+                        setattr(case, field, value)
+            
+            db.session.commit()
+            return {
+                'success': True,
+                'message': 'Case updated successfully',
+                'case': case.to_dict()
+            }
+        
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'success': False,
+                'error': f'Failed to update case: {str(e)}'
             }

@@ -154,6 +154,7 @@ class CaseService {
   }
 
   /// Fetch all saved patient cases from backend
+  /// Requires JWT authentication - only returns cases for the logged-in user
   /// 
   /// Returns: {success: true/false, cases: [...], error?: string}
   static Future<Map<String, dynamic>> getAllCases() async {
@@ -163,11 +164,23 @@ class CaseService {
 
       print('📋 Fetch Cases Request: $url');
 
+      // Get authentication token
+      final token = await AuthService.getToken();
+      if (token == null) {
+        print('⚠️ No authentication token found');
+        return {
+          'success': false,
+          'cases': [],
+          'error': 'Not authenticated',
+        };
+      }
+
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
         },
       );
 
@@ -182,6 +195,14 @@ class CaseService {
           'cases': cases,
           'count': cases.length,
           'message': jsonResponse['message'] ?? 'Cases retrieved successfully',
+        };
+      } else if (response.statusCode == 401) {
+        print('❌ Unauthorized: Token invalid or expired');
+        return {
+          'success': false,
+          'cases': [],
+          'error': 'Unauthorized - please log in again',
+          'statusCode': 401,
         };
       } else {
         final jsonResponse = jsonDecode(response.body);
@@ -202,6 +223,7 @@ class CaseService {
   }
 
   /// Fetch a specific case by ID
+  /// Requires JWT authentication - user can only access their own cases
   /// 
   /// Parameters:
   ///   - caseId: The case ID to fetch
@@ -214,11 +236,22 @@ class CaseService {
 
       print('🔍 Fetch Case Request: $url');
 
+      // Get authentication token
+      final token = await AuthService.getToken();
+      if (token == null) {
+        print('⚠️ No authentication token found');
+        return {
+          'success': false,
+          'error': 'Not authenticated',
+        };
+      }
+
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
         },
       );
 
@@ -229,6 +262,20 @@ class CaseService {
         return {
           'success': true,
           'case': jsonResponse['case'],
+        };
+      } else if (response.statusCode == 401) {
+        print('❌ Unauthorized: Token invalid or expired');
+        return {
+          'success': false,
+          'error': 'Unauthorized - please log in again',
+          'statusCode': 401,
+        };
+      } else if (response.statusCode == 403) {
+        print('❌ Forbidden: Cannot access this case');
+        return {
+          'success': false,
+          'error': 'You do not have permission to access this case',
+          'statusCode': 403,
         };
       } else {
         final jsonResponse = jsonDecode(response.body);
@@ -387,6 +434,7 @@ class CaseService {
   }
 
   /// Delete a case by ID
+  /// Requires JWT authentication - user can only delete their own cases
   /// 
   /// Parameters:
   ///   - caseId: The case ID to delete
@@ -399,11 +447,22 @@ class CaseService {
 
       print('🗑️ Delete Case Request: $url');
 
+      // Get authentication token
+      final token = await AuthService.getToken();
+      if (token == null) {
+        print('⚠️ No authentication token found');
+        return {
+          'success': false,
+          'error': 'Not authenticated',
+        };
+      }
+
       final response = await http.delete(
         url,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
         },
       );
 
@@ -414,6 +473,20 @@ class CaseService {
         return {
           'success': true,
           'message': jsonResponse['message'] ?? 'Case deleted successfully',
+        };
+      } else if (response.statusCode == 401) {
+        print('❌ Unauthorized: Token invalid or expired');
+        return {
+          'success': false,
+          'error': 'Unauthorized - please log in again',
+          'statusCode': 401,
+        };
+      } else if (response.statusCode == 403) {
+        print('❌ Forbidden: Cannot delete this case');
+        return {
+          'success': false,
+          'error': 'You do not have permission to delete this case',
+          'statusCode': 403,
         };
       } else {
         final jsonResponse = jsonDecode(response.body);

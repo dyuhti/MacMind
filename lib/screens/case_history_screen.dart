@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 import '../models/case_history_item.dart';
 import '../services/case_service.dart';
+import '../services/auth_service.dart';
 import '../services/export_service.dart';
 import '../widgets/app_header.dart';
 import '../providers/case_provider.dart';
@@ -50,7 +51,28 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
   Future<List<CaseHistoryItem>> _fetchCases() async {
     try {
       final result = await CaseService.getAllCases();
+      
+      // Handle authentication errors
+      if (result['statusCode'] == 401) {
+        // Token expired or invalid - redirect to login
+        if (!mounted) return <CaseHistoryItem>[];
+        
+        // Clear auth session and redirect to login
+        await AuthService.logout();
+        Navigator.of(context).pushReplacementNamed('/login');
+        return <CaseHistoryItem>[];
+      }
+      
       if (result['success'] != true) {
+        if (!mounted) return <CaseHistoryItem>[];
+        
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['error']?.toString() ?? 'Failed to fetch cases'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
         return <CaseHistoryItem>[];
       }
 
@@ -141,6 +163,25 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
 
     final result = await CaseService.deleteCase(parsedId);
     if (!mounted) {
+      return;
+    }
+
+    // Handle authentication errors
+    if (result['statusCode'] == 401) {
+      // Token expired or invalid - redirect to login
+      await AuthService.logout();
+      Navigator.of(context).pushReplacementNamed('/login');
+      return;
+    }
+    
+    // Handle authorization errors
+    if (result['statusCode'] == 403) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You do not have permission to delete this case'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
       return;
     }
 

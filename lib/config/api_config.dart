@@ -18,7 +18,7 @@ class ApiConfig {
   // );
 
   /// Base URL (hardcoded to production for APKs)
-  static const String baseUrl = "https://med-calci-backend.onrender.com";
+  static const String baseUrl = "https://med-calci-backend-new.onrender.com";
 
   /// Get server host for configuration purposes
   // static String get serverHost {

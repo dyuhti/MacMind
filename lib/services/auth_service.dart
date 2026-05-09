@@ -179,25 +179,19 @@ class AuthService {
       print('👤 Full Name: $fullName');
       print('📧 Email: $email');
       
-      final requestBody = {
-        "full_name": fullName,
+      final body = jsonEncode({
         "email": email,
         "password": password,
-      };
-      
-      // Add confirm_password if provided
-      if (confirmPassword != null) {
-        requestBody["confirm_password"] = confirmPassword;
-      } else {
-        requestBody["confirm_password"] = password;
-      }
-      
-      print('📤 Request Body: $requestBody');
-      
+        "confirm_password": password,
+        "full_name": fullName, // you must pass this from UI
+      });
+
+      print('📤 Request Body: $body');
+
       final response = await _postWithRetry(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode(requestBody),
+        body: body,
       );
 
       print('📩 Register Response Status: ${response.statusCode}');

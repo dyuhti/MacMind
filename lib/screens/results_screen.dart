@@ -287,15 +287,31 @@ class _ResultsScreenState extends State<ResultsScreen> {
             ),
           );
 
+          // Debug and navigate to history after successful save
+          print('✅ Save success — navigating now');
+
           if (mounted) {
             Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) {
-                Navigator.popUntil(context, ModalRoute.withName('/'));
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CaseHistoryScreen()),
+                );
               }
             });
           }
         }
       } else {
+        // Handle authentication errors
+        if (result['statusCode'] == 401) {
+          // Token expired or invalid - redirect to login
+          if (!mounted) return;
+          await AuthService.logout();
+          Navigator.of(context).pushReplacementNamed('/login');
+          return;
+        }
+        
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ ${result['error'] ?? 'Failed to ${isEditMode ? 'update' : 'save'} case'}'),
