@@ -308,4 +308,9 @@ def delete_case(case_id, current_user):
                     'success': False,
                     'message': result['error']
                 }, 404
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'message': f'Error deleting case: {str(e)}'
         }, 500
