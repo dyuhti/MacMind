@@ -27,42 +27,56 @@ def clinical_insight(current_user):
         data = payload.get('data') or {}
         logger.info("AI route request type=%s user_id=%s", calc_type, current_user.get('user_id'))
 
-        # Build prompt templates per type
+        # Build prompt templates per type - focus on clinical interpretation and inference
         if calc_type == 'economy':
+            agent = data.get('agent') or data.get('anesthetic_agent')
+            fgf = data.get('fresh_gas_flow')
+            duration = data.get('duration') or data.get('time_minutes')
             prompt = (
-                f"An economy anesthetic calculation was performed. "
-                f"Agent: {data.get('agent') or data.get('anesthetic_agent')}. "
-                f"Molecular weight: {data.get('molecular_mass')}. "
-                f"Fresh gas flow (L/min): {data.get('fresh_gas_flow')}. "
-                f"Concentration (%): {data.get('concentration') or data.get('dial_concentration')}. "
-                f"Duration (minutes): {data.get('duration') or data.get('time_minutes')}. "
-                f"Total consumption (ml): {data.get('consumption') or data.get('total_consumption')}."
+                f"Analyze the consumption behavior of {agent} volatile anesthetic across a range of fresh gas flow rates. "
+                f"The calculation considers a duration of {duration} minutes and shows consumption patterns. "
+                f"Provide clinical insights about: consumption efficiency trends, flow impact on agent utilization, "
+                f"cost-effectiveness observations, and any efficiency or wastage implications. "
+                f"Do not repeat the entered values or formulas."
             )
         elif calc_type == 'volatile':
+            agent = data.get('agent') or data.get('anesthetic_agent')
+            duration = data.get('duration') or data.get('time_minutes')
+            biro = data.get('biro_formula')
+            dion = data.get('dion_formula')
             prompt = (
-                f"Volatile anesthetic result page data: Agent={data.get('agent') or data.get('anesthetic_agent')}, "
-                f"molecular_weight={data.get('molecular_mass')}, fgf={data.get('fresh_gas_flow')}, "
-                f"concentration={data.get('concentration') or data.get('dial_concentration')}, "
-                f"duration={data.get('duration') or data.get('time_minutes')}, "
-                f"biro={data.get('biro_formula')}, dion={data.get('dion_formula')}, "
-                f"weight_based={data.get('weight_based')}, total={data.get('total_consumption')}"
+                f"A volatile anesthetic procedure using {agent} over {duration} minutes resulted in calculated consumptions of approximately {biro}ml (Biro) and {dion}ml (Dion). "
+                f"Provide clinical observations about: anesthetic utilization patterns, resource efficiency, "
+                f"consistency with low-flow anesthesia principles, consumption stability, and any notable characteristics of this profile. "
+                f"Focus on clinical meaning and efficiency implications. Do not repeat patient data or formulas."
             )
         elif calc_type == 'oxygen':
+            cylinder_type = data.get('cylinder_type')
+            total_content = data.get('oxygen_content')
             prompt = (
-                f"Oxygen cylinder calculation: type={data.get('cylinder_type')}, "
-                f"pressure={data.get('pressure')}, oxygen_content={data.get('oxygen_content')}, "
-                f"factor={data.get('factor')}"
+                f"An {cylinder_type} oxygen cylinder contains approximately {total_content} liters of available oxygen. "
+                f"Provide clinical insights about: adequacy of oxygen reserve for typical surgical scenarios, "
+                f"emergency preparedness implications, suitability for short vs extended procedures, "
+                f"utilization profile recommendations, and practical considerations for this reserve capacity. "
+                f"Do not repeat the cylinder type, pressure, or formula."
             )
         elif calc_type == 'case_summary':
+            agent = data.get('anesthetic_agent')
+            surgery = data.get('surgery_type')
+            duration = data.get('time_minutes')
             prompt = (
-                f"Case summary: surgery_type={data.get('surgery_type')}, "
-                f"anesthetic_agent={data.get('anesthetic_agent')}, fgf={data.get('fresh_gas_flow')}, "
-                f"duration={data.get('time_minutes')}, weight_diff={data.get('weight_difference')}, "
-                f"formulas={data.get('formulas')}"
+                f"A {surgery} case was anesthetized with {agent} over {duration} minutes. "
+                f"Provide clinical insights about: the consumption profile observed, anesthetic efficacy indicators, "
+                f"resource utilization efficiency, stability of anesthetic delivery, and any notable clinical characteristics. "
+                f"Focus on clinical interpretation and efficiency analysis. Do not repeat case details or values."
             )
         else:
             # Generic prompt
-            prompt = f"Clinical calculation data: {data}"
+            prompt = (
+                "Analyze the clinical significance of these anesthetic calculation results. "
+                "Provide insights about utilization patterns, efficiency, clinical implications, and professional observations. "
+                "Do not repeat raw data or formulas."
+            )
 
         # Call Groq service
         result = generate_clinical_insight(prompt)

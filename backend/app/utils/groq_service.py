@@ -55,6 +55,14 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
 
     api_key = GROQ_API_KEY
 
+    system_message = (
+        "You are a clinical anesthesia assistant generating concise inference-based insights for medical calculator results. "
+        "Do not repeat raw inputs, formulas, entered values, or calculations. "
+        "Focus only on clinical interpretation, trends, efficiency analysis, implications, and professional observations. "
+        "Return 3-5 short bullet insights, max 1 sentence each. "
+        "Use professional medical tone. No markdown, headings, or formulas."
+    )
+
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
@@ -63,7 +71,7 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
     payload = {
         'model': 'llama-3.1-8b-instant',
         'messages': [
-            {'role': 'system', 'content': 'You are a concise medical AI assistant.'},
+            {'role': 'system', 'content': system_message},
             {'role': 'user', 'content': prompt},
         ],
         'temperature': 0.4,
