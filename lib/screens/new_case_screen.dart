@@ -10,6 +10,7 @@ import 'login_screen.dart';
 import '../services/agent_constants_service.dart';
 import 'case_history_screen.dart';
 import '../providers/case_provider.dart';
+import '../services/user_session.dart';
 // macmind_design import removed (not used here)
 
 /// New Case Screen - Post-login form
@@ -60,6 +61,14 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
 
   bool _isLoadingConstants = true;
 
+  String _getProfileInitial() {
+    final fullName = (UserSession.name ?? '').trim();
+    if (fullName.isEmpty) {
+      return 'U';
+    }
+    return fullName[0].toUpperCase();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -93,7 +102,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
     } else {
       // NEW CASE MODE: Explicitly clear all fields and reset to defaults
-      print('📝 New Case Mode - clearing all fields and resetting state');
+      print('���� New Case Mode - clearing all fields and resetting state');
       _patientNameController.clear();
       _idNumberController.clear();
       _surgeryTypeController.clear();
@@ -336,6 +345,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                   ),
                   const SizedBox(width: 8),
                   AppHeaderProfileAvatar(
+                    profileLabel: _getProfileInitial(),
                     onTap: () {
                       Navigator.push(
                         context,

@@ -14,6 +14,7 @@ import 'case_history_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/case_history_dialog.dart';
 import '../providers/case_provider.dart';
+import '../services/user_session.dart';
 // macmind_design removed (unused)
 
 class ResultsScreen extends StatefulWidget {
@@ -79,6 +80,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
   bool _isAiLoading = false;
   List<String> _aiInsights = [];
   String? _aiWarning;
+
+  String _getProfileInitial() {
+    final fullName = (UserSession.name ?? '').trim();
+    if (fullName.isEmpty) {
+      return 'U';
+    }
+    return fullName[0].toUpperCase();
+  }
 
   @override
   void initState() {
@@ -184,7 +193,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     if (_isSaved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ This case is already saved'),
+          content: Text('ԣ� This case is already saved'),
           backgroundColor: Colors.green,
         ),
       );
@@ -199,10 +208,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
       // Format date as YYYY-MM-DD
       final dateStr = '${widget.date.year}-${widget.date.month.toString().padLeft(2, '0')}-${widget.date.day.toString().padLeft(2, '0')}';
       
-      print('💾 Attempting to ${isEditMode ? 'update' : 'save'} case...');
-      print('👤 Patient: ${widget.patientName}');
-      print('📅 Date: $dateStr');
-      if (isEditMode) print('🔄 Edit Mode - Case ID: $caseId');
+      print('��ƥ Attempting to ${isEditMode ? 'update' : 'save'} case...');
+      print('���� Patient: ${widget.patientName}');
+      print('���� Date: $dateStr');
+      if (isEditMode) print('���� Edit Mode - Case ID: $caseId');
 
       Map<String, dynamic> result;
 
@@ -297,7 +306,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             _savedAt = savedAt;
           });
 
-          final successMessage = '✅ Case updated successfully';
+          final successMessage = 'ԣ� Case updated successfully';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(successMessage),
@@ -305,7 +314,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               duration: const Duration(seconds: 2),
             ),
           );
-          print('✅ Case updated successfully');
+          print('ԣ� Case updated successfully');
 
           // Pop back to caller and signal success so calling screens can refresh
           if (mounted) {
@@ -322,7 +331,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             _savedAt = savedAt;
           });
 
-          final successMessage = '✅ Case saved successfully';
+          final successMessage = 'ԣ� Case saved successfully';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(successMessage),
@@ -332,7 +341,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           );
 
           // Debug and navigate to history after successful save
-          print('✅ Save success — navigating now');
+          print('ԣ� Save success ��� navigating now');
 
           if (mounted) {
             Future.delayed(const Duration(milliseconds: 500), () {
@@ -358,19 +367,19 @@ class _ResultsScreenState extends State<ResultsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ ${result['error'] ?? 'Failed to ${isEditMode ? 'update' : 'save'} case'}'),
+            content: Text('��� ${result['error'] ?? 'Failed to ${isEditMode ? 'update' : 'save'} case'}'),
             backgroundColor: const Color(0xFFDC2626),
             duration: const Duration(seconds: 2),
           ),
         );
-        print('❌ Failed to ${isEditMode ? 'update' : 'save'} case: ${result['error']}');
+        print('��� Failed to ${isEditMode ? 'update' : 'save'} case: ${result['error']}');
       }
     } catch (e) {
       if (!mounted) return;
-      print('❌ Exception ${context.read<CaseProvider>().isEditMode ? 'updating' : 'saving'} case: $e');
+      print('��� Exception ${context.read<CaseProvider>().isEditMode ? 'updating' : 'saving'} case: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Error: $e'),
+          content: Text('��� Error: $e'),
           backgroundColor: const Color(0xFFDC2626),
           duration: const Duration(seconds: 2),
         ),
@@ -445,6 +454,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ),
                   const SizedBox(width: 8),
                   AppHeaderProfileAvatar(
+                    profileLabel: _getProfileInitial(),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -645,7 +655,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Row $rowNum → Biro: ${rowBiro.toStringAsFixed(1)} mL | Dion: ${rowDion.toStringAsFixed(1)} mL',
+                                'Row $rowNum ��� Biro: ${rowBiro.toStringAsFixed(1)} mL | Dion: ${rowDion.toStringAsFixed(1)} mL',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF374151),

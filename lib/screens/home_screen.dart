@@ -5,7 +5,6 @@ import '../widgets/app_header.dart';
 import '../widgets/macmind_design.dart';
 import 'case_history_screen.dart';
 import 'formulas_and_constants_module_screen.dart';
-import 'new_case_screen.dart';
 import 'oxygen_cylinder_module_screen.dart';
 import 'profile_screen.dart';
 import 'volatile_anesthetic_module_screen.dart';
@@ -144,16 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                MacMindLegacyButton(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const NewCaseScreen(caseData: null),
-                      ),
-                    );
-                  },
-                ),
               ],
             ),
           ),

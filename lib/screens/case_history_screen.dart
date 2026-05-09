@@ -11,6 +11,7 @@ import '../widgets/app_header.dart';
 import '../providers/case_provider.dart';
 import 'profile_screen.dart';
 import 'new_case_screen.dart';
+import 'case_details_screen.dart';
 // macmind_design not used directly in this file
 
 /// Full-page Case History Screen
@@ -26,14 +27,74 @@ class CaseHistoryScreen extends StatefulWidget {
 
 class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
   late Future<List<CaseHistoryItem>> _casesFuture;
-  List<CaseHistoryItem> _savedCases = <CaseHistoryItem>[];
+  final TextEditingController _searchController = TextEditingController();
+  List<CaseHistoryItem> allCases = <CaseHistoryItem>[];
+  List<CaseHistoryItem> filteredCases = <CaseHistoryItem>[];
   bool _isLoadingCases = true;
 
   @override
   void initState() {
     super.initState();
     _casesFuture = _fetchCases();
+    _searchController.addListener(_onSearchChanged);
     _loadCases();
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _applySearchFilter(_searchController.text);
+  }
+
+  String _searchDate(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  void _applySearchFilter(String query) {
+    final normalized = query.toLowerCase().trim();
+
+    setState(() {
+      if (normalized.isEmpty) {
+        filteredCases = List<CaseHistoryItem>.from(allCases);
+        return;
+      }
+
+      filteredCases = allCases.where((caseItem) {
+        final patientName = caseItem.patientName.toLowerCase();
+        final patientId = caseItem.idNumber.toLowerCase();
+        final surgeryType = caseItem.surgeryType.toLowerCase();
+        final agent = caseItem.agent.toLowerCase();
+        final displayDate = _searchDate(caseItem.date).toLowerCase();
+        final isoDate =
+            '${caseItem.date.year}-${caseItem.date.month.toString().padLeft(2, '0')}-${caseItem.date.day.toString().padLeft(2, '0')}';
+
+        return patientName.toLowerCase().contains(normalized) ||
+            patientId.toLowerCase().contains(normalized) ||
+            surgeryType.toLowerCase().contains(normalized) ||
+            agent.toLowerCase().contains(normalized) ||
+            displayDate.toLowerCase().contains(normalized) ||
+            isoDate.toLowerCase().contains(normalized);
+      }).toList();
+    });
   }
 
   Future<void> _loadCases() async {
@@ -43,7 +104,8 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
     }
 
     setState(() {
-      _savedCases = cases;
+      allCases = cases;
+      filteredCases = List<CaseHistoryItem>.from(cases);
       _isLoadingCases = false;
     });
   }
@@ -114,8 +176,10 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
       final fresh = await _fetchCases();
       if (!mounted) return;
       setState(() {
-        _savedCases = fresh;
+        allCases = fresh;
+        filteredCases = List<CaseHistoryItem>.from(fresh);
       });
+      _applySearchFilter(_searchController.text);
     }
   }
 
@@ -187,8 +251,9 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
 
     if (result['success'] == true) {
       setState(() {
-        _savedCases.removeWhere((entry) => entry.id == caseData.id);
+        allCases.removeWhere((entry) => entry.id == caseData.id);
       });
+      _applySearchFilter(_searchController.text);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Case deleted successfully'),
@@ -358,17 +423,65 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
                 children: [
             // Header with export button
             Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFDCE6F2)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1F2937),
+                    fontFamily: 'Inter',
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search cases...',
+                    hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF9CA3AF),
+                      fontFamily: 'Inter',
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 20,
+                      color: Color(0xFF6B7280),
+                    ),
+                    suffixIcon: _searchController.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              size: 18,
+                              color: Color(0xFF6B7280),
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                            },
+                          ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: _savedCases.isEmpty
+                  onPressed: allCases.isEmpty
                       ? null
                       : () async {
                           try {
                             final path = await ExportService.exportAllAsCsv(
-                              _savedCases,
+                              allCases,
                             );
                             if (!context.mounted) {
                               return;
@@ -427,7 +540,7 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
                   ? Center(
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
-                  : _savedCases.isEmpty
+                  : allCases.isEmpty
                       ? const Center(
                           child: Text(
                             'No saved cases yet.',
@@ -438,19 +551,30 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
                             ),
                           ),
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemCount: _savedCases.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final caseItem = _savedCases[index];
-                            return _HistoryCard(
-                              item: caseItem,
-                              onEdit: () => _openEditCase(caseItem),
-                              onDelete: () => _deleteCase(caseItem),
-                            );
-                          },
-                        ),
+                      : filteredCases.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No matching cases found',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF6B7280),
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              itemCount: filteredCases.length,
+                              separatorBuilder: (_, _) => const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final caseItem = filteredCases[index];
+                                return _HistoryCard(
+                                  item: caseItem,
+                                  onEdit: () => _openEditCase(caseItem),
+                                  onDelete: () => _deleteCase(caseItem),
+                                );
+                              },
+                            ),
             ),
           ],
         ),
@@ -491,49 +615,50 @@ class _HistoryCard extends StatelessWidget {
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
-  Widget _kv(String k, String v) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            k,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF6B7280),
-              fontFamily: 'Inter',
+  void _openDetailsPage(BuildContext context) {
+    Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        transitionDuration: const Duration(milliseconds: 280),
+        reverseTransitionDuration: const Duration(milliseconds: 220),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: CaseDetailsScreen(
+              item: item,
+              onEdit: onEdit,
+              onDelete: onDelete,
             ),
-          ),
-          Text(
-            v,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1F2937),
-              fontFamily: 'Inter',
-            ),
-          ),
-        ],
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final slide = Tween<Offset>(
+            begin: const Offset(0.04, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+          return SlideTransition(position: slide, child: child);
+        },
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openDetailsPage(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDCE6F2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDCE6F2)),
+          ),
+          child: Row(
             children: [
               Expanded(
                 child: Column(
@@ -544,19 +669,30 @@ class _HistoryCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF1F2937),
                         fontFamily: 'Inter',
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       'ID: ${item.idNumber}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _displayDate(item.date),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
                         color: Color(0xFF6B7280),
                         fontFamily: 'Inter',
                       ),
@@ -564,105 +700,15 @@ class _HistoryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _displayDate(item.date),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6B7280),
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!context.mounted) {
-                              return;
-                            }
-                            onEdit();
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            size: 18,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: onDelete,
-                        borderRadius: BorderRadius.circular(8),
-                        child: const Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.delete_outline,
-                            size: 18,
-                            color: Color(0xFFDC2626),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.keyboard_arrow_right_rounded,
+                size: 22,
+                color: Color(0xFF94A3B8),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          _kv('Surgery', item.surgeryType),
-          _kv('Agent', item.agent),
-          const SizedBox(height: 10),
-          const Divider(color: Color(0xFFE5EAF0), height: 1),
-          const SizedBox(height: 10),
-          const Text(
-            'Induction:',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6B7280),
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 6),
-          _kv('FGF', '${item.inductionFGF.toStringAsFixed(2)} L'),
-          _kv('Concentration', '${item.inductionConcentration.toStringAsFixed(2)} %'),
-          _kv('Time', '${item.inductionTime.toStringAsFixed(2)} min'),
-          _kv('Biro', '${item.inductionBiro.toStringAsFixed(1)} mL'),
-          _kv('Dion', '${item.inductionDion.toStringAsFixed(1)} mL'),
-          if (item.maintenanceRows.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            const Text(
-              'Maintenance:',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF6B7280),
-                fontFamily: 'Inter',
-              ),
-            ),
-            const SizedBox(height: 6),
-            ...item.maintenanceRows.asMap().entries.map((e) {
-              final rowIdx = e.key + 1;
-              final row = e.value;
-              return _kv(
-                'Row $rowIdx',
-                'FGF: ${row['fgf']?.toStringAsFixed(2) ?? "0.00"} L, '
-                'Conc: ${row['concentration']?.toStringAsFixed(2) ?? "0.00"}%, '
-                'Time: ${row['time']?.toStringAsFixed(2) ?? "0.00"}m',
-              );
-            }).toList(),
-          ],
-        ],
+        ),
       ),
     );
   }

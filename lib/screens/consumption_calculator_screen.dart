@@ -7,6 +7,7 @@ import '../widgets/app_header.dart';
 import 'case_history_screen.dart';
 import 'profile_screen.dart';
 import '../providers/case_provider.dart';
+import '../services/user_session.dart';
 // case_history_dialog and macmind_design imports removed (unused)
 
 /// Consumption Calculator Screen
@@ -92,6 +93,14 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
       'density': 1.86,
     },
   };
+
+  String _getProfileInitial() {
+    final fullName = (UserSession.name ?? '').trim();
+    if (fullName.isEmpty) {
+      return 'U';
+    }
+    return fullName[0].toUpperCase();
+  }
 
   @override
   void initState() {
@@ -574,6 +583,7 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
                   ),
                   const SizedBox(width: 8),
                   AppHeaderProfileAvatar(
+                    profileLabel: _getProfileInitial(),
                     onTap: () {
                       Navigator.push(
                         context,
