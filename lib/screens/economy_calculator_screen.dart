@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../services/ai_service.dart';
 import '../widgets/app_header.dart';
+import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/macmind_design.dart';
 import 'case_history_screen.dart';
 import 'profile_screen.dart';
@@ -20,10 +24,14 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   int _selectedIndex = 0;
   late final TextEditingController _durationController;
   late final TextEditingController _concentrationController;
+  Timer? _aiDebounce;
 
   double _surgeryDuration = 60;
   double _concentration = 2.0;
   String _selectedAgent = 'Isoflurane';
+  bool _isAiLoading = false;
+  List<String> _aiInsights = [];
+  String? _aiWarning;
 
   final Map<String, Map<String, dynamic>> agents = {
     'Isoflurane': {'color': Colors.blue, 'mw': 184.5, 'k': 184.5 / 2412},
@@ -39,13 +47,71 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     super.initState();
     _durationController = TextEditingController(text: '60');
     _concentrationController = TextEditingController(text: '2.0');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleEconomyInsightFetch();
+    });
   }
 
   @override
   void dispose() {
+    _aiDebounce?.cancel();
     _durationController.dispose();
     _concentrationController.dispose();
     super.dispose();
+  }
+
+  void _scheduleEconomyInsightFetch() {
+    _aiDebounce?.cancel();
+    _aiDebounce = Timer(const Duration(milliseconds: 650), _fetchEconomyInsights);
+  }
+
+  Future<void> _fetchEconomyInsights() async {
+    if (_surgeryDuration <= 0 || _concentration < 0.1) {
+      if (!mounted) return;
+      setState(() {
+        _isAiLoading = false;
+        _aiInsights = [];
+        _aiWarning = null;
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isAiLoading = true;
+      _aiWarning = null;
+    });
+
+    final selected = agents[_selectedAgent];
+    final k = (selected?['k'] as num?)?.toDouble() ?? 0.0;
+    const requestFgf = 3.0;
+    final consumption = _calculateConsumption(
+      requestFgf,
+      _concentration,
+      _surgeryDuration,
+      k,
+    );
+
+    final result = await AIService.fetchEconomyInsights(
+      agent: _selectedAgent,
+      freshGasFlow: requestFgf,
+      concentration: _concentration,
+      duration: _surgeryDuration,
+      consumption: consumption,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isAiLoading = false;
+      if (result['success'] == true) {
+        _aiInsights = (result['insights'] as List<dynamic>).cast<String>();
+        _aiWarning = null;
+      } else {
+        _aiInsights = [];
+        _aiWarning = (result['message'] as String?) ??
+            'AI clinical insights are temporarily unavailable.';
+      }
+    });
   }
 
   double _calculateConsumption(
@@ -80,6 +146,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     setState(() {
       _surgeryDuration = double.tryParse(value) ?? 60;
     });
+    _scheduleEconomyInsightFetch();
   }
 
   void _updateConcentration(String value) {
@@ -95,6 +162,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
         _concentration = parsed;
       }
     });
+    _scheduleEconomyInsightFetch();
   }
 
   void _updateAgent(String? value) {
@@ -102,6 +170,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     setState(() {
       _selectedAgent = value;
     });
+    _scheduleEconomyInsightFetch();
   }
 
   void _onItemTapped(int index) {
@@ -148,6 +217,13 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                 _buildAgentSelectorDropdown(),
                 const SizedBox(height: 24),
                 _buildConsumptionAnalysisCard(),
+                const SizedBox(height: 14),
+                AIClinicalInsightCard(
+                  isLoading: _isAiLoading,
+                  insights: _aiInsights,
+                  warningMessage: _aiWarning,
+                  onRetry: _fetchEconomyInsights,
+                ),
                 const SizedBox(height: 24),
                 const MacMindInfoCard(
                   icon: Icons.info_outline,
@@ -161,7 +237,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 90),
               ],
             ),
           ),

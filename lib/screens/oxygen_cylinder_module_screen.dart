@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/ai_service.dart';
 import '../widgets/app_header.dart';
+import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/custom_button.dart' show PrimaryButton, SecondaryButton;
 import 'profile_screen.dart';
 
@@ -46,6 +48,9 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
   double? _totalContent;
   double? _lastPressure;
   double? _lastFactor;
+  bool _isAiLoading = false;
+  List<String> _aiInsights = [];
+  String? _aiWarning;
 
   @override
   void dispose() {
@@ -78,6 +83,45 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
       _totalContent = totalContent;
       _lastPressure = pressure;
       _lastFactor = factor;
+    });
+
+    _fetchOxygenInsights();
+  }
+
+  Future<void> _fetchOxygenInsights() async {
+    final totalContent = _totalContent;
+    final pressure = _lastPressure;
+    final factor = _lastFactor;
+    final cylinderType = _selectedCylinderType;
+
+    if (totalContent == null || pressure == null || factor == null || cylinderType == null) {
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isAiLoading = true;
+      _aiWarning = null;
+    });
+
+    final result = await AIService.fetchOxygenInsights(
+      cylinderType: cylinderType,
+      pressure: pressure,
+      oxygenContent: totalContent,
+      factor: factor,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isAiLoading = false;
+      if (result['success'] == true) {
+        _aiInsights = (result['insights'] as List<dynamic>).cast<String>();
+        _aiWarning = null;
+      } else {
+        _aiInsights = [];
+        _aiWarning = (result['message'] as String?) ??
+            'AI clinical insights are temporarily unavailable.';
+      }
     });
   }
 
@@ -133,6 +177,14 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
                 if (_totalContent != null) ...[
                   const SizedBox(height: 16),
                   _buildResultCard(),
+                  const SizedBox(height: 14),
+                  AIClinicalInsightCard(
+                    isLoading: _isAiLoading,
+                    insights: _aiInsights,
+                    warningMessage: _aiWarning,
+                    onRetry: _fetchOxygenInsights,
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ],
             ),

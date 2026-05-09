@@ -4,10 +4,12 @@ import '../config/app_colors.dart';
 // api_config and http imports removed (unused)
 import '../models/case_history_item.dart';
 import '../services/auth_service.dart';
+import '../services/ai_service.dart';
 import '../services/export_service.dart';
 import '../services/session_history.dart';
 import '../services/case_service.dart';
 import '../widgets/app_header.dart';
+import '../widgets/ai_clinical_insight_card.dart';
 import 'case_history_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/case_history_dialog.dart';
@@ -74,11 +76,53 @@ class _ResultsScreenState extends State<ResultsScreen> {
   final TextEditingController _notesController = TextEditingController();
   bool _isSaved = false;
   DateTime? _savedAt;
+  bool _isAiLoading = false;
+  List<String> _aiInsights = [];
+  String? _aiWarning;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchVolatileInsights();
+    });
+  }
 
   @override
   void dispose() {
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchVolatileInsights() async {
+    if (!mounted) return;
+    setState(() {
+      _isAiLoading = true;
+      _aiWarning = null;
+    });
+
+    final result = await AIService.fetchVolatileInsights(
+      agent: widget.selectedAgent,
+      freshGasFlow: widget.freshGasFlow,
+      concentration: widget.dialConcentration,
+      duration: widget.timeMinutes,
+      biroFormula: widget.biroResult,
+      dionFormula: widget.dionResult,
+      weightBased: widget.weightBasedResult,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isAiLoading = false;
+      if (result['success'] == true) {
+        _aiInsights = (result['insights'] as List<dynamic>).cast<String>();
+        _aiWarning = null;
+      } else {
+        _aiInsights = [];
+        _aiWarning = (result['message'] as String?) ??
+            'AI clinical insights are temporarily unavailable.';
+      }
+    });
   }
 
   String _formatDate(DateTime date) {
@@ -732,6 +776,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 14),
+            AIClinicalInsightCard(
+              isLoading: _isAiLoading,
+              insights: _aiInsights,
+              warningMessage: _aiWarning,
+              onRetry: _fetchVolatileInsights,
             ),
             const SizedBox(height: 16),
             SizedBox(
