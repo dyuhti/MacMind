@@ -2,20 +2,30 @@
 Email utilities for sending OTP and notifications
 Uses SMTP with Gmail
 """
+import os
+import socket
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import os
 from dotenv import load_dotenv
-import logging
-import traceback
-from flask import current_app
 import logging
 import traceback
 from flask import current_app
 
 # Load environment variables
 load_dotenv()
+
+
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _force_ipv4_getaddrinfo(*args, **kwargs):
+    responses = _original_getaddrinfo(*args, **kwargs)
+    ipv4_responses = [response for response in responses if response[0] == socket.AF_INET]
+    return ipv4_responses or responses
+
+
+socket.getaddrinfo = _force_ipv4_getaddrinfo
 
 
 def send_otp_email(recipient_email, user_name, otp):
@@ -104,8 +114,11 @@ def send_otp_email(recipient_email, user_name, otp):
         message.attach(part1)
         message.attach(part2)
         
+        smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com').strip()
+        smtp_port = int(os.getenv('SMTP_PORT', '465'))
+
         # Send email via SMTP (enable debug output for troubleshooting)
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
             try:
                 server.set_debuglevel(1)
             except Exception:
