@@ -7,6 +7,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
+import logging
+import traceback
+from flask import current_app
+import logging
+import traceback
+from flask import current_app
 
 # Load environment variables
 load_dotenv()
@@ -22,16 +28,23 @@ def send_otp_email(recipient_email, user_name, otp):
         otp: 6-digit OTP code
     
     Returns:
-        True if email sent successfully, False otherwise
+        Dictionary with success status and error details when available
     """
     try:
         # Get email credentials from environment
         sender_email = os.getenv('EMAIL_USER')
         sender_password = os.getenv('EMAIL_PASS')
+
+        if sender_password:
+            sender_password = sender_password.replace(' ', '').strip()
         
         if not sender_email or not sender_password:
-            print('Email credentials not configured in .env')
-            return False
+            error_message = 'Email credentials not configured in .env'
+            try:
+                current_app.logger.error(error_message)
+            except Exception:
+                logging.error(error_message)
+            return {'success': False, 'error': error_message}
         
         # Create message
         message = MIMEMultipart('alternative')
@@ -91,20 +104,42 @@ def send_otp_email(recipient_email, user_name, otp):
         message.attach(part1)
         message.attach(part2)
         
-        # Send email via SMTP
+        # Send email via SMTP (enable debug output for troubleshooting)
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            try:
+                server.set_debuglevel(1)
+            except Exception:
+                pass
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, recipient_email, message.as_string())
         
         print(f'OTP email sent successfully to {recipient_email}')
-        return True
+        return {'success': True}
     
-    except smtplib.SMTPAuthenticationError:
-        print('Error: SMTP authentication failed. Check EMAIL_USER and EMAIL_PASS in .env')
-        return False
+    except smtplib.SMTPAuthenticationError as e:
+        msg = f'Error: SMTP authentication failed. Check EMAIL_USER and EMAIL_PASS in .env. {str(e)}'
+        try:
+            current_app.logger.error(msg)
+            current_app.logger.error(traceback.format_exc())
+        except Exception:
+            logging.error(msg)
+            logging.error(traceback.format_exc())
+        return {'success': False, 'error': msg}
     except smtplib.SMTPException as e:
-        print(f'Error: SMTP error occurred: {str(e)}')
-        return False
+        msg = f'Error: SMTP error occurred: {str(e)}'
+        try:
+            current_app.logger.error(msg)
+            current_app.logger.error(traceback.format_exc())
+        except Exception:
+            logging.error(msg)
+            logging.error(traceback.format_exc())
+        return {'success': False, 'error': msg}
     except Exception as e:
-        print(f'Error sending email: {str(e)}')
-        return False
+        msg = f'Error sending email: {str(e)}'
+        try:
+            current_app.logger.error(msg)
+            current_app.logger.error(traceback.format_exc())
+        except Exception:
+            logging.error(msg)
+            logging.error(traceback.format_exc())
+        return {'success': False, 'error': msg}

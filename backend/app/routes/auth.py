@@ -210,12 +210,12 @@ def send_otp():
         otp = otp_result['otp']
         
         # Send OTP via email
-        email_sent = send_otp_email(email, user.full_name, otp)
+        email_result = send_otp_email(email, user.full_name, otp)
         
-        if not email_sent:
+        if not email_result.get('success'):
             return {
                 'success': False,
-                'message': 'Failed to send OTP email. Please try again.'
+                'message': email_result.get('error', 'Failed to send OTP email. Please try again.')
             }, 500
         
         return {
