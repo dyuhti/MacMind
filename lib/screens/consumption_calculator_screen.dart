@@ -5,7 +5,7 @@ import '../config/app_colors.dart';
 import 'results_screen.dart';
 import '../widgets/app_header.dart';
 import 'case_history_screen.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 import '../providers/case_provider.dart';
 import '../services/user_session.dart';
 // case_history_dialog and macmind_design imports removed (unused)
@@ -587,7 +587,7 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
                       );
                     },
                   ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/app_header.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 /// Screen B: Formulas and Constants Module
 /// Display anesthesia formulas and reference constants
@@ -38,7 +38,7 @@ class FormulasAndConstantsModuleScreen extends StatelessWidget {
               onProfileTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
             ),

@@ -11,7 +11,7 @@ import '../services/case_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/ai_clinical_insight_card.dart';
 import 'case_history_screen.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 import '../widgets/case_history_dialog.dart';
 import '../providers/case_provider.dart';
 import '../services/user_session.dart';
@@ -458,7 +458,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
                       );
                     },
                   ),

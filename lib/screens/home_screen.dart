@@ -6,7 +6,7 @@ import '../widgets/macmind_design.dart';
 import 'case_history_screen.dart';
 import 'formulas_and_constants_module_screen.dart';
 import 'oxygen_cylinder_module_screen.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 import 'volatile_anesthetic_module_screen.dart';
 
 /// Screen A: Home / Module Selection
@@ -60,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onBack: () => _onItemTapped(0),
           onProfileTap: () => _onItemTapped(2),
         ),
-        ProfileScreen(onBack: () => _onItemTapped(0)),
+        SettingsScreen(onBack: () => _onItemTapped(0)),
       ];
 
   /// Get time-based greeting

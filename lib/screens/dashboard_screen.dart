@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_spacing.dart';
 import '../widgets/app_header.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 import '../widgets/case_history_dialog.dart';
 import '../widgets/macmind_design.dart';
 import 'new_case_screen.dart';
@@ -39,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onProfileTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
               trailing: Row(

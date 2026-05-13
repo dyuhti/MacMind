@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 import '../widgets/app_header.dart';
 import '../models/case_history_item.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 import '../services/auth_service.dart';
 import 'consumption_calculator_screen.dart';
 import 'login_screen.dart';
@@ -349,7 +349,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
                       );
                     },
                   ),

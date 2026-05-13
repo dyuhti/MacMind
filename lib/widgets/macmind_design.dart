@@ -403,7 +403,7 @@ class MacMindBottomNav extends StatelessWidget {
     final items = [
       _NavItem('Home', Icons.home_outlined, Icons.home),
       _NavItem('Records', Icons.description_outlined, Icons.description),
-      _NavItem('Profile', Icons.person_outline, Icons.person),
+      _NavItem('Settings', Icons.settings_outlined, Icons.settings),
     ];
 
     return Container(

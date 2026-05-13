@@ -9,7 +9,7 @@ import '../services/auth_service.dart';
 import '../services/export_service.dart';
 import '../widgets/app_header.dart';
 import '../providers/case_provider.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 import 'new_case_screen.dart';
 import 'case_details_screen.dart';
 // macmind_design not used directly in this file
@@ -412,7 +412,7 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
             onProfileTap: widget.onProfileTap ?? () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
             ),

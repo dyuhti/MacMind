@@ -42,13 +42,13 @@ def send_otp_email(recipient_email, user_name, otp):
     """
     try:
         # Get email credentials from environment
-        sender_email = os.getenv('EMAIL_USER')
-        sender_password = os.getenv('EMAIL_PASS')
+        email_user = os.getenv('EMAIL_USER')
+        email_pass = os.getenv('EMAIL_PASS')
 
-        if sender_password:
-            sender_password = sender_password.replace(' ', '').strip()
+        if email_pass:
+            email_pass = email_pass.replace(' ', '').strip()
         
-        if not sender_email or not sender_password:
+        if not email_user or not email_pass:
             error_message = 'Email credentials not configured in .env'
             try:
                 current_app.logger.error(error_message)
@@ -59,7 +59,7 @@ def send_otp_email(recipient_email, user_name, otp):
         # Create message
         message = MIMEMultipart('alternative')
         message['Subject'] = 'Password Reset OTP - Med Calci App'
-        message['From'] = sender_email
+        message['From'] = email_user
         message['To'] = recipient_email
         
         # Email body
@@ -115,16 +115,19 @@ def send_otp_email(recipient_email, user_name, otp):
         message.attach(part2)
         
         smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com').strip()
-        smtp_port = int(os.getenv('SMTP_PORT', '465'))
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
 
         # Send email via SMTP (enable debug output for troubleshooting)
-        with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
             try:
                 server.set_debuglevel(1)
             except Exception:
                 pass
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, recipient_email, message.as_string())
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(email_user, email_pass)
+            server.sendmail(email_user, recipient_email, message.as_string())
         
         print(f'OTP email sent successfully to {recipient_email}')
         return {'success': True}

@@ -8,7 +8,7 @@ import '../widgets/app_header.dart';
 import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/macmind_design.dart';
 import 'case_history_screen.dart';
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 /// Economy Calculator Screen
 /// Clinically accurate anesthetic concentration calculator
@@ -161,7 +161,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
           onBack:       () => _onItemTapped(0),
           onProfileTap: () => _onItemTapped(2),
         ),
-        ProfileScreen(onBack: () => _onItemTapped(0)),
+        SettingsScreen(onBack: () => _onItemTapped(0)),
       ];
 
   @override

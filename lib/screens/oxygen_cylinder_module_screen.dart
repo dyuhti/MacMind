@@ -8,7 +8,7 @@ import '../services/ai_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/custom_button.dart' show PrimaryButton, SecondaryButton;
-import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 /// Screen B: Oxygen Cylinder Module
 /// Calculates total oxygen content from pressure and cylinder type.
@@ -158,7 +158,7 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
               onProfileTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
             ),
@@ -967,7 +967,7 @@ class _ConsumptionTableScreenState extends State<ConsumptionTableScreen>
               onProfileTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 );
               },
             ),
