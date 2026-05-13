@@ -242,4 +242,40 @@ class User(db.Model):
             db.session.rollback()
             return {'success': False, 'error': f'Error resetting password: {str(e)}'}
 
+    @staticmethod
+    def change_password(user_id, current_password, new_password):
+        """
+        Change user's password when already logged in
+        
+        Args:
+            user_id: User's database ID
+            current_password: Current password for verification
+            new_password: New password (will be hashed)
+        
+        Returns:
+            Dictionary with success status and message
+        """
+        user = User.find_by_id(user_id)
+        
+        if not user:
+            return {'success': False, 'error': 'User not found'}
+        
+        # Verify current password is correct
+        if not verify_password(current_password, user.password):
+            return {'success': False, 'error': 'Incorrect current password'}
+        
+        # Check if new password is different from current
+        if verify_password(new_password, user.password):
+            return {'success': False, 'error': 'New password must be different from current password'}
+        
+        try:
+            user.password = hash_password(new_password)
+            db.session.commit()
+            
+            return {'success': True, 'message': 'Password updated successfully'}
+        
+        except Exception as e:
+            db.session.rollback()
+            return {'success': False, 'error': f'Error updating password: {str(e)}'}
+
 

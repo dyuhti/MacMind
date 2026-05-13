@@ -288,3 +288,75 @@ def reset_password():
             'message': f'Error resetting password: {str(e)}'
         }, 500
 
+
+@auth_bp.route('/change_password', methods=['POST'])
+@require_json
+@validate_fields(['current_password', 'new_password'])
+@require_token
+def change_password(current_user):
+    """
+    Change user's password when already logged in
+    
+    Request body:
+        {
+            "current_password": "oldpassword123",
+            "new_password": "newpassword123"
+        }
+    
+    Returns:
+        200: Password changed successfully
+        400: Invalid current password or weak new password
+        401: Unauthorized
+    """
+    try:
+        data = request.get_json()
+        current_password = data['current_password']
+        new_password = data['new_password']
+        
+        # Get user ID from JWT token payload
+        user_id = current_user.get('id')
+        
+        if not user_id:
+            return {
+                'success': False,
+                'message': 'Unable to identify user'
+            }, 401
+        
+        # Validate new password length
+        if len(new_password) < 8:
+            return {
+                'success': False,
+                'message': 'Password must be at least 8 characters'
+            }, 400
+        
+        # Validate new password has uppercase
+        if not re.search(r'[A-Z]', new_password):
+            return {
+                'success': False,
+                'message': 'Password must contain at least one uppercase letter'
+            }, 400
+        
+        # Validate new password has number
+        if not re.search(r'[0-9]', new_password):
+            return {
+                'success': False,
+                'message': 'Password must contain at least one number'
+            }, 400
+        
+        # Change password
+        result = User.change_password(user_id, current_password, new_password)
+        
+        if not result['success']:
+            return {'success': False, 'message': result['error']}, 400
+        
+        return {
+            'success': True,
+            'message': 'Password updated successfully'
+        }, 200
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'message': f'Error changing password: {str(e)}'
+        }, 500
+
