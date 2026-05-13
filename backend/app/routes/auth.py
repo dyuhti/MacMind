@@ -314,13 +314,22 @@ def change_password(current_user):
         current_password = data['current_password']
         new_password = data['new_password']
         
-        # Get user ID from JWT token payload
-        user_id = current_user.get('id')
-        
+        # Get user ID from JWT token payload.
+        # Tokens are created with "user_id", while some flows may provide "id".
+        user_id = current_user.get('id') or current_user.get('user_id')
+
         if not user_id:
             return {
                 'success': False,
                 'message': 'Unable to identify user'
+            }, 401
+
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {
+                'success': False,
+                'message': 'Invalid user identity in token'
             }, 401
         
         # Validate new password length
