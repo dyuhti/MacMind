@@ -50,6 +50,7 @@ def create_app(config_name='development'):
     from app.routes.cases import cases_bp
     from app.routes.ai import ai_bp
     from app.routes.profile import profile_bp
+    from app.routes.feedback import feedback_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -57,6 +58,7 @@ def create_app(config_name='development'):
     app.register_blueprint(cases_bp, url_prefix='/api/cases')
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
     app.register_blueprint(profile_bp, url_prefix='/api')
+    app.register_blueprint(feedback_bp, url_prefix='/api')
     
     # Error handlers
     @app.errorhandler(404)
