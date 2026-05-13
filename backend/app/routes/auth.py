@@ -290,6 +290,7 @@ def reset_password():
 
 
 @auth_bp.route('/change_password', methods=['POST'])
+@auth_bp.route('/change-password', methods=['POST'])
 @require_json
 @validate_fields(['current_password', 'new_password'])
 @require_token
