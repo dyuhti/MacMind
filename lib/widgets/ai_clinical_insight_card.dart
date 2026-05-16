@@ -58,12 +58,24 @@ class _AIClinicalInsightCardState extends State<AIClinicalInsightCard>
   @override
   Widget build(BuildContext context) {
     final hasWarning = (widget.warningMessage ?? '').trim().isNotEmpty;
+    final w = MediaQuery.of(context).size.width;
+    final int maxInsights = 4;
+    final int maxChars = w < 360 ? 100 : (w < 420 ? 120 : 150);
+    final displayedInsights = widget.insights.take(maxInsights).map((s) {
+      var t = s.trim();
+      if (t.length > maxChars) {
+        final cut = t.substring(0, maxChars);
+        final safe = cut.contains(' ') ? cut.substring(0, cut.lastIndexOf(' ')) : cut;
+        t = '${safe.trimRight()}.';
+      }
+      return t;
+    }).toList();
 
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -82,12 +94,12 @@ class _AIClinicalInsightCardState extends State<AIClinicalInsightCard>
             Row(
               children: const [
                 CircleAvatar(
-                  radius: 14,
+                  radius: 12,
                   backgroundColor: Color(0xFFE7F2FF),
                   child: Icon(
                     Icons.local_hospital_outlined,
                     color: Color(0xFF1C6ECF),
-                    size: 16,
+                    size: 14,
                   ),
                 ),
                 SizedBox(width: 10),
@@ -96,7 +108,7 @@ class _AIClinicalInsightCardState extends State<AIClinicalInsightCard>
                     'AI Clinical Insights',
                     style: TextStyle(
                       fontFamily: 'DM Sans',
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1F2937),
                     ),
@@ -104,7 +116,7 @@ class _AIClinicalInsightCardState extends State<AIClinicalInsightCard>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
             if (widget.isLoading) const _LoadingShimmer(),
             if (!widget.isLoading && hasWarning) ...[
               Container(
@@ -158,51 +170,80 @@ class _AIClinicalInsightCardState extends State<AIClinicalInsightCard>
               ],
             ],
             if (!widget.isLoading && !hasWarning) ...[
-              if (widget.insights.isEmpty)
+              if (displayedInsights.isEmpty)
                 const Text(
                   'No insights available.',
                   style: TextStyle(
                     fontFamily: 'DM Sans',
-                    fontSize: 12,
+                    fontSize: 12.5,
                     color: Color(0xFF6B7280),
+                    height: 1.5,
                   ),
                 )
               else
-                ...widget.insights.map(
-                  (insight) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          margin: const EdgeInsets.only(top: 6),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1C6ECF),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            insight,
-                            style: const TextStyle(
-                              fontFamily: 'DM Sans',
-                              fontSize: 12,
-                              height: 1.42,
-                              color: Color(0xFF1F2937),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                ListView.separated(
+                  itemCount: displayedInsights.length,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  separatorBuilder: (_, __) => SizedBox(height: w < 360 ? 8 : 12),
+                  itemBuilder: (context, index) {
+                    final insight = displayedInsights[index];
+                    return _InsightItem(text: insight);
+                  },
                 ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+class _InsightItem extends StatelessWidget {
+  final String text;
+
+  const _InsightItem({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    final double fontSize = w < 360 ? 11.5 : (w < 420 ? 12.0 : 12.5);
+    final double lineHeight = w < 360 ? 1.35 : (w < 420 ? 1.45 : 1.55);
+    final double bulletSize = w < 360 ? 12 : 14;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: bulletSize + 4,
+          alignment: Alignment.topCenter,
+          padding: const EdgeInsets.only(top: 1),
+          child: Text(
+            '\u2022',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: bulletSize,
+              height: 1.25,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1C6ECF),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: fontSize,
+              height: lineHeight,
+              color: const Color(0xFF374151),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

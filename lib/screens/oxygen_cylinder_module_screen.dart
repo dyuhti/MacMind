@@ -178,14 +178,14 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
                 if (_totalContent != null) ...[
                   const SizedBox(height: 16),
                   _buildResultCard(),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 6),
                   AIClinicalInsightCard(
                     isLoading: _isAiLoading,
                     insights: _aiInsights,
                     warningMessage: _aiWarning,
                     onRetry: _fetchOxygenInsights,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                 ],
               ],
             ),

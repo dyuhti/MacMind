@@ -655,7 +655,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Row $rowNum ��� Biro: ${rowBiro.toStringAsFixed(1)} mL | Dion: ${rowDion.toStringAsFixed(1)} mL',
+                                'Row $rowNum Biro: ${rowBiro.toStringAsFixed(1)} mL | Dion: ${rowDion.toStringAsFixed(1)} mL',
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF374151),
@@ -741,13 +741,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   _summaryRow(
                     'Initial Weight',
                     widget.initialWeight != null
-                        ? '${widget.initialWeight!.toStringAsFixed(2)} kg'
+                        ? '${widget.initialWeight!.toStringAsFixed(2)} g'
                         : '--',
                   ),
                   _summaryRow(
                     'Final Weight',
                     widget.finalWeight != null
-                        ? '${widget.finalWeight!.toStringAsFixed(2)} kg'
+                        ? '${widget.finalWeight!.toStringAsFixed(2)} g'
                         : '--',
                   ),
                   const SizedBox(height: 8),
@@ -787,14 +787,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 6),
             AIClinicalInsightCard(
               isLoading: _isAiLoading,
               insights: _aiInsights,
               warningMessage: _aiWarning,
               onRetry: _fetchVolatileInsights,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               height: 52,

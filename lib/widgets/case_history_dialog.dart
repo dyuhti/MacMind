@@ -107,7 +107,7 @@ class _CaseHistoryDialogContentState extends State<_CaseHistoryDialogContent> {
           maintenanceRows.add({
             'rowNumber': asDouble(row['rowNumber']),
             'fgf': asDouble(row['fgf']),
-            'concentration': asDouble(row['concentration']),
+            'concentration': asDouble(row['concentration'] ?? row['conc']),
             'time': asDouble(row['time']),
           });
         }
@@ -496,13 +496,13 @@ class _HistoryCard extends StatelessWidget {
           _kv(
             'Initial Weight',
             item.initialWeight != null
-                ? '${item.initialWeight!.toStringAsFixed(0)} kg'
+                ? '${item.initialWeight!.toStringAsFixed(0)} g'
                 : '-',
           ),
           _kv(
             'Final Weight',
             item.finalWeight != null
-                ? '${item.finalWeight!.toStringAsFixed(0)} kg'
+                ? '${item.finalWeight!.toStringAsFixed(0)} g'
                 : '-',
           ),
           const SizedBox(height: 8),

@@ -6,6 +6,7 @@ import 'config/app_theme.dart';
 import 'config/api_config.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
 import 'services/user_session.dart';
@@ -78,6 +79,9 @@ class MyApp extends StatelessWidget {
         title: 'Anesthetic Consumption Calculator',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        routes: {
+          '/onboarding': (context) => const OnboardingScreen(),
+        },
         scrollBehavior: const AppScrollBehavior(),
         home: FutureBuilder<bool>(
           future: _bootstrapApp(),

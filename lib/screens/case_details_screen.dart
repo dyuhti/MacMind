@@ -135,11 +135,11 @@ class CaseDetailsScreen extends StatelessWidget {
                       _kv('Time', '${item.timeMinutes.toStringAsFixed(2)} min'),
                       _kv(
                         'Initial Weight',
-                        item.initialWeight != null ? '${item.initialWeight!.toStringAsFixed(2)} kg' : '--',
+                        item.initialWeight != null ? '${item.initialWeight!.toStringAsFixed(2)} g' : '--',
                       ),
                       _kv(
                         'Final Weight',
-                        item.finalWeight != null ? '${item.finalWeight!.toStringAsFixed(2)} kg' : '--',
+                        item.finalWeight != null ? '${item.finalWeight!.toStringAsFixed(2)} g' : '--',
                       ),
                     ],
                   ),

@@ -209,14 +209,14 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                 _buildAgentDropdown(),
                 const SizedBox(height: 24),
                 _buildConcentrationAnalysisCard(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 6),
                 AIClinicalInsightCard(
                   isLoading:      _isAiLoading,
                   insights:       _aiInsights,
                   warningMessage: _aiWarning,
                   onRetry:        _fetchEconomyInsights,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
                 const MacMindInfoCard(
                   icon: Icons.info_outline,
                   child: Text(

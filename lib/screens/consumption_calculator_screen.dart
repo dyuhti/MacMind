@@ -139,14 +139,20 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     if (widget.maintenanceRows.isNotEmpty) {
       for (int i = 0; i < widget.maintenanceRows.length && i < _maintenanceRows.length; i++) {
         final row = widget.maintenanceRows[i];
-        if (row.containsKey('fgf') && row['fgf']! > 0) {
-          _maintenanceRows[i].fgfController.text = row['fgf'].toString();
+
+        // Support both legacy key 'conc' and canonical 'concentration'
+        final fgfVal = row['fgf'] ?? row['fgf'.toString()];
+        final concVal = row['concentration'] ?? row['conc'];
+        final timeVal = row['time'] ?? row['time'.toString()];
+
+        if (fgfVal != null && fgfVal > 0) {
+          _maintenanceRows[i].fgfController.text = fgfVal.toString();
         }
-        if (row.containsKey('concentration') && row['concentration']! > 0) {
-          _maintenanceRows[i].concController.text = row['concentration'].toString();
+        if (concVal != null && concVal > 0) {
+          _maintenanceRows[i].concController.text = concVal.toString();
         }
-        if (row.containsKey('time') && row['time']! > 0) {
-          _maintenanceRows[i].timeController.text = row['time'].toString();
+        if (timeVal != null && timeVal > 0) {
+          _maintenanceRows[i].timeController.text = timeVal.toString();
         }
       }
     }
@@ -210,10 +216,11 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
 
       // Include only completed rows
       if (fgf != null && conc != null && time != null && fgf > 0 && conc > 0 && time > 0) {
-        maintenanceRows.add({
+          maintenanceRows.add({
           'rowNumber': (i + 1).toDouble(),
           'fgf': fgf,
-          'conc': conc,
+          // Use canonical 'concentration' key for serialization to persistable state
+          'concentration': conc,
           'time': time,
         });
       }
@@ -358,7 +365,14 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     final avgFreshGasFlow = rowCount > 0 ? (totalFreshGasFlow / rowCount).toDouble() : 0.0;
     final avgDialConcentration = rowCount > 0 ? (totalDialConcentration / rowCount).toDouble() : 0.0;
 
-    final weightBasedConsumed = (initialWeight - finalWeight) / density;
+    // Convert weights from grams to kilograms for internal calculation
+    final initialWeightKg = initialWeight / 1000.0;
+    final finalWeightKg = finalWeight / 1000.0;
+
+    // Weight-based consumption: convert density from g/ml to kg/ml for consistency
+    // Formula: consumption (ml) = (weight_change_kg * 1000) / density (g/ml)
+    // Which simplifies to: (weight_change_g) / density (g/ml)
+    final weightBasedConsumed = ((initialWeightKg - finalWeightKg) * 1000.0) / density;
 
     return _CalculationResults(
       biroResult: _roundToOneDecimal(totalBiroResult),
@@ -504,12 +518,16 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     final initialWeightVal = double.tryParse(initialWeight);
     final finalWeightVal = double.tryParse(finalWeight);
 
-    if (initialWeightVal == null || initialWeightVal <= 0 ||
-        finalWeightVal == null || finalWeightVal <= 0) {
-      _showErrorSnackBar('Weight values must be positive numbers.');
+    // Validation: 100g to 300000g range
+    const double minWeight = 100.0;
+    const double maxWeight = 300000.0;
+
+    if (initialWeightVal == null || initialWeightVal < minWeight || initialWeightVal > maxWeight ||
+        finalWeightVal == null || finalWeightVal < minWeight || finalWeightVal > maxWeight) {
+      _showErrorSnackBar('Please enter a valid weight in grams (100-300000 g).');
       setState(() {
-        _initialWeightError = initialWeightVal == null || initialWeightVal <= 0;
-        _finalWeightError = finalWeightVal == null || finalWeightVal <= 0;
+        _initialWeightError = initialWeightVal == null || initialWeightVal < minWeight || initialWeightVal > maxWeight;
+        _finalWeightError = finalWeightVal == null || finalWeightVal < minWeight || finalWeightVal > maxWeight;
       });
       return false;
     }
@@ -724,21 +742,21 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
                           ),
                           const SizedBox(height: 16),
                           _buildFormField(
-                            label: 'Initial Weight (kg)',
+                            label: 'Initial Weight (g)',
                             hint: 'Enter initial weight',
                             controller: _initialWeightController,
                             keyboardType: TextInputType.number,
                             isError: _initialWeightError,
-                            errorMessage: _initialWeightError ? 'Initial weight must be greater than 0' : null,
+                            errorMessage: _initialWeightError ? 'Please enter a valid weight in grams' : null,
                           ),
                           const SizedBox(height: 16),
                           _buildFormField(
-                            label: 'Final Weight (kg)',
+                            label: 'Final Weight (g)',
                             hint: 'Enter final weight',
                             controller: _finalWeightController,
                             keyboardType: TextInputType.number,
                             isError: _finalWeightError,
-                            errorMessage: _finalWeightError ? 'Final weight must be greater than 0' : null,
+                            errorMessage: _finalWeightError ? 'Please enter a valid weight in grams' : null,
                           ),
                         ],
                       ),

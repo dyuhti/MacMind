@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import '../widgets/app_header.dart';
 import 'settings_screen.dart';
+import '../config/api_config.dart';
+import '../services/auth_service.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -56,7 +60,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     );
   }
 
-  void _submitFeedback() {
+  Future<void> _submitFeedback() async {
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a rating')),
@@ -71,15 +75,106 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       return;
     }
 
+    // Show loading indicator
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Thank you for your feedback!')),
+      const SnackBar(
+        content: Text('Sending feedback...'),
+        duration: Duration(seconds: 1),
+      ),
     );
 
-    setState(() {
-      _rating = 0;
-      _category = 'Bug Report';
-      _messageController.clear();
-    });
+    try {
+      // Get auth token
+      final token = await AuthService.getToken();
+      if (token == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Authentication required. Please login again.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+        return;
+      }
+
+      // Prepare request body
+      final requestBody = {
+        'rating': _rating,
+        'category': _category,
+        'feedback_message': _messageController.text.trim(),
+      };
+
+      print('📤 Submitting feedback: $requestBody');
+
+      // Make POST request to backend
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/submit_feedback'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+
+      print('📨 Response status: ${response.statusCode}');
+      print('📨 Response body: ${response.body}');
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // Success
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thank you for your feedback!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Reset form
+        setState(() {
+          _rating = 0;
+          _category = 'Bug Report';
+          _messageController.clear();
+        });
+
+        // Navigate back after a short delay
+        await Future.delayed(const Duration(milliseconds: 800));
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } else if (response.statusCode == 401) {
+        // Unauthorized
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Session expired. Please login again.'),
+            backgroundColor: Color(0xFFDC2626),
+          ),
+        );
+      } else {
+        // Error
+        final responseData = jsonDecode(response.body);
+        final errorMessage = responseData['error'] ?? 'Failed to submit feedback';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error submitting feedback: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
   }
 
   Widget _buildRatingChip(int index) {
@@ -298,24 +393,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                                 width: 1.5,
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Screenshot attachment will be added later')),
-                            );
-                          },
-                          icon: const Icon(Icons.attach_file, size: 18),
-                          label: const Text('Attach Screenshot'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF1E5F9A),
-                            side: const BorderSide(color: Color(0xFFBFD3EC)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           ),
                         ),
                       ],

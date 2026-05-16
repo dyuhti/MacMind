@@ -5,6 +5,7 @@ import '../widgets/app_header.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'feedback_screen.dart';
+import 'reset_password_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -217,11 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     iconBackground: const Color(0xFFF2EAFF),
                     title: 'Reset Password',
                     subtitle: 'Update account password',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Reset Password coming soon')),
-                      );
-                    },
+                    onTap: () => _navigateWithFade(const ResetPasswordScreen()),
                   ),
                   const SizedBox(height: 12),
                   _buildSettingsCard(
@@ -240,9 +237,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     title: 'About the App',
                     subtitle: 'Learn more about this application',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('About section coming soon')),
-                      );
+                      // Open the premium App Tour / Onboarding flow
+                      Navigator.pushNamed(context, '/onboarding');
                     },
                   ),
                   const SizedBox(height: 12),

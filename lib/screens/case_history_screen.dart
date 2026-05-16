@@ -323,7 +323,8 @@ class _CaseHistoryScreenState extends State<CaseHistoryScreen> {
           maintenanceRows.add({
             'rowNumber': asDouble(row['rowNumber']),
             'fgf': asDouble(row['fgf']),
-            'concentration': asDouble(row['concentration']),
+            // Accept legacy 'conc' key as fallback
+            'concentration': asDouble(row['concentration'] ?? row['conc']),
             'time': asDouble(row['time']),
           });
         }
