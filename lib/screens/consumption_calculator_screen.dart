@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import '../config/app_colors.dart';
 import 'results_screen.dart';
 import '../widgets/app_header.dart';
 import 'case_history_screen.dart';
 import 'settings_screen.dart';
-import '../providers/case_provider.dart';
+import '../widgets/voice_input_mic_button.dart';
+import '../services/numeric_voice_validation.dart';
+import '../services/speech_text_normalizer.dart';
 import '../services/user_session.dart';
 // case_history_dialog and macmind_design imports removed (unused)
 
@@ -49,7 +50,8 @@ class ConsumptionCalculatorScreen extends StatefulWidget {
   State<ConsumptionCalculatorScreen> createState() => _ConsumptionCalculatorScreenState();
 }
 
-class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScreen> {
+class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScreen>
+  with TickerProviderStateMixin {
   // Induction Phase Controllers
   late TextEditingController _inductionFGFController;
   late TextEditingController _inductionConcController;
@@ -70,6 +72,8 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
   // Error state tracking - Weight-Based
   bool _initialWeightError = false;
   bool _finalWeightError = false;
+
+  final Map<String, AnimationController> _fieldShakeControllers = {};
 
   static const Map<String, Map<String, double>> _agentConstantMap = {
     'Isoflurane': {
@@ -100,6 +104,61 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
       return 'U';
     }
     return fullName[0].toUpperCase();
+  }
+
+  AnimationController _getShakeController(String fieldId) {
+    return _fieldShakeControllers.putIfAbsent(
+      fieldId,
+      () => AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 360),
+      ),
+    );
+  }
+
+  void _triggerFieldShake(String fieldId) {
+    if (!mounted) return;
+    _getShakeController(fieldId).forward(from: 0);
+  }
+
+  void _showNumericInputError(String fieldId, String message) {
+    _triggerFieldShake(fieldId);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Numeric input required. ${message.isEmpty ? NumericVoiceValidator.invalidVoiceMessage : message}',
+        ),
+      ),
+    );
+  }
+
+  Widget _wrapWithShake({required String fieldId, required Widget child}) {
+    final controller = _getShakeController(fieldId);
+    final animation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -8.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -8.0, end: 8.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 8.0, end: -6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -6.0, end: 6.0), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 6.0, end: 0.0), weight: 1),
+    ]).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
+
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(animation.value, 0),
+          child: child,
+        );
+      },
+    );
+  }
+
+  List<TextInputFormatter> _numericInputFormatters() {
+    return [
+      FilteringTextInputFormatter.allow(RegExp(r'[0-9eE+\-.]')),
+    ];
   }
 
   @override
@@ -181,6 +240,11 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     // Weight-Based Method
     _initialWeightController.dispose();
     _finalWeightController.dispose();
+
+    for (final controller in _fieldShakeControllers.values) {
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
@@ -518,13 +582,13 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     final initialWeightVal = double.tryParse(initialWeight);
     final finalWeightVal = double.tryParse(finalWeight);
 
-    // Validation: 100g to 300000g range
-    const double minWeight = 100.0;
+    // Validation: 500g to 300000g range
+    const double minWeight = 500.0;
     const double maxWeight = 300000.0;
 
     if (initialWeightVal == null || initialWeightVal < minWeight || initialWeightVal > maxWeight ||
         finalWeightVal == null || finalWeightVal < minWeight || finalWeightVal > maxWeight) {
-      _showErrorSnackBar('Please enter a valid weight in grams (100-300000 g).');
+      _showErrorSnackBar('Weight must be between 500g and 300000g.');
       setState(() {
         _initialWeightError = initialWeightVal == null || initialWeightVal < minWeight || initialWeightVal > maxWeight;
         _finalWeightError = finalWeightVal == null || finalWeightVal < minWeight || finalWeightVal > maxWeight;
@@ -745,18 +809,22 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
                             label: 'Initial Weight (g)',
                             hint: 'Enter initial weight',
                             controller: _initialWeightController,
-                            keyboardType: TextInputType.number,
+                            fieldId: 'consumption-initial-weight',
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            voiceInputMode: VoiceInputMode.numeric,
                             isError: _initialWeightError,
-                            errorMessage: _initialWeightError ? 'Please enter a valid weight in grams' : null,
+                            errorMessage: _initialWeightError ? 'Weight must be between 500g and 300000g' : null,
                           ),
                           const SizedBox(height: 16),
                           _buildFormField(
                             label: 'Final Weight (g)',
                             hint: 'Enter final weight',
                             controller: _finalWeightController,
-                            keyboardType: TextInputType.number,
+                            fieldId: 'consumption-final-weight',
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            voiceInputMode: VoiceInputMode.numeric,
                             isError: _finalWeightError,
-                            errorMessage: _finalWeightError ? 'Please enter a valid weight in grams' : null,
+                            errorMessage: _finalWeightError ? 'Weight must be between 500g and 300000g' : null,
                           ),
                         ],
                       ),
@@ -831,51 +899,93 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     required bool concError,
     required bool timeError,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF374151),
-            fontFamily: 'Inter',
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Single row with 3 compact input boxes
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 520;
+
+        Widget buildInputs() {
+          if (narrow) {
+            return Column(
+              children: [
+                _buildCompactInputField(
+                  label: 'FGF (L)',
+                  hint: '0.0',
+                  controller: fgfController,
+                  isError: fgfError,
+                  fieldId: 'consumption-${title.toLowerCase()}-fgf',
+                ),
+                const SizedBox(height: 12),
+                _buildCompactInputField(
+                  label: 'Conc (%)',
+                  hint: '0.0',
+                  controller: concController,
+                  isError: concError,
+                  fieldId: 'consumption-${title.toLowerCase()}-conc',
+                ),
+                const SizedBox(height: 12),
+                _buildCompactInputField(
+                  label: 'Time (min)',
+                  hint: '0',
+                  controller: timeController,
+                  isError: timeError,
+                  fieldId: 'consumption-${title.toLowerCase()}-time',
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: _buildCompactInputField(
+                  label: 'FGF (L)',
+                  hint: '0.0',
+                  controller: fgfController,
+                  isError: fgfError,
+                  fieldId: 'consumption-${title.toLowerCase()}-fgf',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCompactInputField(
+                  label: 'Conc (%)',
+                  hint: '0.0',
+                  controller: concController,
+                  isError: concError,
+                  fieldId: 'consumption-${title.toLowerCase()}-conc',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCompactInputField(
+                  label: 'Time (min)',
+                  hint: '0',
+                  controller: timeController,
+                  isError: timeError,
+                  fieldId: 'consumption-${title.toLowerCase()}-time',
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: _buildCompactInputField(
-                label: 'FGF (L)',
-                hint: '0.0',
-                controller: fgfController,
-                isError: fgfError,
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF374151),
+                fontFamily: 'Inter',
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildCompactInputField(
-                label: 'Conc (%)',
-                hint: '0.0',
-                controller: concController,
-                isError: concError,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildCompactInputField(
-                label: 'Time (min)',
-                hint: '0',
-                controller: timeController,
-                isError: timeError,
-              ),
-            ),
+            const SizedBox(height: 12),
+            buildInputs(),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -883,97 +993,178 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     required _MaintenanceRow row,
     required int rowIndex,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFBFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFE5E7EB),
-          width: 1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 560;
+
+        Widget buildFields() {
+          if (narrow) {
+            return Column(
+              children: [
+                _buildCompactInputField(
+                  label: 'FGF',
+                  hint: '0.0',
+                  controller: row.fgfController,
+                  isError: false,
+                  fieldId: 'consumption-maintenance-$rowIndex-fgf',
+                ),
+                const SizedBox(height: 10),
+                _buildCompactInputField(
+                  label: 'Conc',
+                  hint: '0.0',
+                  controller: row.concController,
+                  isError: false,
+                  fieldId: 'consumption-maintenance-$rowIndex-conc',
+                ),
+                const SizedBox(height: 10),
+                _buildCompactInputField(
+                  label: 'Time',
+                  hint: '0',
+                  controller: row.timeController,
+                  isError: false,
+                  fieldId: 'consumption-maintenance-$rowIndex-time',
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(
+                child: _buildCompactInputField(
+                  label: 'FGF',
+                  hint: '0.0',
+                  controller: row.fgfController,
+                  isError: false,
+                  fieldId: 'consumption-maintenance-$rowIndex-fgf',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactInputField(
+                  label: 'Conc',
+                  hint: '0.0',
+                  controller: row.concController,
+                  isError: false,
+                  fieldId: 'consumption-maintenance-$rowIndex-conc',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactInputField(
+                  label: 'Time',
+                  hint: '0',
+                  controller: row.timeController,
+                  isError: false,
+                  fieldId: 'consumption-maintenance-$rowIndex-time',
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAFBFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFFE5E7EB),
+              width: 1,
+            ),
+          ),
+          child: narrow
+              ? Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.primaryLight, width: 1),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${rowIndex + 1}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        _buildDeleteButton(row: row, rowIndex: rowIndex),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    buildFields(),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.primaryLight, width: 1),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${rowIndex + 1}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: buildFields()),
+                    const SizedBox(width: 10),
+                    _buildDeleteButton(row: row, rowIndex: rowIndex),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDeleteButton({required _MaintenanceRow row, required int rowIndex}) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          row.dispose();
+          _maintenanceRows.removeAt(rowIndex);
+        });
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+            width: 1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // Row Number/Badge
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primaryLight, width: 1),
-            ),
-            child: Center(
-              child: Text(
-                '${rowIndex + 1}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ),
+        child: const Center(
+          child: Icon(
+            Icons.close,
+            size: 18,
+            color: Color(0xFFDC2626),
           ),
-          const SizedBox(width: 12),
-          // Three input fields
-          Expanded(
-            child: _buildCompactInputField(
-              label: 'FGF',
-              hint: '0.0',
-              controller: row.fgfController,
-              isError: false,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildCompactInputField(
-              label: 'Conc',
-              hint: '0.0',
-              controller: row.concController,
-              isError: false,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _buildCompactInputField(
-              label: 'Time',
-              hint: '0',
-              controller: row.timeController,
-              isError: false,
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Delete button
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                row.dispose();
-                _maintenanceRows.removeAt(rowIndex);
-              });
-            },
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: const Color(0xFFDC2626).withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.close,
-                  size: 18,
-                  color: Color(0xFFDC2626),
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -983,6 +1174,7 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     required String hint,
     required TextEditingController controller,
     required bool isError,
+    required String fieldId,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -998,52 +1190,61 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
         ),
         const SizedBox(height: 6),
         SizedBox(
-          height: 38,
-          child: TextFormField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-            ],
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0xFFD1D5DB),
-                fontSize: 12,
+          height: 42,
+          child: _wrapWithShake(
+            fieldId: fieldId,
+            child: TextFormField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              inputFormatters: _numericInputFormatters(),
+              style: const TextStyle(
+                color: Color(0xFF1F2937),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Inter',
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 6,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(
-                  color: isError ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: const TextStyle(
+                  color: Color(0xFFD1D5DB),
+                  fontSize: 12,
                 ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(
-                  color: isError ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
-                  width: isError ? 1.5 : 1,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(
-                  color: isError ? const Color(0xFFDC2626) : AppColors.primary,
-                  width: 1.5,
+                suffixIcon: VoiceInputMicButton(
+                  controller: controller,
+                  fieldLabel: label,
+                  fieldId: fieldId,
+                  voiceInputMode: VoiceInputMode.numeric,
+                  onInvalidVoiceInput: _showNumericInputError,
                 ),
+                suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: isError ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: isError ? const Color(0xFFDC2626) : const Color(0xFFE5E7EB),
+                    width: isError ? 1.5 : 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: isError ? const Color(0xFFDC2626) : AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+                fillColor: Colors.white,
+                filled: true,
               ),
-              fillColor: Colors.white,
-              filled: true,
             ),
           ),
         ),
@@ -1055,7 +1256,9 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
     required String label,
     required String hint,
     required TextEditingController controller,
+    required String fieldId,
     TextInputType keyboardType = TextInputType.text,
+    VoiceInputMode voiceInputMode = VoiceInputMode.text,
     bool? isError,
     String? errorMessage,
   }) {
@@ -1076,50 +1279,59 @@ class _ConsumptionCalculatorScreenState extends State<ConsumptionCalculatorScree
         const SizedBox(height: 8),
         SizedBox(
           height: 44,
-          child: TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-            ],
-            style: const TextStyle(
-              color: Color(0xFF1F2937),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0xFFB5BFC7),
+          child: _wrapWithShake(
+            fieldId: fieldId,
+            child: TextFormField(
+              controller: controller,
+              keyboardType: keyboardType,
+              inputFormatters: _numericInputFormatters(),
+              style: const TextStyle(
+                color: Color(0xFF1F2937),
                 fontSize: 14,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Inter',
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: hasError ? const Color(0xFFDC2626) : const Color(0xFFDCE6F2),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: const TextStyle(
+                  color: Color(0xFFB5BFC7),
+                  fontSize: 14,
                 ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: hasError ? const Color(0xFFDC2626) : const Color(0xFFDCE6F2),
-                  width: hasError ? 2 : 1,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: hasError ? const Color(0xFFDC2626) : AppColors.primary,
-                  width: 2,
+                suffixIcon: VoiceInputMicButton(
+                  controller: controller,
+                  fieldLabel: label,
+                  fieldId: fieldId,
+                  voiceInputMode: voiceInputMode,
+                  onInvalidVoiceInput: _showNumericInputError,
                 ),
+                suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: hasError ? const Color(0xFFDC2626) : const Color(0xFFDCE6F2),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: hasError ? const Color(0xFFDC2626) : const Color(0xFFDCE6F2),
+                    width: hasError ? 2 : 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: hasError ? const Color(0xFFDC2626) : AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                fillColor: Colors.white,
+                filled: true,
               ),
-              fillColor: Colors.white,
-              filled: true,
             ),
           ),
         ),

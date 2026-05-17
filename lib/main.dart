@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'config/app_theme.dart';
 import 'config/api_config.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/speech_smoke_test_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
-import 'services/user_session.dart';
+// speech_input_service removed - replaced by self-contained widgets
 import 'providers/case_provider.dart';
+import 'widgets/permission_lifecycle_manager.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
@@ -30,11 +33,15 @@ class AppScrollBehavior extends MaterialScrollBehavior {
   }
 }
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
+  debugPrint('🔐 GROQ_API_KEY loaded: ${(dotenv.env['GROQ_API_KEY'] ?? '').isNotEmpty}');
+
   // Log startup configuration
-  print('🚀 MacMind App Starting...');
-  print('📡 API Base URL: ${ApiConfig.baseUrl}');
-  print('🔍 Is Release Mode: $kReleaseMode');
+  debugPrint('🚀 MacMind App Starting...');
+  debugPrint('📡 API Base URL: ${ApiConfig.baseUrl}');
+  debugPrint('🔍 Is Release Mode: $kReleaseMode');
   
   runApp(const MyApp());
 }
@@ -60,10 +67,10 @@ class MyApp extends StatelessWidget {
     // Attempt to hydrate user session from stored data
     try {
       await ProfileService.hydrateUserSession();
-      print('✅ Auto-login successful - token validated');
+      debugPrint('✅ Auto-login successful - token validated');
       return true;
     } catch (e) {
-      print('❌ Failed to hydrate user session: $e');
+      debugPrint('❌ Failed to hydrate user session: $e');
       await AuthService.logout();
       return false;
     }
@@ -81,6 +88,7 @@ class MyApp extends StatelessWidget {
         theme: AppTheme.light,
         routes: {
           '/onboarding': (context) => const OnboardingScreen(),
+          '/speech-smoke-test': (context) => const SpeechSmokeTestScreen(),
         },
         scrollBehavior: const AppScrollBehavior(),
         home: FutureBuilder<bool>(
@@ -94,7 +102,9 @@ class MyApp extends StatelessWidget {
             }
 
             if (snapshot.hasData && snapshot.data == true) {
-              return const HomeScreen();
+              return PermissionLifecycleManager(
+                child: const HomeScreen(),
+              );
             }
 
             // Otherwise, show login screen

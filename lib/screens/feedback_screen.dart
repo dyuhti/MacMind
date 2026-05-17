@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../widgets/app_header.dart';
+import '../widgets/voice_input_mic_button.dart';
 import 'settings_screen.dart';
 import '../config/api_config.dart';
 import '../services/auth_service.dart';
@@ -393,6 +394,12 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                                 width: 1.5,
                               ),
                             ),
+                            suffixIcon: VoiceInputMicButton(
+                              controller: _messageController,
+                              fieldLabel: 'Feedback message',
+                              fieldId: 'feedback-message',
+                            ),
+                            suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                           ),
                         ),
                       ],

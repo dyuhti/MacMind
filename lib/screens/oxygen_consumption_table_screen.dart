@@ -74,7 +74,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     }
   }
 
-  String _formatDuration(int totalSeconds) {
+  String _formatCountdownDuration(int totalSeconds) {
     final hours = totalSeconds ~/ 3600;
     final minutes = (totalSeconds % 3600) ~/ 60;
     final seconds = totalSeconds % 60;
@@ -292,7 +292,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
   }
 
   void _startTimer({required _ConsumptionRowData row, required int index}) {
-    final durationInSeconds = (row.durationMin * 60).round();
+    final durationInSeconds = (row.durationHr * 3600).round();
     if (durationInSeconds <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Duration must be greater than 0 seconds')),
@@ -606,7 +606,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
                                           ),
                                         ),
                                         child: Text(
-                                          _formatDuration(_remainingTime),
+                                          _formatCountdownDuration(_remainingTime),
                                           key: ValueKey<String>('timer-$_remainingTime-$_isTimerRunning-$_isTimerPaused'),
                                           style: const TextStyle(
                                             fontFamily: 'Roboto Mono',
@@ -723,7 +723,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
                                     ),
                                     Expanded(
                                       child: Text(
-                                        row.durationHr.toStringAsFixed(2),
+                                        _formatDuration(row.durationHr),
                                         textAlign: TextAlign.end,
                                         style: const TextStyle(fontFamily: 'DM Sans'),
                                       ),
@@ -774,10 +774,31 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
         children: [
           Expanded(child: Text('Flow Rate (L/min)', style: headerStyle)),
           Expanded(child: Text('Duration (min)', style: headerStyle, textAlign: TextAlign.center)),
-          Expanded(child: Text('Duration (hr)', style: headerStyle, textAlign: TextAlign.end)),
+          Expanded(child: Text('Duration', style: headerStyle, textAlign: TextAlign.end)),
         ],
       ),
     );
+  }
+
+  String _formatDuration(double durationHours) {
+    final totalSeconds = (durationHours * 3600).round();
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      final parts = <String>['${hours}h', '${minutes}m'];
+      if (seconds > 0) {
+        parts.add('${seconds}s');
+      }
+      return parts.join(' ');
+    }
+
+    if (seconds > 0) {
+      return '${minutes}m ${seconds}s';
+    }
+
+    return '${minutes}m';
   }
 }
 

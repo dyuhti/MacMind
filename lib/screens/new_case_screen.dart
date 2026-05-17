@@ -11,6 +11,8 @@ import '../services/agent_constants_service.dart';
 import 'case_history_screen.dart';
 import '../providers/case_provider.dart';
 import '../services/user_session.dart';
+import '../services/speech_text_normalizer.dart';
+import '../widgets/voice_input_mic_button.dart';
 // macmind_design import removed (not used here)
 
 /// New Case Screen - Post-login form
@@ -392,6 +394,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                         icon: Icons.person_outline,
                         isError: _patientNameError,
                         errorMessage: _patientNameError ? 'Patient name is required' : null,
+                        voiceInputMode: VoiceInputMode.text,
                       ),
 
                       const SizedBox(height: 16),
@@ -405,6 +408,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                         keyboardType: TextInputType.number,
                         isError: _idNumberError,
                         errorMessage: _idNumberError ? 'ID number is required' : null,
+                        voiceInputMode: VoiceInputMode.numeric,
                       ),
 
                       const SizedBox(height: 16),
@@ -471,6 +475,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
                         icon: Icons.local_hospital_outlined,
                         isError: _surgeryTypeError,
                         errorMessage: _surgeryTypeError ? 'Surgery type is required' : null,
+                        voiceInputMode: VoiceInputMode.text,
                       ),
                     ],
                   ),
@@ -633,6 +638,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
     required TextEditingController controller,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
+    VoiceInputMode voiceInputMode = VoiceInputMode.text,
     bool? isError,
     String? errorMessage,
   }) {
@@ -703,6 +709,13 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
               ),
               fillColor: Colors.white,
               filled: true,
+              suffixIcon: VoiceInputMicButton(
+                controller: controller,
+                fieldLabel: label,
+                fieldId: 'new-case-${label.replaceAll(' ', '-').toLowerCase()}',
+                voiceInputMode: voiceInputMode,
+              ),
+              suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
             ),
           ),
         ),

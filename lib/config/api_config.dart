@@ -20,6 +20,18 @@ class ApiConfig {
   /// Base URL (hardcoded to production for APKs)
   static const String baseUrl = "https://med-calci-backend-new.onrender.com";
 
+  /// Groq Whisper API Configuration
+  static const String groqApiUrl = "https://api.groq.com/openai/v1/audio/transcriptions";
+  static const String groqModel = "whisper-large-v3";
+  
+  /// Get Groq API Key from environment
+  /// Store this securely - for production, fetch from secure backend endpoint
+  /// For development, use a .env file and load with flutter_dotenv
+  static const String groqApiKey = String.fromEnvironment(
+    'GROQ_API_KEY',
+    defaultValue: '',
+  );
+
   /// Get server host for configuration purposes
   // static String get serverHost {
   //   return baseUrl.contains("localhost") || baseUrl.contains("127.0.0.1")

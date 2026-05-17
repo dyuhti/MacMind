@@ -7,6 +7,8 @@ import '../services/ai_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/macmind_design.dart';
+import '../widgets/voice_input_mic_button.dart';
+import '../services/speech_text_normalizer.dart';
 import 'case_history_screen.dart';
 import 'settings_screen.dart';
 
@@ -32,6 +34,12 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   bool   _isAiLoading     = false;
   List<String> _aiInsights = [];
   String? _aiWarning;
+
+  // ── Graph interaction state ──
+  double? _selectedPointFGF;
+  double? _selectedPointConc;
+  int? _selectedPointIndex;
+  bool _showDetailedTooltip = false;
 
   final Map<String, Map<String, dynamic>> agents = {
     'Isoflurane':  {'color': Colors.blue,   'mw': 184.5, 'k': 0.0765, 'minConc': 0.2, 'maxConc': 5.0},
@@ -109,6 +117,33 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   double _calcConsumption(double fgf, double conc, double dur, double k) {
     if (fgf == 0 || conc == 0 || dur == 0) return 0;
     return fgf * conc * dur * k;
+  }
+
+  /// Calculate consumption for a specific graph point
+  /// Returns consumption in mL/hr format
+  double _getPointConsumption(double fgf, double pointConc) {
+    if (fgf == 0) return 0;
+    final k = (agents[_selectedAgent]?['k'] as num?)?.toDouble() ?? 0.0;
+    // Consumption per hour: FGF (L/min) * concentration (%) * 60 (min/hr) * k
+    // Result is in mL/hr
+    return fgf * pointConc * 60 * k / 100;
+  }
+
+  /// Get economy rating based on consumption
+  /// Low: < 5 mL/hr, Moderate: 5-15 mL/hr, High: > 15 mL/hr
+  String _getEconomyRating(double consumption) {
+    if (consumption < 5) return 'Excellent';
+    if (consumption < 10) return 'Good';
+    if (consumption < 15) return 'Moderate';
+    return 'High';
+  }
+
+  /// Get color for economy rating
+  Color _getEconomyColor(double consumption) {
+    if (consumption < 5) return const Color(0xFF10B981); // Green
+    if (consumption < 10) return const Color(0xFF3B82F6); // Blue
+    if (consumption < 15) return const Color(0xFFF59E0B); // Amber
+    return const Color(0xFFEF4444); // Red
   }
 
   /// Delivered Concentration (%) varies clinically with FGF
@@ -250,7 +285,17 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
       controller:   _durationController,
       keyboardType: TextInputType.number,
       onChanged:    _updateDuration,
-      decoration:   _dec(hint: 'Enter duration in minutes', icon: Icons.schedule_outlined),
+      decoration:   _dec(
+        hint: 'Enter duration in minutes',
+        icon: Icons.schedule_outlined,
+        suffixIcon: VoiceInputMicButton(
+          controller: _durationController,
+          fieldLabel: 'Surgery duration',
+          fieldId: 'economy-surgery-duration',
+          voiceInputMode: VoiceInputMode.numeric,
+        ),
+        suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      ),
       style:        _ts,
     ),
   );
@@ -271,6 +316,13 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
         helperText: 'Valid range: ${_getAgentMinConc().toStringAsFixed(1)}–${_getAgentMaxConc().toStringAsFixed(1)}% for $_selectedAgent',
         helperStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 11, color: Colors.black45),
         prefixIcon:  Icon(Icons.opacity_outlined, color: Colors.black38, size: 20),
+        suffixIcon: VoiceInputMicButton(
+          controller: _concentrationController,
+          fieldLabel: 'Agent concentration',
+          fieldId: 'economy-agent-concentration',
+          voiceInputMode: VoiceInputMode.numeric,
+        ),
+        suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
         suffixText:  '%',
         suffixStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.black54),
       ),
@@ -398,178 +450,353 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
 
             const SizedBox(height: 20),
 
-            // ── CHART ────────────────────────────────────────────────────
-            SizedBox(
-              height: 230,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            // ── CHART WITH ENHANCED INTERACTION ──
+            Stack(
+              children: [
+                SizedBox(
+                  height: 280,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
 
-                  // Y-axis label — external RotatedBox (reliable, never flips)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 30),
-                    child: Center(
-                      child: RotatedBox(
-                        quarterTurns: 3,
-                        child: Text(
-                          'Concentration (%)',
-                          style: const TextStyle(
-                            fontFamily: 'DM Sans', fontSize: 11,
-                            fontWeight: FontWeight.w600, color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 6),
-
-                  // Chart body + X label
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: LineChart(
-                            duration: const Duration(milliseconds: 200),
-                            LineChartData(
-                              gridData: FlGridData(
-                                show:               true,
-                                drawVerticalLine:   true,
-                                horizontalInterval: interval,
-                                verticalInterval:   1,
-                                getDrawingHorizontalLine: (_) => FlLine(
-                                  color: Colors.grey.withOpacity(0.15), strokeWidth: 1),
-                                getDrawingVerticalLine: (_) => FlLine(
-                                  color: Colors.grey.withOpacity(0.08), strokeWidth: 1),
-                              ),
-
-                              titlesData: FlTitlesData(
-                                topTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles:   true,
-                                    reservedSize: 44,
-                                    interval:     interval,
-                                    getTitlesWidget: (value, meta) {
-                                      if (value >= meta.max) return const SizedBox.shrink();
-                                      return SideTitleWidget(
-                                        axisSide: meta.axisSide,
-                                        space:    4,
-                                        child: Text(
-                                          '${value.toStringAsFixed(1)}%',
-                                          style: const TextStyle(
-                                            fontFamily: 'DM Sans', fontSize: 9,
-                                            color: Colors.black54, fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles:   true,
-                                    reservedSize: 24,
-                                    interval:     1,
-                                    getTitlesWidget: (value, meta) {
-                                      if (value != value.roundToDouble()) return const SizedBox.shrink();
-                                      return SideTitleWidget(
-                                        axisSide: meta.axisSide,
-                                        space:    4,
-                                        child: Text(
-                                          value.toInt().toString(),
-                                          style: const TextStyle(
-                                            fontFamily: 'DM Sans', fontSize: 9,
-                                            color: Colors.black54, fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-
-                              borderData: FlBorderData(
-                                show: true,
-                                border: Border(
-                                  left:   BorderSide(color: Colors.black87.withOpacity(0.7), width: 1.5),
-                                  bottom: BorderSide(color: Colors.black87.withOpacity(0.7), width: 1.5),
-                                  right:  BorderSide.none,
-                                  top:    BorderSide.none,
-                                ),
-                              ),
-
-                              // minX=0 keeps the "0" label on X axis.
-                              // First spot is at x=0.5, so fl_chart draws
-                              // nothing between x=0 and x=0.5 — no bar artifact.
-                              minX: _chartMinX,
-                              maxX: _chartMaxX,
-                              minY: 0,
-                              maxY: maxY,
-
-                              lineBarsData: [
-                                LineChartBarData(
-                                  spots:            spots,
-                                  isCurved:         false,
-                                  color:            color,
-                                  barWidth:         2.0,
-                                  isStrokeCapRound: true,
-                                  dashArray:        [5, 4],
-                                  dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter: (_, __, ___, ____) =>
-                                      FlDotCirclePainter(
-                                        radius:      3.5,
-                                        color:       color,
-                                        strokeWidth: 1.5,
-                                        strokeColor: Colors.white,
-                                      ),
-                                  ),
-                                  belowBarData: BarAreaData(show: false),
-                                ),
-                              ],
-
-                              lineTouchData: LineTouchData(
-                                enabled: true,
-                                touchTooltipData: LineTouchTooltipData(
-                                  fitInsideHorizontally: true,
-                                  fitInsideVertically:   true,
-                                  maxContentWidth:       160,
-                                  tooltipMargin:         8,
-                                  getTooltipItems: (s) => s.map((sp) => LineTooltipItem(
-                                    'FGF: ${sp.x.toStringAsFixed(1)} L/min\nConc: ${sp.y.toStringAsFixed(2)}%',
-                                    const TextStyle(
-                                      fontFamily: 'DM Sans', color: Colors.white,
-                                      fontSize: 11, fontWeight: FontWeight.w600,
-                                    ),
-                                  )).toList(),
-                                ),
+                      // Y-axis label — external RotatedBox (reliable, never flips)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 30),
+                        child: Center(
+                          child: RotatedBox(
+                            quarterTurns: 3,
+                            child: Text(
+                              'Concentration (%)',
+                              style: const TextStyle(
+                                fontFamily: 'DM Sans', fontSize: 11,
+                                fontWeight: FontWeight.w600, color: Colors.black87,
                               ),
                             ),
                           ),
                         ),
+                      ),
 
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Fresh Gas Flow (L/min)',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'DM Sans', fontSize: 11,
-                            fontWeight: FontWeight.w600, color: Colors.black87,
-                          ),
+                      const SizedBox(width: 6),
+
+                      // Chart body + X label
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: LineChart(
+                                duration: const Duration(milliseconds: 200),
+                                LineChartData(
+                                  gridData: FlGridData(
+                                    show:               true,
+                                    drawVerticalLine:   true,
+                                    horizontalInterval: interval,
+                                    verticalInterval:   1,
+                                    getDrawingHorizontalLine: (_) => FlLine(
+                                      color: Colors.grey.withOpacity(0.15), strokeWidth: 1),
+                                    getDrawingVerticalLine: (_) => FlLine(
+                                      color: Colors.grey.withOpacity(0.08), strokeWidth: 1),
+                                  ),
+
+                                  titlesData: FlTitlesData(
+                                    topTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles:   true,
+                                        reservedSize: 44,
+                                        interval:     interval,
+                                        getTitlesWidget: (value, meta) {
+                                          if (value >= meta.max) return const SizedBox.shrink();
+                                          return SideTitleWidget(
+                                            axisSide: meta.axisSide,
+                                            space:    4,
+                                            child: Text(
+                                              '${value.toStringAsFixed(1)}%',
+                                              style: const TextStyle(
+                                                fontFamily: 'DM Sans', fontSize: 9,
+                                                color: Colors.black54, fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles:   true,
+                                        reservedSize: 24,
+                                        interval:     1,
+                                        getTitlesWidget: (value, meta) {
+                                          if (value != value.roundToDouble()) return const SizedBox.shrink();
+                                          return SideTitleWidget(
+                                            axisSide: meta.axisSide,
+                                            space:    4,
+                                            child: Text(
+                                              value.toInt().toString(),
+                                              style: const TextStyle(
+                                                fontFamily: 'DM Sans', fontSize: 9,
+                                                color: Colors.black54, fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+
+                                  borderData: FlBorderData(
+                                    show: true,
+                                    border: Border(
+                                      left:   BorderSide(color: Colors.black87.withOpacity(0.7), width: 1.5),
+                                      bottom: BorderSide(color: Colors.black87.withOpacity(0.7), width: 1.5),
+                                      right:  BorderSide.none,
+                                      top:    BorderSide.none,
+                                    ),
+                                  ),
+
+                                  minX: _chartMinX,
+                                  maxX: _chartMaxX,
+                                  minY: 0,
+                                  maxY: maxY,
+
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots:            spots,
+                                      isCurved:         false,
+                                      color:            color,
+                                      barWidth:         2.0,
+                                      isStrokeCapRound: true,
+                                      dashArray:        [5, 4],
+                                      dotData: FlDotData(
+                                        show: true,
+                                        getDotPainter: (spot, __, index, ___) {
+                                          final isSelected = _selectedPointIndex == index;
+                                          return FlDotCirclePainter(
+                                            radius:      isSelected ? 5.5 : 3.5,
+                                            color:       isSelected ? color : color,
+                                            strokeWidth: isSelected ? 2.5 : 1.5,
+                                            strokeColor: isSelected ? color.withOpacity(0.3) : Colors.white,
+                                          );
+                                        },
+                                      ),
+                                      belowBarData: BarAreaData(show: false),
+                                    ),
+                                  ],
+
+                                  lineTouchData: LineTouchData(
+                                    enabled: true,
+                                    handleBuiltInTouches: true,
+                                    touchCallback: (event, response) {
+                                      if (event is FlTapUpEvent && response?.lineBarSpots != null) {
+                                        final spots = response!.lineBarSpots!;
+                                        if (spots.isNotEmpty) {
+                                          final spot = spots[0];
+                                          setState(() {
+                                            _selectedPointFGF = spot.x;
+                                            _selectedPointConc = spot.y;
+                                            _selectedPointIndex = spot.spotIndex;
+                                            _showDetailedTooltip = true;
+                                          });
+                                        }
+                                      }
+                                    },
+                                    touchTooltipData: LineTouchTooltipData(
+                                      fitInsideHorizontally: true,
+                                      fitInsideVertically:   true,
+                                      maxContentWidth:       200,
+                                      tooltipMargin:         8,
+                                      getTooltipItems: (s) {
+                                        if (s.isEmpty) return [];
+                                        final sp = s[0];
+                                        final consumption = _getPointConsumption(sp.x, sp.y);
+                                        final economy = _getEconomyRating(consumption);
+                                        
+                                        return [
+                                          LineTooltipItem(
+                                            'FGF: ${sp.x.toStringAsFixed(1)} L/min\n'
+                                            'Conc: ${sp.y.toStringAsFixed(2)}%\n'
+                                            'Consumption: ${consumption.toStringAsFixed(2)} mL/hr\n'
+                                            'Economy: $economy',
+                                            const TextStyle(
+                                              fontFamily: 'DM Sans', color: Colors.white,
+                                              fontSize: 11, fontWeight: FontWeight.w600,
+                                            ),
+                                          )
+                                        ];
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Fresh Gas Flow (L/min)',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'DM Sans', fontSize: 11,
+                                fontWeight: FontWeight.w600, color: Colors.black87,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Floating tooltip card for selected point
+                if (_showDetailedTooltip && 
+                    _selectedPointFGF != null && 
+                    _selectedPointConc != null)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: AnimatedOpacity(
+                      opacity: 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: _buildDetailedTooltipCard(color),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Build detailed floating tooltip card
+  Widget _buildDetailedTooltipCard(Color agentColor) {
+    if (_selectedPointFGF == null || _selectedPointConc == null) {
+      return const SizedBox.shrink();
+    }
+
+    final consumption = _getPointConsumption(_selectedPointFGF!, _selectedPointConc!);
+    final economy = _getEconomyRating(consumption);
+    final economyColor = _getEconomyColor(consumption);
+
+    return GestureDetector(
+      onTap: () => setState(() => _showDetailedTooltip = false),
+      child: Card(
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with close button
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Selected Point Details',
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () => setState(() => _showDetailedTooltip = false),
+                    child: Icon(Icons.close, size: 18, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              
+              // Divider
+              Container(
+                height: 1,
+                color: Colors.grey[200],
+              ),
+              const SizedBox(height: 10),
+
+              // FGF value
+              _buildTooltipRow('Fresh Gas Flow', '${_selectedPointFGF!.toStringAsFixed(1)} L/min', agentColor),
+              const SizedBox(height: 8),
+
+              // Concentration value
+              _buildTooltipRow('Concentration', '${_selectedPointConc!.toStringAsFixed(2)}%', agentColor),
+              const SizedBox(height: 8),
+
+              // Consumption value
+              _buildTooltipRow('Consumption', '${consumption.toStringAsFixed(2)} mL/hr', Colors.blue),
+              const SizedBox(height: 10),
+
+              // Economy rating with color indicator
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: economyColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Economy Rating',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 11,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      economy,
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: economyColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build a single row in the tooltip
+  Widget _buildTooltipRow(String label, String value, Color accentColor) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 11,
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: accentColor,
+          ),
+        ),
+      ],
     );
   }
 
@@ -611,7 +838,13 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     );
   }
 
-  InputDecoration _dec({String? hint, IconData? icon, String? suffixText}) {
+  InputDecoration _dec({
+    String? hint,
+    IconData? icon,
+    String? suffixText,
+    Widget? suffixIcon,
+    BoxConstraints? suffixIconConstraints,
+  }) {
     return InputDecoration(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       filled:         true,
@@ -620,6 +853,8 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
       hintText:       hint,
       hintStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.black54),
       prefixIcon:  icon != null ? Icon(icon, color: Colors.black38, size: 20) : null,
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: suffixIconConstraints ?? const BoxConstraints(minWidth: 44, minHeight: 44),
       suffixText:  suffixText,
       suffixStyle: const TextStyle(fontFamily: 'DM Sans', fontSize: 13, color: Colors.black54),
     );

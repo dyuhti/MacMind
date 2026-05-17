@@ -10,9 +10,10 @@ import '../services/session_history.dart';
 import '../services/case_service.dart';
 import '../widgets/app_header.dart';
 import '../widgets/ai_clinical_insight_card.dart';
+import '../widgets/voice_input_mic_button.dart';
+import '../services/speech_text_normalizer.dart';
 import 'case_history_screen.dart';
 import 'settings_screen.dart';
-import '../widgets/case_history_dialog.dart';
 import '../providers/case_provider.dart';
 import '../services/user_session.dart';
 // macmind_design removed (unused)
@@ -782,6 +783,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: AppColors.primary, width: 2),
                       ),
+                      suffixIcon: VoiceInputMicButton(
+                        controller: _notesController,
+                        fieldLabel: 'Clinical notes',
+                        fieldId: 'results-clinical-notes',
+                        voiceInputMode: VoiceInputMode.text,
+                      ),
+                      suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     ),
                   ),
                 ],

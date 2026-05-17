@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../widgets/app_header.dart';
 import '../widgets/custom_button.dart' show PrimaryButton;
+import '../widgets/pressure_input_field.dart';
 import 'oxygen_result_screen.dart';
 import 'settings_screen.dart';
 
@@ -52,12 +53,24 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
   double get _selectedFactor => _cylinderFactors[_selectedCylinderType] ?? 0.0;
 
   void _calculateTotalContent() {
-    final isValid = _formKey.currentState?.validate() ?? false;
-    if (!isValid) {
+    final text = _pressureController.text.trim();
+    
+    // Manual validation
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pressure is required')),
+      );
       return;
     }
 
-    final pressure = double.parse(_pressureController.text.trim());
+    final pressure = double.tryParse(text);
+    if (pressure == null || pressure <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid pressure greater than 0')),
+      );
+      return;
+    }
+
     final factor = _selectedFactor;
 
     // DEBUG LOGGING - IMPORTANT FOR TESTING
@@ -166,95 +179,78 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Cylinder Inputs',
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
-                color: Color(0xFF888780),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Cylinder Inputs',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+              color: Color(0xFF888780),
             ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<String>(
-              value: _selectedCylinderType,
-              isExpanded: true,
-              decoration: _inputDecoration(
-                label: 'Cylinder Type',
-                icon: Icons.medical_services_outlined,
-              ),
-              items: _cylinderOrder
-                  .map(
-                    (type) => DropdownMenuItem<String>(
-                      value: type,
-                      child: Text(type),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCylinderType = value;
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please select a cylinder type';
-                }
-                return null;
-              },
+          ),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: _selectedCylinderType,
+            isExpanded: true,
+            decoration: _inputDecoration(
+              label: 'Cylinder Type',
+              icon: Icons.medical_services_outlined,
             ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _pressureController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*$'))],
-              decoration: _inputDecoration(
-                label: 'Pressure (PSI)',
-                hintText: 'e.g., 2000–2200',
-                icon: Icons.speed,
-              ),
-              validator: (value) {
-                final text = value?.trim() ?? '';
-                if (text.isEmpty) {
-                  return 'Pressure is required';
-                }
-                final pressure = double.tryParse(text);
-                if (pressure == null || pressure <= 0) {
-                  return 'Enter a valid pressure greater than 0';
-                }
-                return null;
-              },
+            items: _cylinderOrder
+                .map(
+                  (type) => DropdownMenuItem<String>(
+                    value: type,
+                    child: Text(type),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedCylinderType = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select a cylinder type';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          PressureInputField(
+            initialValue: _pressureController.text,
+            onPressureChanged: (value) {
+              setState(() {
+                _pressureController.text = value;
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Enter pressure in PSI (e.g., 2000–2200). Formula: Total Content (L) = Pressure (PSI) × Cylinder Factor',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 11,
+              height: 1.4,
+              color: Color(0xFF333333),
+              fontStyle: FontStyle.italic,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Enter pressure in PSI (e.g., 2000–2200). Formula: Total Content (L) = Pressure (PSI) × Cylinder Factor',
-              style: TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 11,
-                height: 1.4,
-                color: Color(0xFF333333),
-                fontStyle: FontStyle.italic,
-              ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Auto factor: ${_selectedFactor.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1D9E75),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Auto factor: ${_selectedFactor.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontFamily: 'DM Sans',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1D9E75),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -263,11 +259,14 @@ class _OxygenCylinderModuleScreenState extends State<OxygenCylinderModuleScreen>
     required String label,
     required IconData icon,
     String? hintText,
+    Widget? suffixIcon,
   }) {
     return InputDecoration(
       labelText: label,
       hintText: hintText,
       prefixIcon: Icon(icon, size: 18, color: const Color(0xFF185FA5)),
+      suffixIcon: suffixIcon,
+      suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
