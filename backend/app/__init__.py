@@ -51,6 +51,7 @@ def create_app(config_name='development'):
     from app.routes.ai import ai_bp
     from app.routes.profile import profile_bp
     from app.routes.feedback import feedback_bp
+    from app.routes.oxygen import oxygen_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -59,6 +60,7 @@ def create_app(config_name='development'):
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
     app.register_blueprint(profile_bp, url_prefix='/api')
     app.register_blueprint(feedback_bp, url_prefix='/api')
+    app.register_blueprint(oxygen_bp, url_prefix='/api/oxygen')
     
     # Error handlers
     @app.errorhandler(404)

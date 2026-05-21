@@ -20,6 +20,7 @@ class NotificationService {
   static const String oxygenTimerStateKey = 'oxygen_timer_state';
   static const String oxygenTimerRowIndexKey = 'oxygen_timer_active_row_index';
   static const String oxygenTimerFlowRateKey = 'oxygen_timer_flow_rate';
+  static const String oxygenTimerHistoryIdKey = 'oxygen_timer_history_id';
   static const String permissionPromptedKey = 'oxygen_timer_notification_permission_prompted';
 
   static const String timerStateRunning = 'running';

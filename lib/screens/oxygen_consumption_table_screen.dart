@@ -2,14 +2,24 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/oxygen_timer_models.dart';
+import '../services/oxygen_timer_service.dart';
 import '../widgets/app_header.dart';
 import '../services/notification_service.dart';
 import 'settings_screen.dart';
+import 'timer_history_screen.dart';
 
 class OxygenConsumptionTableScreen extends StatefulWidget {
+  final String cylinderType;
+  final double pressurePsi;
   final double totalContent;
 
-  const OxygenConsumptionTableScreen({super.key, required this.totalContent});
+  const OxygenConsumptionTableScreen({
+    super.key,
+    required this.cylinderType,
+    required this.pressurePsi,
+    required this.totalContent,
+  });
 
   @override
   State<OxygenConsumptionTableScreen> createState() => _OxygenConsumptionTableScreenState();
@@ -25,6 +35,8 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
   bool _finalShown = false;
   int? _selectedFlowRate;
   int? _activeRowIndex;
+  int? _historyId;
+  Future<int?>? _pendingHistoryIdFuture;
 
   DateTime? _timerEndTime;
   int? _timerDurationSeconds;
@@ -69,6 +81,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     final durationSeconds = prefs.getInt(NotificationService.oxygenTimerDurationKey);
     final activeRowIndex = prefs.getInt(NotificationService.oxygenTimerRowIndexKey);
     final selectedFlowRate = prefs.getInt(NotificationService.oxygenTimerFlowRateKey);
+    final historyId = prefs.getInt(NotificationService.oxygenTimerHistoryIdKey);
 
     if (!mounted) {
       return;
@@ -95,6 +108,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
         _finalShown = false;
         _activeRowIndex = activeRowIndex;
         _selectedFlowRate = selectedFlowRate ?? activeRowIndex + 1;
+        _historyId = historyId;
       });
 
       _startTicker();
@@ -114,6 +128,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
         _finalShown = false;
         _activeRowIndex = activeRowIndex;
         _selectedFlowRate = selectedFlowRate ?? activeRowIndex + 1;
+        _historyId = historyId;
       });
     }
   }
@@ -400,9 +415,15 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     _startTicker();
     unawaited(_persistRunningTimerState(endTime: endTime, durationSeconds: durationInSeconds, row: row, index: index));
     unawaited(NotificationService().scheduleTimerNotification(endTime));
+    _pendingHistoryIdFuture = _createTimerHistoryRecord(
+      row: row,
+      durationSeconds: durationInSeconds,
+      durationText: _formatDuration(row.durationHr),
+    );
+    unawaited(_pendingHistoryIdFuture!);
   }
 
-  void _pauseTimer() {
+  Future<void> _pauseTimer() async {
     if (!_isTimerRunning || _timerEndTime == null || _timerDurationSeconds == null) {
       return;
     }
@@ -419,9 +440,10 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
 
     unawaited(NotificationService().cancelTimerNotification());
     unawaited(_persistPausedTimerState(remainingSeconds: _remainingTime));
+    unawaited(_sendTimerPauseUpdate());
   }
 
-  void _resumeTimer() {
+  Future<void> _resumeTimer() async {
     if (!_isTimerPaused || _remainingTime <= 0) {
       return;
     }
@@ -448,12 +470,12 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       index: _activeRowIndex ?? selectedIndex,
     ));
     unawaited(NotificationService().scheduleTimerNotification(resumedEndTime));
+    unawaited(_sendTimerResumeUpdate());
   }
 
-  void _stopTimer() {
+  Future<void> _stopTimer() async {
     _countdownTimer?.cancel();
     unawaited(NotificationService().cancelAllNotifications());
-    unawaited(_clearPersistedTimerState());
     setState(() {
       _remainingTime = 0;
       _isTimerRunning = false;
@@ -464,6 +486,8 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       _selectedFlowRate = null;
       _timerDurationSeconds = null;
     });
+    unawaited(_sendTimerStopUpdate());
+    unawaited(_clearPersistedTimerState());
   }
 
   void _checkAlertTriggers() {
@@ -484,7 +508,6 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     _finalShown = true;
     _countdownTimer?.cancel();
     _timerEndTime = null;
-    unawaited(_clearPersistedTimerState());
 
     setState(() {
       _remainingTime = 0;
@@ -492,6 +515,8 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       _isTimerPaused = false;
     });
 
+    await _sendTimerCompleteUpdate();
+    unawaited(_clearPersistedTimerState());
     _showFinalAlert();
   }
 
@@ -516,7 +541,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
               TextButton(
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
-                  _resetTimer();
+                    _resetTimer(updateBackend: false);
                 },
                 child: const Text('OK'),
               ),
@@ -527,10 +552,9 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     });
   }
 
-  void _resetTimer() {
+  Future<void> _resetTimer({bool updateBackend = true}) async {
     _countdownTimer?.cancel();
     unawaited(NotificationService().cancelAllNotifications());
-    unawaited(_clearPersistedTimerState());
     setState(() {
       _remainingTime = 0;
       _isTimerRunning = false;
@@ -541,6 +565,10 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       _selectedFlowRate = null;
       _timerDurationSeconds = null;
     });
+    if (updateBackend) {
+      unawaited(_sendTimerStopUpdate());
+    }
+    unawaited(_clearPersistedTimerState());
   }
 
   Future<void> _persistRunningTimerState({
@@ -580,6 +608,159 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     await prefs.remove(NotificationService.oxygenTimerDurationKey);
     await prefs.remove(NotificationService.oxygenTimerRowIndexKey);
     await prefs.remove(NotificationService.oxygenTimerFlowRateKey);
+    await prefs.remove(NotificationService.oxygenTimerHistoryIdKey);
+  }
+
+  Future<void> _persistHistoryId(int historyId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(NotificationService.oxygenTimerHistoryIdKey, historyId);
+  }
+
+  Future<void> _clearHistoryId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(NotificationService.oxygenTimerHistoryIdKey);
+  }
+
+  Future<int?> _resolveHistoryId() async {
+    if (_historyId != null) {
+      return _historyId;
+    }
+
+    if (_pendingHistoryIdFuture != null) {
+      _historyId = await _pendingHistoryIdFuture;
+      if (_historyId != null) {
+        await _persistHistoryId(_historyId!);
+      }
+    }
+
+    if (_historyId != null) {
+      return _historyId;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final storedHistoryId = prefs.getInt(NotificationService.oxygenTimerHistoryIdKey);
+    if (storedHistoryId != null && storedHistoryId > 0) {
+      _historyId = storedHistoryId;
+      return _historyId;
+    }
+
+    return null;
+  }
+
+  Future<void> _showTimerApiFailure(String action, String message) async {
+    debugPrint('$action failure: $message');
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$action failed: $message')),
+    );
+  }
+
+  Future<int?> _createTimerHistoryRecord({
+    required _ConsumptionRowData row,
+    required int durationSeconds,
+    required String durationText,
+  }) async {
+    debugPrint('Selected Flow Rate: ${row.flowRate}');
+    debugPrint('Duration Seconds: $durationSeconds');
+    debugPrint('Duration Text: $durationText');
+
+    final response = await OxygenTimerApiService.startTimer(
+      OxygenTimerStartRequest(
+        cylinderType: widget.cylinderType,
+        pressurePsi: widget.pressurePsi,
+        totalOxygenContent: widget.totalContent,
+        selectedFlowRate: row.flowRate.toDouble(),
+        durationSeconds: durationSeconds,
+        durationText: durationText,
+      ),
+    );
+
+    debugPrint('Start Success: ${response.success}');
+    debugPrint('API Response: ${response.toJson()}');
+
+    if (response.success && response.historyId != null) {
+      _historyId = response.historyId;
+      await _persistHistoryId(response.historyId!);
+      debugPrint('History ID: ${response.historyId}');
+      return response.historyId;
+    }
+
+    await _showTimerApiFailure('Start Timer', response.message ?? 'Unknown error');
+    return null;
+  }
+
+  Future<void> _sendTimerPauseUpdate() async {
+    final historyId = await _resolveHistoryId();
+    if (historyId == null) {
+      debugPrint('Pause Success: skipped because history_id is unavailable');
+      return;
+    }
+
+    final response = await OxygenTimerApiService.pauseTimer(historyId);
+    debugPrint('Pause Success: ${response.success}');
+    debugPrint('API Response: ${response.toJson()}');
+    if (!response.success) {
+      await _showTimerApiFailure('Pause Timer', response.message ?? 'Unknown error');
+    }
+  }
+
+  Future<void> _sendTimerResumeUpdate() async {
+    final historyId = await _resolveHistoryId();
+    if (historyId == null) {
+      debugPrint('Resume Success: skipped because history_id is unavailable');
+      return;
+    }
+
+    final response = await OxygenTimerApiService.resumeTimer(historyId);
+    debugPrint('Resume Success: ${response.success}');
+    debugPrint('API Response: ${response.toJson()}');
+    if (!response.success) {
+      await _showTimerApiFailure('Resume Timer', response.message ?? 'Unknown error');
+    }
+  }
+
+  Future<void> _sendTimerStopUpdate() async {
+    final historyId = await _resolveHistoryId();
+    if (historyId == null) {
+      debugPrint('Stop Success: skipped because history_id is unavailable');
+      await _clearHistoryId();
+      return;
+    }
+
+    final response = await OxygenTimerApiService.stopTimer(historyId);
+    debugPrint('Stop Success: ${response.success}');
+    debugPrint('API Response: ${response.toJson()}');
+    if (!response.success) {
+      await _showTimerApiFailure('Stop Timer', response.message ?? 'Unknown error');
+    }
+    await _clearHistoryId();
+    _historyId = null;
+    _pendingHistoryIdFuture = null;
+  }
+
+  Future<void> _sendTimerCompleteUpdate() async {
+    final historyId = await _resolveHistoryId();
+    if (historyId == null) {
+      debugPrint('Complete Success: skipped because history_id is unavailable');
+      return;
+    }
+
+    final response = await OxygenTimerApiService.completeTimer(historyId);
+    debugPrint('Complete Success: ${response.success}');
+    debugPrint('API Response: ${response.toJson()}');
+    if (!response.success) {
+      await _showTimerApiFailure('Complete Timer', response.message ?? 'Unknown error');
+    }
+  }
+
+  void _openTimerHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TimerHistoryScreen()),
+    );
   }
 
   @override
@@ -613,12 +794,25 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
                       : 'Tap a row to highlight',
               showBack: true,
               onBack: () => Navigator.pop(context),
-              onProfileTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              },
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppHeaderActionButton(
+                    icon: Icons.history,
+                    tooltip: 'Timer History',
+                    onTap: _openTimerHistory,
+                  ),
+                  const SizedBox(width: 8),
+                  AppHeaderProfileAvatar(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/ai_service.dart';
+import '../services/oxygen_calculation_service.dart';
 import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/app_header.dart';
 import '../widgets/custom_button.dart' show SecondaryButton;
@@ -28,8 +31,10 @@ class OxygenResultScreen extends StatefulWidget {
 class _OxygenResultScreenState extends State<OxygenResultScreen> {
   bool _isInitialLoading = true;
   bool _isAiLoading = false;
+  bool _isSavingCalculation = false;
   List<String> _aiInsights = [];
   String? _aiWarning;
+  String? _saveStatusMessage;
 
   static const List<String> _fallbackInsights = [
     'Available oxygen reserve is suitable for short-duration procedures.',
@@ -41,7 +46,39 @@ class _OxygenResultScreenState extends State<OxygenResultScreen> {
   @override
   void initState() {
     super.initState();
+    unawaited(_saveCalculation());
     _initializeScreen();
+  }
+
+  Future<void> _saveCalculation() async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSavingCalculation = true;
+      _saveStatusMessage = 'Saving calculation...';
+    });
+
+    final result = await OxygenCalculationService.saveCalculation(
+      cylinderType: widget.cylinderType,
+      pressurePsi: widget.pressure,
+      totalOxygenContent: widget.totalContent,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    final success = result['success'] == true;
+    debugPrint('🧪 Oxygen calculation save result: $result');
+
+    setState(() {
+      _isSavingCalculation = false;
+      _saveStatusMessage = success
+          ? 'Calculation saved successfully'
+          : 'Calculation save failed. You can continue using the app.';
+    });
   }
 
   Future<void> _initializeScreen() async {
@@ -98,7 +135,11 @@ class _OxygenResultScreenState extends State<OxygenResultScreen> {
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 360),
         pageBuilder: (context, animation, secondaryAnimation) {
-          return OxygenConsumptionTableScreen(totalContent: widget.totalContent);
+          return OxygenConsumptionTableScreen(
+            cylinderType: widget.cylinderType,
+            pressurePsi: widget.pressure,
+            totalContent: widget.totalContent,
+          );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           final slideAnimation = Tween<Offset>(
@@ -153,6 +194,8 @@ class _OxygenResultScreenState extends State<OxygenResultScreen> {
                       padding: const EdgeInsets.all(16),
                       children: [
                         _buildTotalOxygenCard(),
+                        const SizedBox(height: 12),
+                        _buildSavingStatusCard(),
                         const SizedBox(height: 12),
                         _buildBreakdownCard(),
                         const SizedBox(height: 14),
@@ -277,6 +320,54 @@ class _OxygenResultScreenState extends State<OxygenResultScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSavingStatusCard() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      child: Container(
+        key: ValueKey<String>(_saveStatusMessage ?? 'saving'),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            if (_isSavingCalculation)
+              const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(
+                _saveStatusMessage?.contains('failed') == true
+                    ? Icons.cloud_off_outlined
+                    : Icons.cloud_done_outlined,
+                size: 18,
+                color: _saveStatusMessage?.contains('failed') == true
+                    ? const Color(0xFFB91C1C)
+                    : const Color(0xFF0F6E56),
+              ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _saveStatusMessage ?? 'Saving calculation...',
+                style: TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontSize: 12,
+                  color: _saveStatusMessage?.contains('failed') == true
+                      ? const Color(0xFFB91C1C)
+                      : const Color(0xFF334155),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
