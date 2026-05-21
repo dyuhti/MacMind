@@ -104,7 +104,7 @@ class _NewCaseScreenState extends State<NewCaseScreen> {
       });
     } else {
       // NEW CASE MODE: Explicitly clear all fields and reset to defaults
-      print('���� New Case Mode - clearing all fields and resetting state');
+      print('New Case Mode - clearing all fields and resetting state');
       _patientNameController.clear();
       _idNumberController.clear();
       _surgeryTypeController.clear();

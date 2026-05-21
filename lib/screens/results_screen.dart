@@ -194,7 +194,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     if (_isSaved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ԣ� This case is already saved'),
+          content: Text('This case is already saved'),
           backgroundColor: Colors.green,
         ),
       );
@@ -209,10 +209,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
       // Format date as YYYY-MM-DD
       final dateStr = '${widget.date.year}-${widget.date.month.toString().padLeft(2, '0')}-${widget.date.day.toString().padLeft(2, '0')}';
       
-      print('��ƥ Attempting to ${isEditMode ? 'update' : 'save'} case...');
-      print('���� Patient: ${widget.patientName}');
-      print('���� Date: $dateStr');
-      if (isEditMode) print('���� Edit Mode - Case ID: $caseId');
+      print('Attempting to ${isEditMode ? 'update' : 'save'} case...');
+      print('Patient: ${widget.patientName}');
+      print('Date: $dateStr');
+      if (isEditMode) print('Edit Mode - Case ID: $caseId');
 
       Map<String, dynamic> result;
 
@@ -307,7 +307,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             _savedAt = savedAt;
           });
 
-          final successMessage = 'ԣ� Case updated successfully';
+          final successMessage = 'Case updated successfully';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(successMessage),
@@ -315,7 +315,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               duration: const Duration(seconds: 2),
             ),
           );
-          print('ԣ� Case updated successfully');
+          print('Case updated successfully');
 
           // Pop back to caller and signal success so calling screens can refresh
           if (mounted) {
@@ -332,7 +332,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             _savedAt = savedAt;
           });
 
-          final successMessage = 'ԣ� Case saved successfully';
+          final successMessage = 'Case saved successfully';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(successMessage),
@@ -342,7 +342,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           );
 
           // Debug and navigate to history after successful save
-          print('ԣ� Save success ��� navigating now');
+          print('Save success - navigating now');
 
           if (mounted) {
             Future.delayed(const Duration(milliseconds: 500), () {
@@ -368,19 +368,19 @@ class _ResultsScreenState extends State<ResultsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('��� ${result['error'] ?? 'Failed to ${isEditMode ? 'update' : 'save'} case'}'),
+            content: Text('${result['error'] ?? 'Failed to ${isEditMode ? 'update' : 'save'} case'}'),
             backgroundColor: const Color(0xFFDC2626),
             duration: const Duration(seconds: 2),
           ),
         );
-        print('��� Failed to ${isEditMode ? 'update' : 'save'} case: ${result['error']}');
+        print('Failed to ${isEditMode ? 'update' : 'save'} case: ${result['error']}');
       }
     } catch (e) {
       if (!mounted) return;
-      print('��� Exception ${context.read<CaseProvider>().isEditMode ? 'updating' : 'saving'} case: $e');
+      print('Exception ${context.read<CaseProvider>().isEditMode ? 'updating' : 'saving'} case: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('��� Error: $e'),
+          content: Text('Error: $e'),
           backgroundColor: const Color(0xFFDC2626),
           duration: const Duration(seconds: 2),
         ),
