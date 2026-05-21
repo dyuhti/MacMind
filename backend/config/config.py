@@ -49,7 +49,7 @@ class Config:
     
     # Email settings
     EMAIL_USER = os.getenv('EMAIL_USER', '')
-    EMAIL_PASS = os.getenv('EMAIL_PASS', '')
+    SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
     
     # API settings
     JSON_SORT_KEYS = False

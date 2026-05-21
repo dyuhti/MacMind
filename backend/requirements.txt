@@ -9,3 +9,4 @@ cryptography==41.0.4
 psycopg[binary]>=3.1.18
 gunicorn==21.2.0
 requests>=2.31.0
+sendgrid==6.12.5
