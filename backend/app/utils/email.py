@@ -1,15 +1,14 @@
 """
 Email utilities for sending OTP and notifications.
-Uses SendGrid for outbound email delivery.
+Uses Brevo for outbound email delivery.
 """
 import logging
 import os
 import traceback
 
+import requests
 from dotenv import load_dotenv
 from flask import current_app
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
 
 # Load environment variables
@@ -30,9 +29,9 @@ def send_otp_email(recipient_email, user_name, otp):
     """
     try:
         email_user = os.getenv('EMAIL_USER', '').strip()
-        sendgrid_api_key = os.getenv('SENDGRID_API_KEY', '').strip()
+        brevo_api_key = os.getenv('BREVO_API_KEY', '').strip()
 
-        if not email_user or not sendgrid_api_key:
+        if not email_user or not brevo_api_key:
             error_message = 'Email credentials not configured in .env'
             try:
                 current_app.logger.error(error_message)
@@ -85,16 +84,27 @@ def send_otp_email(recipient_email, user_name, otp):
         MacMind © 2026
         """
 
-        message = Mail(
-            from_email=email_user,
-            to_emails=recipient_email,
-            subject='Password Reset OTP - Med Calci App',
-            plain_text_content=text_body,
-            html_content=html_body,
+        payload = {
+            'sender': {'email': email_user, 'name': 'Med Calci App'},
+            'to': [{'email': recipient_email, 'name': user_name}],
+            'subject': 'Password Reset OTP - Med Calci App',
+            'textContent': text_body,
+            'htmlContent': html_body,
+        }
+
+        response = requests.post(
+            'https://api.brevo.com/v3/smtp/email',
+            headers={
+                'accept': 'application/json',
+                'api-key': brevo_api_key,
+                'content-type': 'application/json',
+            },
+            json=payload,
+            timeout=15,
         )
 
-        sg = SendGridAPIClient(sendgrid_api_key)
-        sg.send(message)
+        if response.status_code >= 400:
+            raise Exception(f'Brevo API error {response.status_code}: {response.text}')
 
         print(f'OTP email sent successfully to {recipient_email}')
         return {'success': True}

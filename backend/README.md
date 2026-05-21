@@ -496,7 +496,7 @@ VALUES ('dr_smith', 'doctor@hospital.com', '$2b$12$...', 'HOSP_001');
 | `SECRET_KEY` | Flask session secret | Auto-generated |
 | `JWT_SECRET_KEY` | JWT signing key | Auto-generated |
 | `EMAIL_USER` | Email sender address | None |
-| `SENDGRID_API_KEY` | SendGrid API key | None |
+| `BREVO_API_KEY` | Brevo API key | None |
 | `CORS_ORIGINS` | Allowed origins | `*` |
 
 ### Generate Secure Keys
