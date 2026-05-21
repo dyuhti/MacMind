@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/app_header.dart';
+import '../services/notification_service.dart';
 import 'settings_screen.dart';
 
 class OxygenConsumptionTableScreen extends StatefulWidget {
@@ -20,23 +20,20 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
   int selectedIndex = -1;
   Timer? _countdownTimer;
   int _remainingTime = 0;
-  int _totalDurationSeconds = 0;
-  int _warningAtElapsedSeconds = -1;
   bool _isTimerRunning = false;
   bool _isTimerPaused = false;
-  bool _warningShown = false;
   bool _finalShown = false;
   int? _selectedFlowRate;
   int? _activeRowIndex;
 
-  DateTime? _timerStartTime;
+  DateTime? _timerEndTime;
   int? _timerDurationSeconds;
-  int _elapsedBeforePauseSeconds = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_restorePersistedTimerState());
   }
 
   @override
@@ -48,18 +45,85 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _isTimerRunning) {
-      _recalculateRemainingTime();
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (_isTimerRunning && _timerEndTime != null) {
+          _startTicker();
+          _syncRemainingTimeFromEndTime();
+        }
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _countdownTimer?.cancel();
+        break;
     }
   }
 
-  void _recalculateRemainingTime() {
-    if (_timerStartTime == null || _timerDurationSeconds == null) {
+  Future<void> _restorePersistedTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final timerState = prefs.getString(NotificationService.oxygenTimerStateKey);
+    final endTimeMillis = prefs.getInt(NotificationService.oxygenTimerEndKey);
+    final remainingSeconds = prefs.getInt(NotificationService.oxygenTimerRemainingKey);
+    final durationSeconds = prefs.getInt(NotificationService.oxygenTimerDurationKey);
+    final activeRowIndex = prefs.getInt(NotificationService.oxygenTimerRowIndexKey);
+    final selectedFlowRate = prefs.getInt(NotificationService.oxygenTimerFlowRateKey);
+
+    if (!mounted) {
       return;
     }
 
-    final elapsed = _elapsedBeforePauseSeconds + DateTime.now().difference(_timerStartTime!).inSeconds;
-    final newRemaining = _timerDurationSeconds! - elapsed;
+    if (timerState == NotificationService.timerStateRunning &&
+        endTimeMillis != null &&
+        durationSeconds != null &&
+        activeRowIndex != null) {
+      final savedEndTime = DateTime.fromMillisecondsSinceEpoch(endTimeMillis);
+      final restoredRemaining = savedEndTime.difference(DateTime.now()).inSeconds;
+
+      if (restoredRemaining <= 0) {
+        await _handleTimerCompletion();
+        return;
+      }
+
+      setState(() {
+        _timerEndTime = savedEndTime;
+        _timerDurationSeconds = durationSeconds;
+        _remainingTime = restoredRemaining;
+        _isTimerRunning = true;
+        _isTimerPaused = false;
+        _finalShown = false;
+        _activeRowIndex = activeRowIndex;
+        _selectedFlowRate = selectedFlowRate ?? activeRowIndex + 1;
+      });
+
+      _startTicker();
+      return;
+    }
+
+    if (timerState == NotificationService.timerStatePaused &&
+        remainingSeconds != null &&
+        durationSeconds != null &&
+        activeRowIndex != null) {
+      setState(() {
+        _timerEndTime = null;
+        _timerDurationSeconds = durationSeconds;
+        _remainingTime = remainingSeconds;
+        _isTimerRunning = false;
+        _isTimerPaused = true;
+        _finalShown = false;
+        _activeRowIndex = activeRowIndex;
+        _selectedFlowRate = selectedFlowRate ?? activeRowIndex + 1;
+      });
+    }
+  }
+
+  void _syncRemainingTimeFromEndTime() {
+    if (_timerEndTime == null || _timerDurationSeconds == null) {
+      return;
+    }
+
+    final newRemaining = _timerEndTime!.difference(DateTime.now()).inSeconds;
 
     if (!mounted) {
       return;
@@ -70,8 +134,11 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     });
 
     if (_remainingTime <= 0) {
-      _handleTimerCompletion();
+      unawaited(_handleTimerCompletion());
+      return;
     }
+
+    _checkAlertTriggers();
   }
 
   String _formatCountdownDuration(int totalSeconds) {
@@ -286,7 +353,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
         return;
       }
 
-      _recalculateRemainingTime();
+      _syncRemainingTimeFromEndTime();
       _checkAlertTriggers();
     });
   }
@@ -316,50 +383,42 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
 
     _countdownTimer?.cancel();
 
-    final warningTime = durationInSeconds - (5 * 60);
-    final hasWarningWindow = durationInSeconds >= 300;
     final now = DateTime.now();
+    final endTime = now.add(Duration(seconds: durationInSeconds));
 
     setState(() {
-      _totalDurationSeconds = durationInSeconds;
       _remainingTime = durationInSeconds;
-      _warningAtElapsedSeconds = warningTime;
       _isTimerRunning = true;
       _isTimerPaused = false;
-      _warningShown = false;
       _finalShown = false;
       _selectedFlowRate = row.flowRate;
       _activeRowIndex = index;
-      _timerStartTime = now;
+      _timerEndTime = endTime;
       _timerDurationSeconds = durationInSeconds;
-      _elapsedBeforePauseSeconds = 0;
     });
 
-    if (!hasWarningWindow) {
-      _warningShown = true;
-    }
-
     _startTicker();
+    unawaited(_persistRunningTimerState(endTime: endTime, durationSeconds: durationInSeconds, row: row, index: index));
+    unawaited(NotificationService().scheduleTimerNotification(endTime));
   }
 
   void _pauseTimer() {
-    if (!_isTimerRunning || _timerStartTime == null) {
+    if (!_isTimerRunning || _timerEndTime == null || _timerDurationSeconds == null) {
       return;
     }
 
     _countdownTimer?.cancel();
-    final elapsedNow = DateTime.now().difference(_timerStartTime!).inSeconds;
+    final remainingSeconds = _timerEndTime!.difference(DateTime.now()).inSeconds;
 
     setState(() {
-      _elapsedBeforePauseSeconds += elapsedNow;
-      _remainingTime = (_timerDurationSeconds ?? 0) - _elapsedBeforePauseSeconds;
-      if (_remainingTime < 0) {
-        _remainingTime = 0;
-      }
-      _timerStartTime = null;
+      _remainingTime = remainingSeconds > 0 ? remainingSeconds : 0;
+      _timerEndTime = null;
       _isTimerRunning = false;
       _isTimerPaused = true;
     });
+
+    unawaited(NotificationService().cancelTimerNotification());
+    unawaited(_persistPausedTimerState(remainingSeconds: _remainingTime));
   }
 
   void _resumeTimer() {
@@ -367,51 +426,49 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       return;
     }
 
+    final now = DateTime.now();
+    final resumedEndTime = now.add(Duration(seconds: _remainingTime));
+
     setState(() {
-      _timerStartTime = DateTime.now();
+      _timerEndTime = resumedEndTime;
       _isTimerRunning = true;
       _isTimerPaused = false;
+      _finalShown = false;
     });
 
     _startTicker();
+    unawaited(_persistRunningTimerState(
+      endTime: resumedEndTime,
+      durationSeconds: _timerDurationSeconds ?? _remainingTime,
+      row: _ConsumptionRowData(
+        flowRate: _selectedFlowRate ?? 1,
+        durationMin: (_timerDurationSeconds ?? _remainingTime) / 60,
+        durationHr: (_timerDurationSeconds ?? _remainingTime) / 3600,
+      ),
+      index: _activeRowIndex ?? selectedIndex,
+    ));
+    unawaited(NotificationService().scheduleTimerNotification(resumedEndTime));
   }
 
   void _stopTimer() {
     _countdownTimer?.cancel();
+    unawaited(NotificationService().cancelAllNotifications());
+    unawaited(_clearPersistedTimerState());
     setState(() {
       _remainingTime = 0;
       _isTimerRunning = false;
       _isTimerPaused = false;
-      _warningShown = false;
       _finalShown = false;
-      _timerStartTime = null;
-      _elapsedBeforePauseSeconds = 0;
+      _timerEndTime = null;
       _activeRowIndex = null;
       _selectedFlowRate = null;
-      _totalDurationSeconds = 0;
       _timerDurationSeconds = null;
-      _warningAtElapsedSeconds = -1;
     });
   }
 
   void _checkAlertTriggers() {
-    if (_timerStartTime == null) {
+    if (_timerDurationSeconds == null) {
       return;
-    }
-
-    final elapsedSeconds = DateTime.now().difference(_timerStartTime!).inSeconds;
-
-    if (!_warningShown &&
-        _warningAtElapsedSeconds >= 0 &&
-        elapsedSeconds >= _warningAtElapsedSeconds &&
-        _totalDurationSeconds >= 300) {
-      _warningShown = true;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Oxygen will run out in 5 minutes'),
-          duration: Duration(seconds: 4),
-        ),
-      );
     }
 
     if (!_finalShown && _remainingTime <= 0) {
@@ -419,15 +476,20 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     }
   }
 
-  void _handleTimerCompletion() {
+  Future<void> _handleTimerCompletion() async {
+    if (_finalShown) {
+      return;
+    }
+
     _finalShown = true;
     _countdownTimer?.cancel();
+    _timerEndTime = null;
+    unawaited(_clearPersistedTimerState());
 
     setState(() {
       _remainingTime = 0;
       _isTimerRunning = false;
       _isTimerPaused = false;
-      _timerStartTime = null;
     });
 
     _showFinalAlert();
@@ -438,42 +500,86 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       return;
     }
 
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Oxygen Alert'),
-          content: const Text('Oxygen supply exhausted'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                _resetTimer();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Oxygen Alert'),
+            content: const Text('Oxygen supply exhausted'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  _resetTimer();
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    });
   }
 
   void _resetTimer() {
-    if (_timerDurationSeconds == null || _timerDurationSeconds! <= 0) {
-      return;
-    }
-
     _countdownTimer?.cancel();
+    unawaited(NotificationService().cancelAllNotifications());
+    unawaited(_clearPersistedTimerState());
     setState(() {
-      _remainingTime = _timerDurationSeconds!;
+      _remainingTime = 0;
       _isTimerRunning = false;
-      _isTimerPaused = true;
-      _warningShown = false;
+      _isTimerPaused = false;
       _finalShown = false;
-      _timerStartTime = null;
-      _elapsedBeforePauseSeconds = 0;
+      _timerEndTime = null;
+      _activeRowIndex = null;
+      _selectedFlowRate = null;
+      _timerDurationSeconds = null;
     });
+  }
+
+  Future<void> _persistRunningTimerState({
+    required DateTime endTime,
+    required int durationSeconds,
+    required _ConsumptionRowData row,
+    required int index,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(NotificationService.oxygenTimerStateKey, NotificationService.timerStateRunning);
+    await prefs.setInt(NotificationService.oxygenTimerEndKey, endTime.millisecondsSinceEpoch);
+    await prefs.setInt(NotificationService.oxygenTimerRemainingKey, endTime.difference(DateTime.now()).inSeconds > 0 ? endTime.difference(DateTime.now()).inSeconds : 0);
+    await prefs.setInt(NotificationService.oxygenTimerDurationKey, durationSeconds);
+    await prefs.setInt(NotificationService.oxygenTimerRowIndexKey, index);
+    await prefs.setInt(NotificationService.oxygenTimerFlowRateKey, row.flowRate);
+  }
+
+  Future<void> _persistPausedTimerState({required int remainingSeconds}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(NotificationService.oxygenTimerStateKey, NotificationService.timerStatePaused);
+    await prefs.setInt(NotificationService.oxygenTimerRemainingKey, remainingSeconds > 0 ? remainingSeconds : 0);
+    if (_timerDurationSeconds != null) {
+      await prefs.setInt(NotificationService.oxygenTimerDurationKey, _timerDurationSeconds!);
+    }
+    if (_activeRowIndex != null) {
+      await prefs.setInt(NotificationService.oxygenTimerRowIndexKey, _activeRowIndex!);
+      await prefs.setInt(NotificationService.oxygenTimerFlowRateKey, _selectedFlowRate ?? _activeRowIndex! + 1);
+    }
+    await prefs.remove(NotificationService.oxygenTimerEndKey);
+  }
+
+  Future<void> _clearPersistedTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(NotificationService.oxygenTimerStateKey);
+    await prefs.remove(NotificationService.oxygenTimerEndKey);
+    await prefs.remove(NotificationService.oxygenTimerRemainingKey);
+    await prefs.remove(NotificationService.oxygenTimerDurationKey);
+    await prefs.remove(NotificationService.oxygenTimerRowIndexKey);
+    await prefs.remove(NotificationService.oxygenTimerFlowRateKey);
   }
 
   @override

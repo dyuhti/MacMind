@@ -3,6 +3,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tzlib;
 import 'config/app_theme.dart';
 import 'config/api_config.dart';
 import 'screens/login_screen.dart';
@@ -11,6 +14,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/speech_smoke_test_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
+import 'services/notification_service.dart';
 // speech_input_service removed - replaced by self-contained widgets
 import 'providers/case_provider.dart';
 import 'widgets/permission_lifecycle_manager.dart';
@@ -36,6 +40,20 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  tz.initializeTimeZones();
+  try {
+    final dynamic localTimeZoneResult = await FlutterTimezone.getLocalTimezone();
+    final String timeZoneName = localTimeZoneResult is String
+      ? localTimeZoneResult
+      : localTimeZoneResult.name.toString();
+    tzlib.setLocalLocation(tzlib.getLocation(timeZoneName));
+    debugPrint('🕒 Local timezone configured: $timeZoneName');
+  } catch (error) {
+    debugPrint('🕒 Failed to configure local timezone, falling back to UTC: $error');
+    tzlib.setLocalLocation(tzlib.getLocation('UTC'));
+  }
+  await NotificationService().initialize();
+  await NotificationService().requestPermissions();
   debugPrint('🔐 GROQ_API_KEY loaded: ${(dotenv.env['GROQ_API_KEY'] ?? '').isNotEmpty}');
 
   // Log startup configuration
