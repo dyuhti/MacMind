@@ -13,6 +13,7 @@ class OxygenTimerHistory(db.Model):
     __tablename__ = 'oxygen_timer_history'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     cylinder_type = db.Column(db.String(100), nullable=True)
     pressure_psi = db.Column(db.Float, nullable=True)
     total_oxygen_content = db.Column(db.Float, nullable=True)
@@ -31,12 +32,15 @@ class OxygenTimerHistory(db.Model):
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    user = db.relationship('User', backref='oxygen_timer_history')
+
     def __repr__(self):
         return f'<OxygenTimerHistory {self.id} {self.timer_status}>'
 
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'cylinder_type': self.cylinder_type,
             'pressure_psi': self.pressure_psi,
             'total_oxygen_content': self.total_oxygen_content,

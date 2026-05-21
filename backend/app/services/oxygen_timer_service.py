@@ -67,7 +67,7 @@ class OxygenTimerService:
         }, None, None
 
     @staticmethod
-    def start_timer(data):
+    def start_timer(data, user_id):
         """Insert a new oxygen timer history row."""
         parsed, error_response, status_code = OxygenTimerService._parse_start_payload(data)
         if error_response is not None:
@@ -76,6 +76,7 @@ class OxygenTimerService:
         try:
             now = datetime.utcnow()
             history = OxygenTimerHistory(
+                user_id=user_id,
                 cylinder_type=parsed['cylinder_type'],
                 pressure_psi=parsed['pressure_psi'],
                 total_oxygen_content=parsed['total_oxygen_content'],
@@ -112,10 +113,10 @@ class OxygenTimerService:
             }, 500
 
     @staticmethod
-    def update_timer_status(history_id, status, timestamp_field):
+    def update_timer_status(history_id, user_id, status, timestamp_field):
         """Update an existing oxygen timer history row with a new status."""
         try:
-            timer_history = OxygenTimerHistory.query.filter_by(id=history_id).first()
+            timer_history = OxygenTimerHistory.query.filter_by(id=history_id, user_id=user_id).first()
             if timer_history is None:
                 return {
                     'success': False,
@@ -155,11 +156,12 @@ class OxygenTimerService:
             }, 500
 
     @staticmethod
-    def get_history():
+    def get_history(user_id):
         """Return all timer history rows ordered newest first."""
         try:
             history_rows = (
                 OxygenTimerHistory.query
+                .filter_by(user_id=user_id)
                 .order_by(OxygenTimerHistory.created_at.desc(), OxygenTimerHistory.id.desc())
                 .all()
             )

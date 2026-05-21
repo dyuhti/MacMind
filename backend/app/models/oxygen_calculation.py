@@ -13,10 +13,13 @@ class OxygenCalculation(db.Model):
     __tablename__ = 'oxygen_calculations'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     cylinder_type = db.Column(db.String(50), nullable=False, index=True)
     pressure_psi = db.Column(db.Float, nullable=False)
     total_oxygen_content = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='oxygen_calculations')
 
     def __repr__(self):
         return f'<OxygenCalculation {self.id} {self.cylinder_type}>'
@@ -24,6 +27,7 @@ class OxygenCalculation(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'cylinder_type': self.cylinder_type,
             'pressure_psi': self.pressure_psi,
             'total_oxygen_content': self.total_oxygen_content,
