@@ -32,7 +32,15 @@ def send_otp_email(recipient_email, user_name, otp):
         brevo_api_key = os.getenv('BREVO_API_KEY', '').strip()
 
         if not email_user or not brevo_api_key:
-            error_message = 'Email credentials not configured in .env'
+            error_message = 'Brevo email credentials not configured'
+            try:
+                current_app.logger.error(error_message)
+            except Exception:
+                logging.error(error_message)
+            return {'success': False, 'error': error_message}
+
+        if brevo_api_key.startswith('xkeysib_x') or 'xxxxxxxx' in brevo_api_key:
+            error_message = 'Brevo API key is still a placeholder. Set a real BREVO_API_KEY in Render and .env.'
             try:
                 current_app.logger.error(error_message)
             except Exception:
@@ -104,6 +112,12 @@ def send_otp_email(recipient_email, user_name, otp):
         )
 
         if response.status_code >= 400:
+            if response.status_code == 401:
+                raise Exception(
+                    'Brevo API key was rejected (401 unauthorized). '
+                    'Verify that BREVO_API_KEY is a valid Brevo API v3 key, '
+                    'and that the sender email is verified in Brevo.'
+                )
             raise Exception(f'Brevo API error {response.status_code}: {response.text}')
 
         print(f'OTP email sent successfully to {recipient_email}')

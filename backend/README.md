@@ -499,6 +499,10 @@ VALUES ('dr_smith', 'doctor@hospital.com', '$2b$12$...', 'HOSP_001');
 | `BREVO_API_KEY` | Brevo API key | None |
 | `CORS_ORIGINS` | Allowed origins | `*` |
 
+### Brevo setup notes
+
+Use a real Brevo API v3 key in `BREVO_API_KEY`, and make sure the sender address in `EMAIL_USER` is verified in Brevo before testing OTP delivery.
+
 ### Generate Secure Keys
 
 ```bash
