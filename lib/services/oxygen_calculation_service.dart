@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import 'auth_service.dart';
 
 class OxygenCalculationService {
   static Future<Map<String, dynamic>> saveCalculation({
@@ -24,10 +25,25 @@ class OxygenCalculationService {
       debugPrint('🧪 Oxygen save request: $uri');
       debugPrint('🧪 Oxygen save payload: ${jsonEncode(payload)}');
 
+      final token = await AuthService.getToken();
+      debugPrint(
+        '🧪 Oxygen save token: ${token == null ? 'NULL' : '${token.substring(0, 16)}...'}',
+      );
+      if (token == null || token.isEmpty) {
+        debugPrint('🧪 Oxygen save skipped: missing auth token');
+        return {
+          'success': false,
+          'message': 'Authentication required',
+        };
+      }
+
       final response = await http
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
             body: jsonEncode(payload),
           )
           .timeout(const Duration(seconds: 12), onTimeout: () {

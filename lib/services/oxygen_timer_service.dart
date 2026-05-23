@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../models/oxygen_timer_models.dart';
+import 'auth_service.dart';
 
 class OxygenTimerApiService {
   static const Duration _timeout = Duration(seconds: 12);
@@ -36,7 +37,25 @@ class OxygenTimerApiService {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/oxygen/timer/history');
     try {
       debugPrint('Oxygen timer history request: $uri');
-      final response = await http.get(uri).timeout(_timeout, onTimeout: () {
+
+      final token = await AuthService.getToken();
+      debugPrint(
+        'Oxygen timer history token: ${token == null ? 'NULL' : '${token.substring(0, 16)}...'}',
+      );
+      if (token == null || token.isEmpty) {
+        debugPrint('Oxygen timer history skipped: missing auth token');
+        return <OxygenTimerHistoryItem>[];
+      }
+
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(_timeout, onTimeout: () {
         throw TimeoutException('Timeout while fetching oxygen timer history');
       });
 
@@ -70,10 +89,25 @@ class OxygenTimerApiService {
       debugPrint('Oxygen timer request: $uri');
       debugPrint('Oxygen timer payload: ${jsonEncode(payload)}');
 
+      final token = await AuthService.getToken();
+      debugPrint(
+        'Oxygen timer token: ${token == null ? 'NULL' : '${token.substring(0, 16)}...'}',
+      );
+      if (token == null || token.isEmpty) {
+        debugPrint('Oxygen timer request skipped: missing auth token');
+        return const OxygenTimerActionResponse(
+          success: false,
+          message: 'Authentication required',
+        );
+      }
+
       final response = await http
           .post(
             uri,
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
             body: jsonEncode(payload),
           )
           .timeout(_timeout, onTimeout: () {

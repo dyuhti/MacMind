@@ -108,12 +108,17 @@ class NotificationService {
     final remainingDurationSeconds = endTime.difference(DateTime.now()).inSeconds;
     final finishedScheduledDate = tz.TZDateTime.from(endTime.toLocal(), tz.local);
     final details = _buildNotificationDetails();
+    final warningLeadSeconds = remainingDurationSeconds > 300
+        ? 300
+        : remainingDurationSeconds > 10
+            ? (remainingDurationSeconds / 2).floor()
+            : 0;
 
     await cancelTimerNotification();
 
-    if (remainingDurationSeconds > 300) {
+    if (warningLeadSeconds > 0) {
       final warningScheduledDate = tz.TZDateTime.from(
-        endTime.subtract(const Duration(minutes: 5)).toLocal(),
+        endTime.subtract(Duration(seconds: warningLeadSeconds)).toLocal(),
         tz.local,
       );
       debugPrint('⏰ Warning notification scheduled for $warningScheduledDate');
@@ -121,7 +126,7 @@ class NotificationService {
       await _notificationsPlugin!.zonedSchedule(
         warningNotificationId,
         '⚠️ Oxygen Running Low',
-        'Only 5 minutes of oxygen remain. Please prepare a replacement cylinder.',
+        'Oxygen supply is running low. Please prepare a replacement cylinder.',
         warningScheduledDate,
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
