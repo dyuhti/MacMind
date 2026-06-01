@@ -2,10 +2,14 @@
 Calculator routes blueprint
 Handles case saving and retrieval
 """
+from datetime import datetime, timedelta, time
+
 from flask import Blueprint, request, jsonify
 import json as json_lib
+from sqlalchemy import func
 from app import db
 from app.models.case import Case
+from app.models.oxygen_calculation import OxygenCalculation
 from app.utils.decorators import require_token
 
 # Create blueprint for calculator routes
@@ -145,6 +149,76 @@ def get_cases(current_user):
             "success": False,
             "message": f"Error: {str(e)}",
             "cases": []
+        }), 500
+
+
+@calculator_bp.route('/stats', methods=['GET'])
+@require_token
+def get_home_stats(current_user):
+    """
+    Fetch aggregate home screen statistics for the authenticated user.
+    """
+    try:
+        user_id = int(current_user.get('user_id'))
+
+        start_of_day = datetime.combine(datetime.utcnow().date(), time.min)
+        end_of_day = start_of_day + timedelta(days=1)
+
+        case_count = db.session.query(func.count(Case.id)).filter(
+            Case.user_id == user_id,
+        ).scalar() or 0
+
+        case_today_count = db.session.query(func.count(Case.id)).filter(
+            Case.user_id == user_id,
+            Case.created_at >= start_of_day,
+            Case.created_at < end_of_day,
+        ).scalar() or 0
+
+        oxygen_count = db.session.query(func.count(OxygenCalculation.id)).filter(
+            OxygenCalculation.user_id == user_id,
+        ).scalar() or 0
+
+        oxygen_today_count = db.session.query(func.count(OxygenCalculation.id)).filter(
+            OxygenCalculation.user_id == user_id,
+            OxygenCalculation.created_at >= start_of_day,
+            OxygenCalculation.created_at < end_of_day,
+        ).scalar() or 0
+
+        total_calculations = case_count + oxygen_count
+        todays_calculations = case_today_count + oxygen_today_count
+
+        most_used_module = None
+        if total_calculations > 0:
+            if oxygen_count > case_count:
+                most_used_module = {
+                    "key": "oxygen",
+                    "title": "Oxygen Cylinder Duration",
+                    "count": oxygen_count,
+                }
+            else:
+                most_used_module = {
+                    "key": "volatile",
+                    "title": "Volatile Anesthetic Consumption",
+                    "count": case_count,
+                }
+
+        return jsonify({
+            "success": True,
+            "stats": {
+                "total_calculations": total_calculations,
+                "saved_records": case_count,
+                "todays_calculations": todays_calculations,
+                "most_used_module": most_used_module,
+            },
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error fetching home stats: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"Error: {str(e)}",
+            "stats": None,
         }), 500
 
 

@@ -6,6 +6,7 @@ import '../models/case_history_item.dart';
 import '../services/auth_service.dart';
 import '../services/ai_service.dart';
 import '../services/export_service.dart';
+import '../services/home_stats_service.dart';
 import '../services/session_history.dart';
 import '../services/case_service.dart';
 import '../widgets/app_header.dart';
@@ -307,6 +308,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
             _savedAt = savedAt;
           });
 
+          HomeStatsService.notifyStatsRefresh();
+
           final successMessage = 'Case updated successfully';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -331,6 +334,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
             _isSaved = true;
             _savedAt = savedAt;
           });
+
+          HomeStatsService.notifyStatsRefresh();
 
           final successMessage = 'Case saved successfully';
           ScaffoldMessenger.of(context).showSnackBar(

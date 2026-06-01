@@ -77,6 +77,7 @@ flutter:
   assets:
     - .env
     - assets/images/macmind_logo.png
+    - assets/images/macmind_logo_1.png
     - assets/fonts/
 
   # Custom fonts

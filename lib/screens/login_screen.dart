@@ -90,6 +90,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final logoHeight = (screenWidth * 0.28).clamp(170.0, 220.0);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Column(
@@ -102,6 +105,18 @@ class _LoginScreenState extends State<LoginScreen> {
               title: 'Welcome Back',
               subtitle: 'Login to continue',
               trailing: const SizedBox(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+            child: Center(
+              child: SizedBox(
+                height: logoHeight,
+                child: Image.asset(
+                  'assets/images/macmind_logo_1.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
           Expanded(

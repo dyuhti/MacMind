@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/ai_service.dart';
+import '../services/home_stats_service.dart';
 import '../services/oxygen_calculation_service.dart';
 import '../widgets/ai_clinical_insight_card.dart';
 import '../widgets/app_header.dart';
@@ -72,6 +73,10 @@ class _OxygenResultScreenState extends State<OxygenResultScreen> {
 
     final success = result['success'] == true;
     debugPrint('🧪 Oxygen calculation save result: $result');
+
+    if (success) {
+      HomeStatsService.notifyStatsRefresh();
+    }
 
     setState(() {
       _isSavingCalculation = false;
