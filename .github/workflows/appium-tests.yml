@@ -1,0 +1,57 @@
+name: Appium Tests CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  appium-tests:
+    name: Appium tests and artifact generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install Appium test requirements
+        run: |
+          if [ -f "lib/frontend/appium-tests/requirements.txt" ]; then
+            python -m pip install -r lib/frontend/appium-tests/requirements.txt
+          fi
+
+      - name: Generate Appium testcases Excel
+        run: python lib/frontend/appium-tests/generate_appium_testcases.py
+
+      - name: List generated files
+        run: ls -la lib/frontend/appium-tests || true
+
+      - name: Run Appium tests (optional)
+        env:
+          APPIUM_SERVER_URL: ${{ secrets.APPIUM_SERVER_URL }}
+          APPIUM_APP: ${{ secrets.APPIUM_APP }}
+          APPIUM_PLATFORM_NAME: ${{ secrets.APPIUM_PLATFORM_NAME }}
+          APPIUM_APP_PACKAGE: ${{ secrets.APPIUM_APP_PACKAGE }}
+          APPIUM_APP_ACTIVITY: ${{ secrets.APPIUM_APP_ACTIVITY }}
+        run: |
+          if [ -n "$APPIUM_SERVER_URL" ]; then
+            echo "APPIUM_SERVER_URL is set — running pytest (may require device/emulator)"
+            pytest lib/frontend/appium-tests/tests/test_appium_runner.py -q
+          else
+            echo "APPIUM_SERVER_URL not set; skipping Appium tests"
+          fi
+
+      - name: Upload Appium testcases artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-testcases
+          path: lib/frontend/appium-tests/*.xlsx
