@@ -14,10 +14,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Set up Flutter (explicit version to avoid channel resolution issues)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'
+          # Use an explicit stable SDK version instead of the literal 'stable' channel
+          flutter-version: '3.10.6'
 
       - name: Flutter --version
         run: flutter --version
