@@ -1,0 +1,7 @@
+{
+  "sample_user": {
+    "email": "testuser@example.com",
+    "password": "P@ssw0rd123"
+  },
+  "backend_url": "http://localhost:5000"
+}

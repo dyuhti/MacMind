@@ -1,0 +1,38 @@
+name: Backend Dependencies CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-deps:
+    name: Install backend dependencies and generate test cases
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install backend test requirements
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f "backend/automated-tests/requirements.txt" ]; then
+            python -m pip install -r backend/automated-tests/requirements.txt
+          fi
+
+      - name: Generate backend testcases Excel
+        run: |
+          python backend/automated-tests/generate_backend_testcases.py
+
+      - name: Upload generated backend testcases artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-testcases
+          path: backend/automated-tests/testcases_backend_99.xlsx
