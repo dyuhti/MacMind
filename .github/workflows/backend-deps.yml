@@ -30,9 +30,14 @@ jobs:
         run: |
           python backend/automated-tests/generate_backend_testcases.py
 
+      - name: List generated backend artifacts
+        run: |
+          echo "Listing backend/automated-tests contents"
+          ls -la backend/automated-tests || true
+
       - name: Upload generated backend testcases artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-testcases
-          path: backend/automated-tests/testcases_backend_99.xlsx
+          path: backend/automated-tests/*.xlsx
