@@ -317,21 +317,23 @@ class AuthService {
     return prefs.getString(_tokenKey);
   }
 
-  static Future<Map<String, dynamic>> deleteAccount(String password) async {
+  static Future<Map<String, dynamic>> deleteAccount(
+    String email,
+    String password,
+    String confirmPassword,
+  ) async {
     try {
-      final token = await getToken();
-      if (token == null || token.isEmpty) {
-        return {'success': false, 'error': 'You are not signed in'};
-      }
-
       final url = Uri.parse('$baseUrl/api/auth/delete-account');
       final response = await _httpClient.delete(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'password': password}),
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'confirm_password': confirmPassword,
+        }),
       ).timeout(_timeout);
 
       if (response.statusCode == 200) {

@@ -104,7 +104,8 @@ class User(db.Model):
         Returns:
             User object or None
         """
-        return User.query.filter_by(email=email).first()
+        normalized_email = (email or '').strip().lower()
+        return User.query.filter(db.func.lower(User.email) == normalized_email).first()
     
     @staticmethod
     def find_by_id(user_id):
@@ -279,9 +280,9 @@ class User(db.Model):
             return {'success': False, 'error': f'Error updating password: {str(e)}'}
 
     @staticmethod
-    def delete_account(user_id, password):
-        """Delete a user account after verifying the password."""
-        user = User.find_by_id(user_id)
+    def delete_account(email, password):
+        """Delete a user account after verifying the email and password."""
+        user = User.find_by_email(email)
 
         if not user:
             return {'success': False, 'error': 'User not found'}

@@ -11,6 +11,7 @@ class DeleteAccountScreen extends StatefulWidget {
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _isSubmitting = false;
@@ -18,7 +19,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   bool _obscureConfirm = true;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillEmail();
+  }
+
+  Future<void> _prefillEmail() async {
+    final email = await AuthService.getLoggedInEmail();
+    if (!mounted || email == null || email.isEmpty) return;
+    setState(() {
+      _emailController.text = email;
+    });
+  }
+
+  @override
   void dispose() {
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -29,7 +45,11 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final result = await AuthService.deleteAccount(_passwordController.text.trim());
+    final result = await AuthService.deleteAccount(
+      _emailController.text.trim(),
+      _passwordController.text,
+      _confirmController.text,
+    );
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
@@ -101,6 +121,32 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                Text(
+                  'Email address',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if ((value ?? '').trim().isEmpty) {
+                      return 'Please enter your email address';
+                    }
+                    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value!.trim())) {
+                      return 'Enter a valid email address';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Email address',
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 14),
                 Text(
                   'Confirm your password',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),

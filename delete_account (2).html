@@ -443,7 +443,7 @@
         This action is irreversible. All data associated with your account will be permanently removed.
       </div>
 
-      <form id="deleteForm" novalidate onsubmit="event.preventDefault(); return false;">
+      <form id="deleteForm" novalidate onsubmit="return false;">
         <fieldset id="formFields">
           <legend class="sr-only">Account deletion form</legend>
         <div class="field">
@@ -531,7 +531,6 @@
     const HEALTH_CHECK_TIMEOUT_MS = 8000;
     const WARMUP_TIMEOUT_MS = 70000;
     const REQUEST_TIMEOUT_MS = 30000;
-
     const form = document.getElementById('deleteForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
@@ -744,7 +743,7 @@
       }
     }
 
-    async function deleteAccountRequest(email, password) {
+    async function deleteAccountRequest(email, password, confirmPassword) {
       try {
         const response = await fetchWithTimeout(`${API_BASE_URL}${DELETE_ENDPOINT}`, {
           method: 'DELETE',
@@ -754,7 +753,7 @@
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, confirm_password: confirmPassword })
         }, REQUEST_TIMEOUT_MS);
 
         let payload = null;
@@ -819,7 +818,7 @@
       if (isSubmitting) return;
 
       const email = emailInput.value.trim().toLowerCase();
-      const password = passwordInput.value.trim();
+      const password = passwordInput.value;
 
       setSubmitting(true);
       clearMessage();
@@ -832,7 +831,7 @@
         }
 
         showMessage('Deleting your account...', 'info');
-        const result = await deleteAccountRequest(email, password);
+        const result = await deleteAccountRequest(email, password, confirmInput.value);
         if (result.success) {
           form.reset();
           clearErrors();

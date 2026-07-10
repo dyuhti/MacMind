@@ -297,32 +297,37 @@ def delete_account_options():
     response.headers['Allow'] = 'DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
     response.headers['Access-Control-Allow-Methods'] = 'DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
 
 @auth_bp.route('/delete-account', methods=['DELETE'])
 @require_json
-@require_token
-def delete_account(current_user):
-    """Delete the current authenticated user account after password confirmation."""
+def delete_account():
+    """Delete a user account after confirming the email and password."""
     try:
         data = request.get_json(silent=True) or {}
+        email = str(data.get('email', '')).strip().lower()
         password = data.get('password', '')
+        confirm_password = data.get('confirm_password', '')
+
+        if not email:
+            return {'success': False, 'message': 'Email is required'}, 400
+
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return {'success': False, 'message': 'Invalid email format'}, 400
 
         if not password:
             return {'success': False, 'message': 'Password is required'}, 400
 
-        user_id = current_user.get('id') or current_user.get('user_id')
-        if not user_id:
-            return {'success': False, 'message': 'Unable to identify user'}, 401
+        if not confirm_password:
+            return {'success': False, 'message': 'Confirm password is required'}, 400
 
-        try:
-            user_id = int(user_id)
-        except (TypeError, ValueError):
-            return {'success': False, 'message': 'Invalid user identity in token'}, 401
+        if password != confirm_password:
+            return {'success': False, 'message': 'Passwords do not match'}, 400
 
-        result = User.delete_account(user_id, password)
+        result = User.delete_account(email, password)
         if not result['success']:
             return {'success': False, 'message': result['error']}, 400
 

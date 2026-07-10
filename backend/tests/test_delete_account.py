@@ -21,7 +21,7 @@ class DeleteAccountRouteTests(unittest.TestCase):
             db.session.remove()
             db.drop_all()
 
-    def _register_and_login(self):
+    def _register_user(self):
         register_resp = self.client.post('/api/auth/register', json={
             'full_name': 'Delete Me',
             'email': 'delete@example.com',
@@ -29,16 +29,16 @@ class DeleteAccountRouteTests(unittest.TestCase):
             'confirm_password': 'StrongPass123',
         })
         self.assertEqual(register_resp.status_code, 201)
-        token = register_resp.get_json()['token']
-        return token
+        return register_resp.get_json()['user']['email']
 
     def test_delete_account_removes_user_and_returns_success(self):
-        token = self._register_and_login()
+        email = self._register_user()
         delete_resp = self.client.delete('/api/auth/delete-account', headers={
-            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json',
         }, json={
+            'email': email,
             'password': 'StrongPass123',
+            'confirm_password': 'StrongPass123',
         })
 
         self.assertEqual(delete_resp.status_code, 200)
@@ -46,8 +46,22 @@ class DeleteAccountRouteTests(unittest.TestCase):
         self.assertTrue(payload['success'])
         self.assertIn('deleted', payload['message'].lower())
 
-        profile_resp = self.client.get('/api/auth/profile', headers={'Authorization': f'Bearer {token}'})
-        self.assertEqual(profile_resp.status_code, 401)
+        login_resp = self.client.post('/api/auth/login', json={
+            'email': email,
+            'password': 'StrongPass123',
+        })
+        self.assertEqual(login_resp.status_code, 401)
+
+    def test_delete_account_requires_matching_password_confirmation(self):
+        email = self._register_user()
+        delete_resp = self.client.delete('/api/auth/delete-account', json={
+            'email': email,
+            'password': 'StrongPass123',
+            'confirm_password': 'WrongPass123',
+        })
+
+        self.assertEqual(delete_resp.status_code, 400)
+        self.assertIn('match', delete_resp.get_json()['message'].lower())
 
     def test_delete_account_options_preflight_is_allowed(self):
         response = self.client.options('/api/auth/delete-account', headers={
