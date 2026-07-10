@@ -160,7 +160,7 @@ def get_profile(current_user):
         user = User.find_by_email(current_user['email'])
         
         if not user:
-            return {'success': False, 'message': 'User not found'}, 404
+            return {'success': False, 'message': 'User not found'}, 401
         
         return {
             'success': True,
@@ -286,6 +286,54 @@ def reset_password():
         return {
             'success': False,
             'message': f'Error resetting password: {str(e)}'
+        }, 500
+
+
+@auth_bp.route('/delete-account', methods=['OPTIONS'])
+def delete_account_options():
+    """Handle CORS preflight for account deletion requests."""
+    response = jsonify({'success': True, 'message': 'Preflight ok'})
+    response.status_code = 200
+    response.headers['Allow'] = 'DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
+    response.headers['Access-Control-Allow-Methods'] = 'DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
+
+@auth_bp.route('/delete-account', methods=['DELETE'])
+@require_json
+@require_token
+def delete_account(current_user):
+    """Delete the current authenticated user account after password confirmation."""
+    try:
+        data = request.get_json(silent=True) or {}
+        password = data.get('password', '')
+
+        if not password:
+            return {'success': False, 'message': 'Password is required'}, 400
+
+        user_id = current_user.get('id') or current_user.get('user_id')
+        if not user_id:
+            return {'success': False, 'message': 'Unable to identify user'}, 401
+
+        try:
+            user_id = int(user_id)
+        except (TypeError, ValueError):
+            return {'success': False, 'message': 'Invalid user identity in token'}, 401
+
+        result = User.delete_account(user_id, password)
+        if not result['success']:
+            return {'success': False, 'message': result['error']}, 400
+
+        return {
+            'success': True,
+            'message': 'Account deleted successfully'
+        }, 200
+    except Exception as e:
+        return {
+            'success': False,
+            'message': f'Error deleting account: {str(e)}'
         }, 500
 
 

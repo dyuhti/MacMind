@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Request permanent account deletion for MacMind." />
+  <title>Delete Account | MacMind</title>
+  <style>
+    :root {
+      --bg: #F5F7FA;
+      --card: #FFFFFF;
+      --primary: #4A90E2;
+      --primary-dark: #2E5CB8;
+      --text: #1F2937;
+      --muted: #6B7280;
+      --danger: #DC2626;
+      --danger-dark: #B91C1C;
+      --success: #15803D;
+      --success-bg: #ECFDF3;
+      --border: #D8E2EC;
+      --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+      --focus: 0 0 0 3px rgba(74, 144, 226, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    :focus-visible {
+      outline: 3px solid rgba(74,144,226,0.22);
+      outline-offset: 2px;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height: 1.45;
+      font-size: 16px;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 18px;
+    }
+
+    .page {
+      width: min(100%, 640px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(216, 226, 236, 0.9);
+      border-radius: 20px;
+      padding: 32px 30px;
+      box-shadow: var(--shadow);
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .brand-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      font-weight: 700;
+      box-shadow: 0 12px 28px rgba(74, 144, 226, 0.18);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .brand-subtitle {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .intro {
+      margin: 8px 0 18px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .warning {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      color: #334155;
+      font-size: 0.98rem;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label,
+    .checkbox-label {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 0.98rem;
+      color: var(--text);
+      background: #fff;
+      transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="checkbox"]:focus + .checkbox-mark,
+    button:focus-visible {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: var(--focus);
+    }
+
+    .error {
+      min-height: 1.1rem;
+      margin: 6px 0 0;
+      color: var(--danger);
+      font-size: 0.85rem;
+    }
+
+    .checkbox-field {
+      margin: 18px 0 20px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: #334155;
+    }
+
+    input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .checkbox-mark {
+      width: 18px;
+      height: 18px;
+      min-width: 18px;
+      margin-top: 2px;
+      border-radius: 4px;
+      border: 2px solid #94A3B8;
+      background: #fff;
+      display: inline-block;
+      position: relative;
+      transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+      flex-shrink: 0;
+    }
+
+    input[type="checkbox"]:checked + .checkbox-mark {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    input[type="checkbox"]:checked + .checkbox-mark::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .primary-btn,
+    .danger-btn,
+    .secondary-btn {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms ease, opacity 140ms ease;
+      will-change: transform;
+    }
+
+    .primary-btn:hover,
+    .danger-btn:hover,
+    .secondary-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 36px rgba(15,23,42,0.08);
+    }
+
+    .primary-btn:disabled,
+    .danger-btn:disabled,
+    .secondary-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .primary-btn {
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      box-shadow: 0 12px 24px rgba(74, 144, 226, 0.24);
+    }
+
+    .danger-btn {
+      color: #fff;
+      background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+      box-shadow: 0 12px 24px rgba(220, 38, 38, 0.22);
+    }
+
+    .secondary-btn {
+      color: var(--text);
+      background: #F8FAFC;
+      border: 1px solid var(--border);
+    }
+
+    .btn-content {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 22px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.7);
+      border-top-color: #fff;
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .spinner.hidden {
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .message-panel {
+      margin-top: 16px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      display: none;
+      border: 1px solid transparent;
+    }
+
+    .message-panel.show {
+      display: block;
+    }
+
+    .message-panel.error {
+      display: block;
+      background: #FEF2F2;
+      color: #991B1B;
+      border-color: #FECACA;
+    }
+
+    .message-panel.success {
+      display: block;
+      background: var(--success-bg);
+      color: var(--success);
+      border-color: #BBF7D0;
+    }
+
+    .message-panel.info {
+      display: block;
+      background: #EFF6FF;
+      color: var(--primary-dark);
+      border-color: #BFDBFE;
+    }
+
+    .success-state {
+      display: none;
+      background: var(--success-bg);
+      border: 1px solid #BBF7D0;
+      border-radius: 18px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+
+    .success-state.show {
+      display: block;
+    }
+
+    .success-title {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .success-subtitle {
+      margin: 0 0 10px;
+      color: #166534;
+    }
+
+    .redirect-text {
+      font-size: 0.95rem;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(100%, 440px);
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .modal-card h2 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+    }
+
+    .modal-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
+    .modal-actions {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 2px 8px 0;
+    }
+
+    footer a {
+      color: var(--primary-dark);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        padding: 24px 18px;
+      }
+
+      .modal-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .primary-btn, .danger-btn, .secondary-btn, .card {
+        transition: none !important;
+        animation: none !important;
+      }
+      .spinner { animation: none; }
+    }
+
+    /* Screen reader only */
+    .sr-only { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px,1px,1px,1px); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card" aria-labelledby="page-title">
+      <div class="brand">
+        <div class="brand-badge" aria-hidden="true">M</div>
+        <div>
+          <h1 id="page-title">MacMind</h1>
+          <p class="brand-subtitle">Request Permanent Account Deletion</p>
+        </div>
+      </div>
+
+      <p class="intro">Use this secure form to request permanent deletion of your MacMind account from the backend.</p>
+
+      <div class="warning" role="note">
+        This action is irreversible. All data associated with your account will be permanently removed.
+      </div>
+
+      <form id="deleteForm" novalidate onsubmit="event.preventDefault(); return false;">
+        <fieldset id="formFields">
+          <legend class="sr-only">Account deletion form</legend>
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="Enter your email" required aria-describedby="emailError" />
+          <p class="error" id="emailError" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required aria-describedby="passwordError" />
+          <p class="error" id="passwordError" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <label for="confirmPassword">Confirm password</label>
+          <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Re-enter your password" required aria-describedby="confirmPasswordError" />
+          <p class="error" id="confirmPasswordError" role="alert"></p>
+        </div>
+
+        <div class="checkbox-field">
+          <label class="checkbox-row" for="consent">
+            <input id="consent" name="consent" type="checkbox" required />
+            <span class="checkbox-mark" aria-hidden="true"></span>
+            <span>I understand that deleting my account is permanent and cannot be undone.</span>
+          </label>
+          <p class="error" id="consentError" role="alert"></p>
+        </div>
+
+        </fieldset>
+
+        <button id="submitBtn" class="primary-btn" type="button" aria-busy="false">
+          <span class="btn-content">
+            <span class="spinner hidden" id="spinner" aria-hidden="true"></span>
+            <span id="buttonLabel">Delete Account</span>
+          </span>
+        </button>
+      </form>
+
+      <div id="messagePanel" class="message-panel" role="status" aria-live="polite"></div>
+
+      <div id="successState" class="success-state" aria-live="polite">
+        <h2 class="success-title" id="successTitle">Your account has been permanently deleted successfully.</h2>
+        <p class="success-subtitle" id="successSubtitle">The deletion request has been completed.</p>
+        <p class="redirect-text" id="redirectText">Redirecting in 5...</p>
+      </div>
+    </section>
+
+    <footer>
+      <span>© 2026 MacMind</span> · <a href="https://dyuthi.github.io/privacy-policy/" target="_blank" rel="noopener noreferrer">Privacy Policy</a> · <a href="mailto:support@macmind.app">support@macmind.app</a>
+    </footer>
+  </main>
+
+  <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmDescription" aria-hidden="true">
+    <div class="modal-card">
+      <h2 id="confirmTitle">Are you absolutely sure?</h2>
+      <p id="confirmDescription">Deleting your account is permanent. All account data associated with your account will be permanently deleted. This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="cancelConfirmBtn" class="secondary-btn" type="button">Cancel</button>
+        <button id="confirmDeleteBtn" class="danger-btn" type="button">Delete Forever</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    // NOTE: The backend must allow requests from your GitHub Pages origin
+    // (for example: https://dyuthi.github.io or https://<your-username>.github.io).
+    // While testing locally, you may also allow http://localhost:8000.
+    // Configure CORS to return these headers on OPTIONS and actual responses:
+    //   Access-Control-Allow-Origin: https://dyuthi.github.io
+    //   Access-Control-Allow-Methods: DELETE, OPTIONS
+    //   Access-Control-Allow-Headers: Content-Type
+    //   Access-Control-Allow-Credentials: false
+    const API_BASE_URL = 'https://med-calci-backend-new.onrender.com';
+    const REDIRECT_URL = 'https://dyuthi.github.io/privacy-policy/';
+    const DELETE_ENDPOINT = '/api/auth/delete-account';
+    const HEALTH_ENDPOINT = '/api/health';
+
+    // Render's free tier spins the backend down after inactivity. The first
+    // request after a cold start can take 30-60s to respond, which is why
+    // the previous 15s timeout was failing. We ping /api/health first (short
+    // timeout) and, if that fails, wait out a much longer warm-up window
+    // before attempting the actual delete request.
+    const HEALTH_CHECK_TIMEOUT_MS = 8000;
+    const WARMUP_TIMEOUT_MS = 70000;
+    const REQUEST_TIMEOUT_MS = 30000;
+
+    const form = document.getElementById('deleteForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirmPassword');
+    const consentInput = document.getElementById('consent');
+    const submitBtn = document.getElementById('submitBtn');
+    const buttonLabel = document.getElementById('buttonLabel');
+    const spinner = document.getElementById('spinner');
+    const messagePanel = document.getElementById('messagePanel');
+    const successState = document.getElementById('successState');
+    const redirectText = document.getElementById('redirectText');
+    const confirmModal = document.getElementById('confirmModal');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+    const fieldElements = {
+      email: document.getElementById('emailError'),
+      password: document.getElementById('passwordError'),
+      confirmPassword: document.getElementById('confirmPasswordError'),
+      consent: document.getElementById('consentError')
+    };
+
+    const inputElements = {
+      email: emailInput,
+      password: passwordInput,
+      confirmPassword: confirmInput,
+      consent: consentInput
+    };
+
+    let isSubmitting = false;
+    let redirectTimerId = null;
+    let previouslyFocused = null;
+
+    function escapeText(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function clearErrors() {
+      Object.values(fieldElements).forEach((element) => {
+        element.textContent = '';
+      });
+      Object.values(inputElements).forEach((input) => {
+        input.removeAttribute('aria-invalid');
+      });
+    }
+
+    function setFieldError(fieldName, message) {
+      const input = inputElements[fieldName];
+      const error = fieldElements[fieldName];
+      if (!input || !error) return;
+      input.setAttribute('aria-invalid', 'true');
+      error.textContent = message;
+    }
+
+    function showMessage(message, type) {
+      // Only expose sanitized messages to users
+      messagePanel.textContent = String(message || '');
+      messagePanel.className = `message-panel ${type} show`;
+    }
+
+    function clearMessage() {
+      messagePanel.textContent = '';
+      messagePanel.className = 'message-panel';
+    }
+
+    function setSubmitting(isLoading) {
+      isSubmitting = isLoading;
+      submitBtn.disabled = isLoading;
+      submitBtn.setAttribute('aria-busy', String(isLoading));
+      spinner.classList.toggle('hidden', !isLoading);
+      buttonLabel.textContent = isLoading ? 'Deleting...' : 'Delete Account';
+
+      // Disable form fields via fieldset for better semantics
+      const fieldset = document.getElementById('formFields');
+      if (fieldset) fieldset.disabled = isLoading;
+    }
+
+    function validateForm() {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      const confirmPassword = confirmInput.value.trim();
+      const consent = consentInput.checked;
+
+      clearErrors();
+
+      if (!email) {
+        setFieldError('email', 'Please enter your email address.');
+        emailInput.focus();
+        return false;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setFieldError('email', 'Please enter a valid email address.');
+        emailInput.focus();
+        return false;
+      }
+
+      if (!password) {
+        setFieldError('password', 'Please enter your password.');
+        passwordInput.focus();
+        return false;
+      }
+
+      if (!confirmPassword) {
+        setFieldError('confirmPassword', 'Please confirm your password.');
+        confirmInput.focus();
+        return false;
+      }
+
+      if (password !== confirmPassword) {
+        setFieldError('confirmPassword', 'Passwords do not match.');
+        confirmInput.focus();
+        return false;
+      }
+
+      if (!consent) {
+        setFieldError('consent', 'You must confirm that the deletion is permanent.');
+        consentInput.focus();
+        return false;
+      }
+
+      return true;
+    }
+
+    function openConfirmModal() {
+      previouslyFocused = document.activeElement;
+      confirmModal.classList.add('show');
+      confirmModal.setAttribute('aria-hidden', 'false');
+      // Focus primary action for quick keyboard confirmation
+      confirmDeleteBtn.focus();
+      trapFocus(confirmModal);
+    }
+
+    function closeConfirmModal() {
+      confirmModal.classList.remove('show');
+      confirmModal.setAttribute('aria-hidden', 'true');
+      releaseFocusTrap();
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+    }
+
+    function getFriendlyMessage(status, payload) {
+      const serverMessage = payload && typeof payload === 'object' && payload.message ? String(payload.message) : '';
+      const safeMessage = serverMessage ? escapeText(serverMessage) : '';
+
+      switch (status) {
+        case 400:
+          return 'Please review your information and try again.';
+        case 401:
+        case 403:
+          return 'The credentials you entered are not authorized. Please verify your email and password.';
+        case 404:
+          return 'The account deletion service is currently unavailable.';
+        case 409:
+          return 'This account cannot be deleted at the moment. Please contact support.';
+        case 422:
+          return 'The information provided is invalid. Please verify your details and try again.';
+        case 429:
+          return 'Too many requests were made. Please wait a moment and try again.';
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          return 'The service is temporarily unavailable. Please try again shortly.';
+        default:
+          // Do not echo raw server messages; show sanitized fallback
+          return safeMessage || 'We could not complete the request. Please try again.';
+      }
+    }
+
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    // Wakes the Render backend before the real delete request. Tries a quick
+    // ping first; if the server is asleep, that will fail fast (connection
+    // refused/reset) or hang, so we fall back to a long-timeout ping and wait
+    // for the container to actually spin up.
+    async function warmUpServer(onStatus) {
+      onStatus('Connecting to server...');
+      try {
+        await fetchWithTimeout(`${API_BASE_URL}${HEALTH_ENDPOINT}`, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'omit'
+        }, HEALTH_CHECK_TIMEOUT_MS);
+        return true;
+      } catch (err) {
+        onStatus('Server was inactive and is waking up. This can take up to a minute...');
+        try {
+          await fetchWithTimeout(`${API_BASE_URL}${HEALTH_ENDPOINT}`, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit'
+          }, WARMUP_TIMEOUT_MS);
+          return true;
+        } catch (err2) {
+          return false;
+        }
+      }
+    }
+
+    async function deleteAccountRequest(email, password) {
+      try {
+        const response = await fetchWithTimeout(`${API_BASE_URL}${DELETE_ENDPOINT}`, {
+          method: 'DELETE',
+          mode: 'cors',
+          credentials: 'omit',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        }, REQUEST_TIMEOUT_MS);
+
+        let payload = null;
+        try {
+          // Some successful responses (204 No Content) have no body
+          payload = await response.json();
+        } catch (err) {
+          payload = null;
+        }
+
+        // Treat any 2xx (including 204) as success. Additionally accept
+        // common success shapes from APIs: { success: true }, { deleted: true }, or a message
+        if (response.ok) {
+          if (payload && (payload.success === true || payload.deleted === true)) {
+            return { success: true };
+          }
+
+          if (payload && typeof payload.message === 'string' && /delete|deleted|success/i.test(payload.message)) {
+            return { success: true };
+          }
+
+          // Generic success when server returns 2xx with or without body
+          return { success: true };
+        }
+
+        return {
+          success: false,
+          message: getFriendlyMessage(response.status, payload)
+        };
+      } catch (error) {
+        if (error && error.name === 'AbortError') {
+          return { success: false, message: 'The request timed out. The server may still be starting up — please try again in a moment.' };
+        }
+
+        if (error instanceof TypeError) {
+          // Could be network failure or a CORS failure
+          return { success: false, message: 'Could not reach the server. This may be a network or CORS issue.' };
+        }
+
+        return { success: false, message: 'Something unexpected happened. Please try again.' };
+      }
+    }
+
+    function showSuccessState() {
+      form.style.display = 'none';
+      successState.classList.add('show');
+      clearMessage();
+      redirectText.textContent = 'Redirecting in 5...';
+
+      let countdown = 5;
+      redirectTimerId = window.setInterval(() => {
+        countdown -= 1;
+        redirectText.textContent = `Redirecting in ${countdown}...`;
+        if (countdown <= 0) {
+          window.clearInterval(redirectTimerId);
+          window.location.assign(REDIRECT_URL);
+        }
+      }, 1000);
+    }
+
+    async function handleDeleteRequest() {
+      if (isSubmitting) return;
+
+      const email = emailInput.value.trim().toLowerCase();
+      const password = passwordInput.value.trim();
+
+      setSubmitting(true);
+      clearMessage();
+
+      try {
+        const isAwake = await warmUpServer((status) => showMessage(status, 'info'));
+        if (!isAwake) {
+          showMessage('The server did not respond in time. Please wait a few seconds and try again.', 'error');
+          return;
+        }
+
+        showMessage('Deleting your account...', 'info');
+        const result = await deleteAccountRequest(email, password);
+        if (result.success) {
+          form.reset();
+          clearErrors();
+          showSuccessState();
+        } else {
+          showMessage(result.message, 'error');
+        }
+      } catch (error) {
+        showMessage('We could not complete the request. Please try again.', 'error');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+
+    function handleSubmitIntent(event) {
+      if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+      }
+      if (isSubmitting) return;
+      if (!validateForm()) {
+        return;
+      }
+      openConfirmModal();
+    }
+
+    // submitBtn is type="button" (not type="submit") so a failed/late script
+    // load can never fall back to the browser's native form submission,
+    // which on file:// pages triggers "Unsafe attempt to load URL ... from
+    // frame ..." since file: origins can't self-navigate. The form's submit
+    // listener is kept only as a safety net for Enter-key presses in some
+    // browsers, and the inline onsubmit="return false" on the <form> tag
+    // blocks native submission even if this script never runs at all.
+    submitBtn.addEventListener('click', handleSubmitIntent);
+    form.addEventListener('submit', handleSubmitIntent);
+
+    cancelConfirmBtn.addEventListener('click', () => {
+      closeConfirmModal();
+    });
+
+    confirmDeleteBtn.addEventListener('click', () => {
+      closeConfirmModal();
+      handleDeleteRequest();
+    });
+
+    confirmModal.addEventListener('click', (event) => {
+      if (event.target === confirmModal) {
+        closeConfirmModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && confirmModal.classList.contains('show')) {
+        closeConfirmModal();
+      }
+    });
+
+    // Trap focus inside modal while open
+    let focusTrap = null;
+    function trapFocus(modal) {
+      const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      focusTrap = function(e) {
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      };
+      document.addEventListener('keydown', focusTrap);
+    }
+
+    function releaseFocusTrap() {
+      if (focusTrap) {
+        document.removeEventListener('keydown', focusTrap);
+        focusTrap = null;
+      }
+    }
+
+    emailInput.addEventListener('input', () => {
+      if (fieldElements.email.textContent) {
+        clearErrors();
+      }
+    });
+
+    passwordInput.addEventListener('input', () => {
+      if (fieldElements.password.textContent) {
+        clearErrors();
+      }
+    });
+
+    confirmInput.addEventListener('input', () => {
+      if (fieldElements.confirmPassword.textContent) {
+        clearErrors();
+      }
+    });
+
+    consentInput.addEventListener('change', () => {
+      if (fieldElements.consent.textContent) {
+        clearErrors();
+      }
+    });
+  </script>
+</body>
+</html>

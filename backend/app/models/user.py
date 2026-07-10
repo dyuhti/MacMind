@@ -278,4 +278,23 @@ class User(db.Model):
             db.session.rollback()
             return {'success': False, 'error': f'Error updating password: {str(e)}'}
 
+    @staticmethod
+    def delete_account(user_id, password):
+        """Delete a user account after verifying the password."""
+        user = User.find_by_id(user_id)
+
+        if not user:
+            return {'success': False, 'error': 'User not found'}
+
+        if not verify_password(password, user.password):
+            return {'success': False, 'error': 'Incorrect password'}
+
+        try:
+            db.session.delete(user)
+            db.session.commit()
+            return {'success': True, 'message': 'Account deleted successfully'}
+        except Exception as e:
+            db.session.rollback()
+            return {'success': False, 'error': f'Error deleting account: {str(e)}'}
+
 

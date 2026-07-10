@@ -12,6 +12,7 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/speech_smoke_test_screen.dart';
+import 'screens/delete_account_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
 import 'services/notification_service.dart';
@@ -107,6 +108,8 @@ class MyApp extends StatelessWidget {
         routes: {
           '/onboarding': (context) => const OnboardingScreen(),
           '/speech-smoke-test': (context) => const SpeechSmokeTestScreen(),
+          '/delete-account': (context) => const DeleteAccountScreen(),
+          '/login': (context) => const LoginScreen(),
         },
         scrollBehavior: const AppScrollBehavior(),
         home: FutureBuilder<bool>(

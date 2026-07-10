@@ -317,6 +317,40 @@ class AuthService {
     return prefs.getString(_tokenKey);
   }
 
+  static Future<Map<String, dynamic>> deleteAccount(String password) async {
+    try {
+      final token = await getToken();
+      if (token == null || token.isEmpty) {
+        return {'success': false, 'error': 'You are not signed in'};
+      }
+
+      final url = Uri.parse('$baseUrl/api/auth/delete-account');
+      final response = await _httpClient.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'password': password}),
+      ).timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        await logout();
+        return {'success': true, 'message': 'Account deleted successfully'};
+      }
+
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        return {'success': false, 'error': body['message'] ?? body['error'] ?? 'Failed to delete account'};
+      } catch (_) {
+        return {'success': false, 'error': 'Failed to delete account'};
+      }
+    } catch (e) {
+      print('❌ DeleteAccount Error: $e');
+      return {'success': false, 'error': 'Network error: $e'};
+    }
+  }
+
   // Clear authentication on logout
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
