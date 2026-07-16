@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
+import 'user_dashboard_screen.dart';
 
 // ── Section enum ─────────────────────────────────────────────────────────────
 
@@ -1063,86 +1064,98 @@ class _UserTile extends StatelessWidget {
     final isActive = user['is_active'] as bool? ?? true;
     final isAdmin = (user['role']?.toString() ?? 'user') == 'admin';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: CircleAvatar(
-          backgroundColor:
-              isActive ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
-          child: Text(
-            (user['name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color:
-                  isActive ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => UserDashboardScreen(
+              userId: user['id'] as int,
             ),
           ),
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
-        title: Text(
-          user['name']?.toString() ?? '—',
-          style: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(user['email']?.toString() ?? '',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-            const SizedBox(height: 4),
-            Row(children: [
-              _RoleBadge(role: user['role']?.toString() ?? 'user'),
-              const SizedBox(width: 6),
-              if (!isActive)
-                _StatusBadge(label: 'Inactive', color: const Color(0xFFE11D48)),
-            ]),
-          ],
-        ),
-        trailing: isAdmin
-            ? const Tooltip(
-                message: 'Admin account protected',
-                child: Icon(Icons.shield_outlined,
-                    color: Color(0xFF2563EB), size: 20))
-            : PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
-                onSelected: (val) {
-                  if (val == 'toggle') onToggleActive();
-                  if (val == 'delete') onDelete();
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'toggle',
-                    child: Row(children: [
-                      Icon(
-                        isActive
-                            ? Icons.block_outlined
-                            : Icons.check_circle_outline,
-                        color:
-                            isActive ? const Color(0xFFF59E0B) : const Color(0xFF0D9488),
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(isActive ? 'Deactivate' : 'Reactivate'),
-                    ]),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(children: [
-                      Icon(Icons.delete_outline,
-                          color: Color(0xFFE11D48), size: 18),
-                      SizedBox(width: 8),
-                      Text('Delete',
-                          style: TextStyle(color: Color(0xFFE11D48))),
-                    ]),
-                  ),
-                ],
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          leading: CircleAvatar(
+            backgroundColor:
+                isActive ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+            child: Text(
+              (user['name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color:
+                    isActive ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
               ),
+            ),
+          ),
+          title: Text(
+            user['name']?.toString() ?? '—',
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(user['email']?.toString() ?? '',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              const SizedBox(height: 4),
+              Row(children: [
+                _RoleBadge(role: user['role']?.toString() ?? 'user'),
+                const SizedBox(width: 6),
+                if (!isActive)
+                  _StatusBadge(label: 'Inactive', color: const Color(0xFFE11D48)),
+              ]),
+            ],
+          ),
+          trailing: isAdmin
+              ? const Tooltip(
+                  message: 'Admin account protected',
+                  child: Icon(Icons.shield_outlined,
+                      color: Color(0xFF2563EB), size: 20))
+              : PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
+                  onSelected: (val) {
+                    if (val == 'toggle') onToggleActive();
+                    if (val == 'delete') onDelete();
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'toggle',
+                      child: Row(children: [
+                        Icon(
+                          isActive
+                              ? Icons.block_outlined
+                              : Icons.check_circle_outline,
+                          color:
+                              isActive ? const Color(0xFFF59E0B) : const Color(0xFF0D9488),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(isActive ? 'Deactivate' : 'Reactivate'),
+                      ]),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        Icon(Icons.delete_outline,
+                            color: Color(0xFFE11D48), size: 18),
+                        SizedBox(width: 8),
+                        Text('Delete',
+                            style: TextStyle(color: Color(0xFFE11D48))),
+                      ]),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

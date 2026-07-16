@@ -43,6 +43,22 @@ def _ensure_is_active_column():
     print("✅ Added missing users.is_active column with default TRUE")
 
 
+def _ensure_feedback_columns():
+    """Add status and admin_reply columns to feedback table if missing."""
+    inspector = db.inspect(db.engine)
+    tables = inspector.get_table_names()
+    if 'feedback' not in tables:
+        return
+
+    columns = {col['name'] for col in inspector.get_columns('feedback')}
+    if 'status' not in columns:
+        db.session.execute(text("ALTER TABLE feedback ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'pending'"))
+    if 'admin_reply' not in columns:
+        db.session.execute(text("ALTER TABLE feedback ADD COLUMN admin_reply TEXT"))
+    db.session.commit()
+    print("✅ Ensured feedback.status and feedback.admin_reply columns")
+
+
 def create_app(config_name='development'):
     """
     Application factory function
@@ -79,6 +95,13 @@ def create_app(config_name='development'):
             db.session.rollback()
             print(f"⚠️  Database initialization warning: {str(e)}")
     
+    # Run additional migrations
+    with app.app_context():
+        try:
+            _ensure_feedback_columns()
+        except Exception as e:
+            print(f"⚠️  Feedback migration warning: {str(e)}")
+
     # Register blueprints (route modules)
     from app.routes.health import health_bp
     from app.routes.auth import auth_bp
@@ -89,6 +112,7 @@ def create_app(config_name='development'):
     from app.routes.feedback import feedback_bp
     from app.routes.oxygen import oxygen_bp
     from app.routes.admin import admin_bp
+    from app.routes.admin_user_dashboard import admin_user_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -99,6 +123,7 @@ def create_app(config_name='development'):
     app.register_blueprint(feedback_bp, url_prefix='/api')
     app.register_blueprint(oxygen_bp, url_prefix='/api/oxygen')
     app.register_blueprint(admin_bp, url_prefix='/api')
+    app.register_blueprint(admin_user_bp, url_prefix='/api')
     
     # Error handlers
     @app.errorhandler(404)

@@ -19,6 +19,8 @@ class Feedback(db.Model):
     rating = db.Column(db.Integer, nullable=False)  # 1-5
     category = db.Column(db.String(50), nullable=False)  # Bug Report, Feature Request, etc.
     feedback_message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='pending')  # pending / resolved
+    admin_reply = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     def __repr__(self):
@@ -39,6 +41,8 @@ class Feedback(db.Model):
             'rating': self.rating,
             'category': self.category,
             'feedback_message': self.feedback_message,
+            'status': self.status,
+            'admin_reply': self.admin_reply,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
     
