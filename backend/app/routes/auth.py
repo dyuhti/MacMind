@@ -432,6 +432,26 @@ def delete_account():
         }, 500
 
 
+@auth_bp.route('/logout', methods=['POST'])
+@require_token
+def logout(current_user):
+    try:
+        user_id = current_user.get('id') or current_user.get('user_id')
+        if user_id:
+            active_session = LoginHistory.query.filter_by(
+                user_id=user_id, logout_time=None, status='success'
+            ).order_by(LoginHistory.login_time.desc()).first()
+            if active_session:
+                active_session.logout_time = datetime.utcnow()
+                diff = active_session.logout_time - active_session.login_time
+                active_session.session_duration = int(diff.total_seconds())
+                db.session.commit()
+        return {'success': True, 'message': 'Logged out successfully'}, 200
+    except Exception as e:
+        db.session.rollback()
+        return {'success': False, 'message': str(e)}, 500
+
+
 @auth_bp.route('/change_password', methods=['POST'])
 @auth_bp.route('/change-password', methods=['POST'])
 @require_json

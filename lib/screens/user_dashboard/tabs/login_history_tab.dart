@@ -1,9 +1,32 @@
 import 'package:flutter/material.dart';
-
 import '../../../services/admin_service.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
+
+IconData _platformIcon(String? platform) {
+  switch (platform?.toLowerCase()) {
+    case 'android': return Icons.android_outlined;
+    case 'ios': return Icons.phone_iphone_outlined;
+    case 'windows': return Icons.laptop_windows_outlined;
+    case 'macos': return Icons.laptop_mac_outlined;
+    case 'linux': return Icons.terminal_outlined;
+    case 'web': return Icons.language_outlined;
+    default: return Icons.devices_outlined;
+  }
+}
+
+Color _platformColor(String? platform) {
+  switch (platform?.toLowerCase()) {
+    case 'android': return const Color(0xFF16A34A);
+    case 'ios': return const Color(0xFF1E293B);
+    case 'windows': return const Color(0xFF2563EB);
+    case 'macos': return const Color(0xFF7C3AED);
+    case 'linux': return const Color(0xFFF59E0B);
+    case 'web': return const Color(0xFF0D9488);
+    default: return const Color(0xFF64748B);
+  }
+}
 
 class LoginHistoryTab extends StatefulWidget {
   final int userId;
@@ -50,6 +73,21 @@ class _LoginHistoryTabState extends State<LoginHistoryTab> {
     return Column(
       children: [
         const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              const Icon(Icons.login_outlined, size: 16, color: Color(0xFF64748B)),
+              const SizedBox(width: 6),
+              Text('${_history.length} session${_history.length == 1 ? '' : 's'}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+              const Spacer(),
+              Text('Page $_page of $_pages',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
         Expanded(
           child: _loading
               ? const LoadingSkeleton()
@@ -66,8 +104,12 @@ class _LoginHistoryTabState extends State<LoginHistoryTab> {
                           child: ListView(
                             padding: const EdgeInsets.only(bottom: 16),
                             children: [
-                              ..._history.map((h) => _LoginCard(
-                                  h: h as Map<String, dynamic>)),
+                              ..._history.asMap().entries.map((entry) =>
+                                _LoginCard(
+                                  h: entry.value as Map<String, dynamic>,
+                                  isActive: _isActive(entry.value as Map<String, dynamic>),
+                                  isLatest: entry.key == 0,
+                                )),
                               if (_pages > 1) _pagination(),
                             ],
                           ),
@@ -75,6 +117,10 @@ class _LoginHistoryTabState extends State<LoginHistoryTab> {
         ),
       ],
     );
+  }
+
+  bool _isActive(Map<String, dynamic> h) {
+    return h['status']?.toString() == 'success' && h['logout_time'] == null;
   }
 
   Widget _pagination() {
@@ -103,10 +149,17 @@ class _LoginHistoryTabState extends State<LoginHistoryTab> {
 
 class _LoginCard extends StatelessWidget {
   final Map<String, dynamic> h;
-  const _LoginCard({required this.h});
+  final bool isActive;
+  final bool isLatest;
+
+  const _LoginCard({
+    required this.h,
+    required this.isActive,
+    required this.isLatest,
+  });
 
   String _formatDuration(int? seconds) {
-    if (seconds == null || seconds <= 0) return '—';
+    if (seconds == null || seconds <= 0) return '\u2014';
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;
     final s = seconds % 60;
@@ -121,95 +174,128 @@ class _LoginCard extends StatelessWidget {
     final loginTime = h['login_time']?.toString() ?? '';
     final logoutTime = h['logout_time']?.toString() ?? '';
     final sessionDuration = h['session_duration'] as int?;
-    final platform = h['platform']?.toString() ?? 'Unknown';
+    final platform = h['platform']?.toString();
     final device = h['device']?.toString() ?? 'Unknown';
     final browser = h['browser']?.toString();
+    final ip = h['ip_address']?.toString();
 
     final isSuccess = status == 'success';
+    final date = loginTime.contains('T') ? loginTime.split('T').first : loginTime;
+    final time = loginTime.contains('T') ? loginTime.split('T').last.substring(0, 8) : '';
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isActive
+              ? const Color(0xFF16A34A).withValues(alpha: 0.4)
+              : isLatest
+                  ? const Color(0xFF2563EB).withValues(alpha: 0.2)
+                  : const Color(0xFFE2E8F0),
+          width: isActive ? 1.5 : 1,
+        ),
+        boxShadow: isActive
+            ? [BoxShadow(color: const Color(0xFF16A34A).withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]
+            : [const BoxShadow(color: Color(0x06000000), blurRadius: 6, offset: Offset(0, 2))],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 10, height: 10,
+                  width: 36, height: 36,
                   decoration: BoxDecoration(
-                    color: isSuccess
+                    color: _platformColor(platform).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(_platformIcon(platform), size: 18, color: _platformColor(platform)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            isActive ? 'Active Session' : (isLatest ? 'Latest Session' : (isSuccess ? 'Successful Login' : 'Failed Login')),
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w600,
+                                color: isActive ? const Color(0xFF16A34A) : const Color(0xFF1E293B)),
+                          ),
+                          if (isActive) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: const Text('LIVE',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF16A34A))),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 1),
+                      Text('$date  $time',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 8, height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive
                         ? const Color(0xFF16A34A)
-                        : const Color(0xFFE11D48),
+                        : (isSuccess ? const Color(0xFF94A3B8) : const Color(0xFFE11D48)),
                     shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  isSuccess ? 'Successful Login' : 'Failed Login',
-                  style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600,
-                      color: isSuccess
-                          ? const Color(0xFF1E293B)
-                          : const Color(0xFFE11D48)),
-                ),
-                const Spacer(),
-                Text(
-                  loginTime.contains('T')
-                      ? loginTime.split('T').last.substring(0, 8)
-                      : '',
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF94A3B8)),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
-            _detailRow(Icons.calendar_today_outlined, 'Date',
-                loginTime.contains('T') ? loginTime.split('T').first : loginTime),
-            _detailRow(Icons.access_time_outlined, 'Login Time',
-                loginTime.contains('T') ? loginTime.split('T').last.substring(0, 8) : '—'),
-            if (logoutTime.isNotEmpty)
-              _detailRow(Icons.logout_outlined, 'Logout Time',
-                  logoutTime.contains('T') ? '${logoutTime.split('T').first} ${logoutTime.split('T').last.substring(0, 8)}' : logoutTime),
-            _detailRow(Icons.timer_outlined, 'Session Duration', _formatDuration(sessionDuration)),
-            const Divider(height: 16),
-            _detailRow(Icons.devices_outlined, 'Device', device),
-            _detailRow(Icons.smartphone_outlined, 'Platform', platform),
-            if (browser != null && browser.isNotEmpty)
-              _detailRow(Icons.language_outlined, 'Browser', browser),
-            _detailRow(Icons.info_outlined, 'Status',
-                isSuccess ? 'Success' : 'Failed'),
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 16,
+              runSpacing: 6,
+              children: [
+                _detailChip(Icons.timer_outlined, 'Duration', _formatDuration(sessionDuration)),
+                _detailChip(Icons.smartphone_outlined, 'Platform', platform ?? '\u2014'),
+                _detailChip(Icons.devices_outlined, 'Device', device),
+                if (browser != null && browser.isNotEmpty)
+                  _detailChip(Icons.language_outlined, 'Browser', browser),
+                if (ip != null && ip.isNotEmpty)
+                  _detailChip(Icons.wifi_outlined, 'IP', ip),
+                _detailChip(Icons.info_outlined, 'Status', isSuccess ? 'Success' : 'Failed'),
+                if (logoutTime.isNotEmpty)
+                  _detailChip(Icons.logout_outlined, 'Logged Out',
+                      logoutTime.contains('T') ? logoutTime.split('T').last.substring(0, 8) : ''),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _detailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: const Color(0xFF94A3B8)),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 100,
-            child: Text(label,
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF64748B))),
-          ),
-          Expanded(
-            child: Text(value,
-                maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B))),
-          ),
-        ],
-      ),
+  Widget _detailChip(IconData icon, String label, String value) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: const Color(0xFF94A3B8)),
+        const SizedBox(width: 4),
+        Text('$label ',
+            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+        Text(value,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+      ],
     );
   }
 }

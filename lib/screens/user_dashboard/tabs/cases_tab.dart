@@ -5,6 +5,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
 import '../widgets/confirm_dialog.dart';
+import '../case_detail_screen.dart';
 
 class CasesTab extends StatefulWidget {
   final int userId;
@@ -127,6 +128,9 @@ class _CasesTabState extends State<CasesTab> {
                             children: [
                               ..._cases.map((c) => _CaseCard(
                                     c: c as Map<String, dynamic>,
+                                    userId: widget.userId,
+                                    caseId: c['id'] as int,
+                                    onRefresh: _load,
                                     onDelete: () => _deleteCase(c['id'] as int),
                                     onDuplicate: () => _duplicateCase(c),
                                   )),
@@ -168,11 +172,17 @@ class _CaseCard extends StatelessWidget {
   final Map<String, dynamic> c;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
+  final VoidCallback onRefresh;
+  final int userId;
+  final int caseId;
 
   const _CaseCard({
     required this.c,
     required this.onDelete,
     required this.onDuplicate,
+    required this.onRefresh,
+    required this.userId,
+    required this.caseId,
   });
 
   @override
@@ -186,54 +196,65 @@ class _CaseCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFBEB),
-                borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => CaseDetailScreen(userId: userId, caseId: caseId),
+            ),
+          );
+          onRefresh();
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.science_outlined,
+                    color: Color(0xFFF59E0B), size: 22),
               ),
-              child: const Icon(Icons.science_outlined,
-                  color: Color(0xFFF59E0B), size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14,
-                          color: Color(0xFF1E293B))),
-                  const SizedBox(height: 2),
-                  Text(surgery,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF64748B))),
-                  Text('$agent \u00b7 $date',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF94A3B8))),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 14,
+                            color: Color(0xFF1E293B))),
+                    const SizedBox(height: 2),
+                    Text(surgery,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF64748B))),
+                    Text('$agent \u00b7 $date',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11, color: Color(0xFF94A3B8))),
+                  ],
+                ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.content_copy_outlined,
-                  color: Color(0xFF2563EB), size: 20),
-              tooltip: 'Duplicate',
-              onPressed: onDuplicate,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFE11D48), size: 20),
-              tooltip: 'Delete',
-              onPressed: onDelete,
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.content_copy_outlined,
+                    color: Color(0xFF2563EB), size: 20),
+                tooltip: 'Duplicate',
+                onPressed: onDuplicate,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline,
+                    color: Color(0xFFE11D48), size: 20),
+                tooltip: 'Delete',
+                onPressed: onDelete,
+              ),
+            ],
+          ),
         ),
       ),
     );

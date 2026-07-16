@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
 
+IconData _platformIcon(String? platform) {
+  switch (platform?.toLowerCase()) {
+    case 'android': return Icons.android_outlined;
+    case 'ios': return Icons.phone_iphone_outlined;
+    case 'windows': return Icons.laptop_windows_outlined;
+    case 'macos': return Icons.laptop_mac_outlined;
+    case 'linux': return Icons.terminal_outlined;
+    case 'web': return Icons.language_outlined;
+    default: return Icons.devices_outlined;
+  }
+}
+
 class UserHeaderCard extends StatelessWidget {
   final Map<String, dynamic> user;
 
@@ -10,8 +22,8 @@ class UserHeaderCard extends StatelessWidget {
     final isActive = user['is_active'] as bool? ?? true;
     final role = (user['role']?.toString() ?? 'user').toUpperCase();
     final status = user['status']?.toString() ?? 'active';
-    final name = user['full_name']?.toString() ?? '—';
-    final email = user['email']?.toString() ?? '—';
+    final name = user['full_name']?.toString() ?? '\u2014';
+    final email = user['email']?.toString() ?? '\u2014';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     final createdAt = _formatDate(user['created_at']?.toString());
     final lastLogin = user['last_login'] != null
@@ -23,13 +35,20 @@ class UserHeaderCard extends StatelessWidget {
     final lastActivity = user['last_activity'] != null
         ? _formatDateTime(user['last_activity']?.toString())
         : 'No activity';
+    final currentSessions = user['current_sessions'] as int? ?? 0;
+    final isOnline = currentSessions > 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isOnline
+              ? const Color(0xFF16A34A).withValues(alpha: 0.3)
+              : const Color(0xFFE2E8F0),
+          width: isOnline ? 1.5 : 1,
+        ),
         boxShadow: const [
           BoxShadow(
               color: Color(0x08000000),
@@ -41,33 +60,74 @@ class UserHeaderCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: isActive
-                    ? const Color(0xFFEFF6FF)
-                    : const Color(0xFFF8FAFC),
-                child: Text(
-                  initial,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: isActive
-                        ? const Color(0xFF2563EB)
-                        : const Color(0xFF94A3B8),
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: isActive
+                        ? const Color(0xFFEFF6FF)
+                        : const Color(0xFFF8FAFC),
+                    child: Text(
+                      initial,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: isActive
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
-                ),
+                  if (isOnline)
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: Container(
+                        width: 14, height: 14,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B))),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1E293B))),
+                        ),
+                        if (isOnline) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.circle, size: 6, color: Color(0xFF16A34A)),
+                                SizedBox(width: 4),
+                                Text('Online',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF16A34A))),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text(email,
                         maxLines: 1,
@@ -87,6 +147,9 @@ class UserHeaderCard extends StatelessWidget {
                                 ? const Color(0xFFEFF6FF)
                                 : const Color(0xFFF0FDF4)),
                         _statusChip(status),
+                        if (currentSessions > 0)
+                          _chip('$currentSessions session${currentSessions == 1 ? '' : 's'}',
+                              const Color(0xFF7C3AED), const Color(0xFFF5F3FF)),
                       ],
                     ),
                   ],
@@ -131,7 +194,7 @@ class UserHeaderCard extends StatelessWidget {
         const SizedBox(height: 6),
         _infoRow(Icons.login_outlined, 'Last Login', lastLogin),
         const SizedBox(height: 6),
-        _infoRow(Icons.smartphone_outlined, 'Platform', platform),
+        _infoRow(_platformIcon(platform), 'Platform', platform),
       ],
     );
   }
@@ -227,7 +290,7 @@ class UserHeaderCard extends StatelessWidget {
   }
 
   String _formatDate(String? iso) {
-    if (iso == null || iso.isEmpty) return '—';
+    if (iso == null || iso.isEmpty) return '\u2014';
     try {
       final parts = iso.split('T');
       if (parts.isNotEmpty) {
@@ -243,7 +306,7 @@ class UserHeaderCard extends StatelessWidget {
   }
 
   String _formatDateTime(String? iso) {
-    if (iso == null || iso.isEmpty) return '—';
+    if (iso == null || iso.isEmpty) return '\u2014';
     try {
       final parts = iso.split('T');
       if (parts.length == 2) {

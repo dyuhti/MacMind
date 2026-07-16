@@ -209,23 +209,6 @@ class AdminService {
   static Future<Map<String, dynamic>> getUserDashboard(int userId) =>
       _get('/api/admin/users/$userId/dashboard');
 
-  /// Paginated activity timeline for a user.
-  static Future<Map<String, dynamic>> getUserActivities(
-    int userId, {
-    int page = 1,
-    int perPage = 20,
-    String search = '',
-    String filter = '',
-  }) {
-    final q = Uri(queryParameters: {
-      'page': '$page',
-      'per_page': '$perPage',
-      if (search.isNotEmpty) 'search': search,
-      if (filter.isNotEmpty) 'filter': filter,
-    }).query;
-    return _get('/api/admin/users/$userId/activities?$q');
-  }
-
   // ── Cases ────────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> getUserCases(
@@ -261,6 +244,9 @@ class AdminService {
   ) =>
       _delete('/api/admin/users/$userId/cases/$caseId');
 
+  static Future<Map<String, dynamic>> getUserCase(int userId, int caseId) =>
+      _get('/api/admin/users/$userId/cases/$caseId');
+
   // ── Oxygen ───────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> getUserOxygen(
@@ -293,6 +279,12 @@ class AdminService {
     int oxygenId,
   ) =>
       _delete('/api/admin/users/$userId/oxygen/$oxygenId');
+
+  static Future<Map<String, dynamic>> getUserOxygenRecord(
+    int userId,
+    int oxygenId,
+  ) =>
+      _get('/api/admin/users/$userId/oxygen/$oxygenId');
 
   // ── Favorites ────────────────────────────────────────────────────────────
 

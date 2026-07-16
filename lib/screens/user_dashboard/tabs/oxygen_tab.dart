@@ -5,6 +5,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
 import '../widgets/confirm_dialog.dart';
+import '../oxygen_detail_screen.dart';
 
 class OxygenTab extends StatefulWidget {
   final int userId;
@@ -81,6 +82,9 @@ class _OxygenTabState extends State<OxygenTab> {
                             children: [
                               ..._oxygen.map((o) => _OxygenCard(
                                     o: o as Map<String, dynamic>,
+                                    userId: widget.userId,
+                                    oxygenId: o['id'] as int,
+                                    onRefresh: _load,
                                     onDelete: () => _deleteOxygen(o['id'] as int),
                                   )),
                               if (_pages > 1) _pagination(),
@@ -120,8 +124,17 @@ class _OxygenTabState extends State<OxygenTab> {
 class _OxygenCard extends StatelessWidget {
   final Map<String, dynamic> o;
   final VoidCallback onDelete;
+  final VoidCallback onRefresh;
+  final int userId;
+  final int oxygenId;
 
-  const _OxygenCard({required this.o, required this.onDelete});
+  const _OxygenCard({
+    required this.o,
+    required this.onDelete,
+    required this.onRefresh,
+    required this.userId,
+    required this.oxygenId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -134,47 +147,58 @@ class _OxygenCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Row(
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDFB),
-                borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => OxygenDetailScreen(userId: userId, oxygenId: oxygenId),
+            ),
+          );
+          onRefresh();
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDFB),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.air_outlined,
+                    color: Color(0xFF0D9488), size: 22),
               ),
-              child: const Icon(Icons.air_outlined,
-                  color: Color(0xFF0D9488), size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(type,
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14,
-                          color: Color(0xFF1E293B))),
-                  const SizedBox(height: 2),
-                  Text('$psi PSI \u00b7 $content L',
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF64748B))),
-                  Text(date,
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF94A3B8))),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(type,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 14,
+                            color: Color(0xFF1E293B))),
+                    const SizedBox(height: 2),
+                    Text('$psi PSI \u00b7 $content L',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF64748B))),
+                    Text(date,
+                        style: const TextStyle(
+                            fontSize: 11, color: Color(0xFF94A3B8))),
+                  ],
+                ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFE11D48), size: 20),
-              tooltip: 'Delete',
-              onPressed: onDelete,
-            ),
-          ],
+              IconButton(
+                icon: const Icon(Icons.delete_outline,
+                    color: Color(0xFFE11D48), size: 20),
+                tooltip: 'Delete',
+                onPressed: onDelete,
+              ),
+            ],
+          ),
         ),
       ),
     );

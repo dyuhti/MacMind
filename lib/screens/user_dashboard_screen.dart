@@ -6,7 +6,6 @@ import 'user_dashboard/widgets/quick_actions.dart';
 import 'user_dashboard/widgets/error_banner.dart';
 import 'user_dashboard/widgets/confirm_dialog.dart';
 import 'user_dashboard/tabs/overview_tab.dart';
-import 'user_dashboard/tabs/activity_tab.dart';
 import 'user_dashboard/tabs/cases_tab.dart';
 import 'user_dashboard/tabs/oxygen_tab.dart';
 import 'user_dashboard/tabs/favorites_tab.dart';
@@ -34,7 +33,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
 
   static const _tabs = [
     _TabDef('Overview', Icons.dashboard_outlined),
-    _TabDef('Activity', Icons.timeline_outlined),
     _TabDef('Cases', Icons.science_outlined),
     _TabDef('Oxygen', Icons.air_outlined),
     _TabDef('Favorites', Icons.star_outline),
@@ -259,7 +257,6 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
         controller: _tabController,
         children: [
           OverviewTab(userId: widget.userId),
-          ActivityTab(userId: widget.userId),
           CasesTab(userId: widget.userId),
           OxygenTab(userId: widget.userId),
           FavoritesTab(userId: widget.userId),

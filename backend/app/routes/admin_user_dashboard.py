@@ -193,116 +193,6 @@ def _get_most_used_calculator(user_id):
 
 
 # ---------------------------------------------------------------------------
-# Activities
-# ---------------------------------------------------------------------------
-
-@admin_user_bp.route('/admin/users/<int:user_id>/activities', methods=['GET'])
-@admin_required
-def get_user_activities(current_user, user_id):
-    try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 20))
-        search = request.args.get('search', '').strip().lower()
-        filter_type = request.args.get('filter', '').strip().lower()
-
-        activities = []
-        user = User.find_by_id(user_id)
-        if not user:
-            return jsonify({'success': False, 'message': 'User not found'}), 404
-
-        if not filter_type or filter_type == 'case':
-            cases = Case.query.filter_by(user_id=user_id).order_by(Case.created_at.desc()).all()
-            for c in cases:
-                activities.append({
-                    'type': 'case_created',
-                    'description': f'Created case for {c.patient_name} ({c.surgery_type})',
-                    'timestamp': c.created_at.isoformat(),
-                    'platform': '—',
-                    'device': '—',
-                })
-
-        if not filter_type or filter_type == 'oxygen':
-            oxygens = OxygenCalculation.query.filter_by(user_id=user_id).order_by(
-                OxygenCalculation.created_at.desc()
-            ).all()
-            for o in oxygens:
-                activities.append({
-                    'type': 'oxygen_created',
-                    'description': f'Created oxygen calculation ({o.cylinder_type}, {o.pressure_psi} PSI)',
-                    'timestamp': o.created_at.isoformat(),
-                    'platform': '—',
-                    'device': '—',
-                })
-
-        if not filter_type or filter_type == 'feedback':
-            feedbacks = Feedback.query.filter_by(user_id=user_id).order_by(
-                Feedback.created_at.desc()
-            ).all()
-            for f in feedbacks:
-                activities.append({
-                    'type': 'feedback_submitted',
-                    'description': f'Submitted feedback ({f.category}, rating: {f.rating})',
-                    'timestamp': f.created_at.isoformat(),
-                    'platform': '—',
-                    'device': '—',
-                })
-
-        if not filter_type or filter_type == 'login':
-            logins = LoginHistory.query.filter_by(user_id=user_id).order_by(
-                LoginHistory.login_time.desc()
-            ).all()
-            for l in logins:
-                desc = f'Logged {"in" if l.status == "success" else "in (failed)"}'
-                if l.logout_time:
-                    desc += f' | session: {l.session_duration or "—"}s'
-                activities.append({
-                    'type': 'login' if l.status == 'success' else 'login_failed',
-                    'description': desc,
-                    'timestamp': l.login_time.isoformat(),
-                    'platform': l.platform or '—',
-                    'device': l.device or '—',
-                })
-
-        if not filter_type or filter_type == 'favorite':
-            favorites = Favorite.query.filter_by(user_id=user_id).order_by(
-                Favorite.created_at.desc()
-            ).all()
-            for f in favorites:
-                activities.append({
-                    'type': 'favorite_added',
-                    'description': f'Added favorite: {f.calculator_name}',
-                    'timestamp': f.created_at.isoformat(),
-                    'platform': '—',
-                    'device': '—',
-                })
-
-        if search:
-            activities = [
-                a for a in activities
-                if search in a['description'].lower()
-            ]
-
-        activities.sort(key=lambda a: a['timestamp'], reverse=True)
-        total = len(activities)
-        start = (page - 1) * per_page
-        sliced = activities[start:start + per_page]
-        pages = max(1, (total + per_page - 1) // per_page)
-
-        return jsonify({
-            'success': True,
-            'activities': sliced,
-            'pagination': {
-                'page': page,
-                'per_page': per_page,
-                'total': total,
-                'pages': pages,
-            },
-        }), 200
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-# ---------------------------------------------------------------------------
 # Cases CRUD
 # ---------------------------------------------------------------------------
 
@@ -338,6 +228,18 @@ def create_user_case(current_user, user_id):
             _log_audit(current_user, user_id, 'case_created', new_value=f'Case ID {result["id"]}')
             return jsonify(result), 201
         return jsonify({'success': False, 'message': result.get('error', 'Failed to create case')}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_user_bp.route('/admin/users/<int:user_id>/cases/<int:case_id>', methods=['GET'])
+@admin_required
+def get_user_case_detail(current_user, user_id, case_id):
+    try:
+        case = Case.query.filter_by(id=case_id, user_id=user_id).first()
+        if not case:
+            return jsonify({'success': False, 'message': 'Case not found'}), 404
+        return jsonify({'success': True, 'case': case.to_dict()}), 200
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -424,6 +326,18 @@ def create_user_oxygen(current_user, user_id):
         return jsonify({'success': True, 'oxygen': calc.to_dict()}), 201
     except Exception as e:
         db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_user_bp.route('/admin/users/<int:user_id>/oxygen/<int:oxygen_id>', methods=['GET'])
+@admin_required
+def get_user_oxygen_detail(current_user, user_id, oxygen_id):
+    try:
+        calc = OxygenCalculation.query.filter_by(id=oxygen_id, user_id=user_id).first()
+        if not calc:
+            return jsonify({'success': False, 'message': 'Oxygen calculation not found'}), 404
+        return jsonify({'success': True, 'oxygen': calc.to_dict()}), 200
+    except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
