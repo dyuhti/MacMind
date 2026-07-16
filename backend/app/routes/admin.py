@@ -18,6 +18,7 @@ from app.models.case import Case
 from app.models.feedback import Feedback
 from app.models.oxygen_calculation import OxygenCalculation
 from app.models.user import User
+from app.models.audit_log import AuditLog
 from app.utils.decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__)
@@ -41,15 +42,22 @@ def _paginate_query(query, page: int, per_page: int):
     return items, total, pages
 
 
-def _admin_id(current_user) -> int:
-    """Safely extract int user_id from the token payload dict."""
-    return int(current_user.get('user_id', 0))
-
-
 def _log_action(current_user, action: str, detail: str = ''):
     """Log an admin action without sensitive data."""
     admin_email = current_user.get('email', 'unknown')
     _log.info('[ADMIN] %s performed %s. %s', admin_email, action, detail)
+
+
+def _log_audit(current_user, target_user_id, action, old_value=None, new_value=None):
+    log = AuditLog(
+        target_user_id=target_user_id,
+        admin_id=_admin_id(current_user),
+        action=action,
+        old_value=str(old_value) if old_value else None,
+        new_value=str(new_value) if new_value else None,
+    )
+    db.session.add(log)
+    db.session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -288,6 +296,7 @@ def patch_admin_user(user_id, current_user):
 
         action = 'activated' if is_active else 'deactivated'
         _log_action(current_user, f'user_{action}', f'target_user_id={user_id}')
+        _log_audit(current_user, user_id, f'user_{action}')
 
         return jsonify({
             'success': True,
@@ -320,6 +329,7 @@ def delete_admin_user(user_id, current_user):
             return jsonify({'success': False, 'message': 'User not found'}), 404
 
         _log_action(current_user, 'user_deleted', f'target_user_id={user_id}')
+        _log_audit(current_user, user_id, 'user_deleted')
         db.session.delete(user)
         db.session.commit()
         return jsonify({'success': True, 'message': 'User deleted successfully'}), 200

@@ -15,7 +15,7 @@ class AuditLogTab extends StatefulWidget {
 
 class _AuditLogTabState extends State<AuditLogTab> {
   List<dynamic> _logs = [];
-  int _page = 1, _pages = 1, _total = 0;
+  int _page = 1, _pages = 1;
   bool _loading = true;
   String? _error;
 
@@ -36,7 +36,6 @@ class _AuditLogTabState extends State<AuditLogTab> {
         final pag = result['pagination'] as Map<String, dynamic>? ?? {};
         setState(() {
           _logs = result['audit_logs'] as List<dynamic>? ?? [];
-          _total = (pag['total'] as int?) ?? 0;
           _pages = (pag['pages'] as int?) ?? 1;
         });
       } else {
@@ -64,9 +63,10 @@ class _AuditLogTabState extends State<AuditLogTab> {
                           onRefresh: _load,
                           child: ListView(
                             children: [
-                              ..._logs.map((l) => _AuditLogItem(
+                              ..._logs.map((l) => _AuditCard(
                                   log: l as Map<String, dynamic>)),
                               if (_pages > 1) _pagination(),
+                              const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -99,14 +99,14 @@ class _AuditLogTabState extends State<AuditLogTab> {
   }
 }
 
-class _AuditLogItem extends StatelessWidget {
+class _AuditCard extends StatelessWidget {
   final Map<String, dynamic> log;
-  const _AuditLogItem({required this.log});
+  const _AuditCard({required this.log});
 
   @override
   Widget build(BuildContext context) {
     final action = log['action']?.toString() ?? '';
-    final adminName = log['admin_name']?.toString() ?? '—';
+    final adminName = log['admin_name']?.toString() ?? '\u2014';
     final oldVal = log['old_value']?.toString();
     final newVal = log['new_value']?.toString();
     final ts = log['timestamp']?.toString() ?? '';
@@ -115,91 +115,99 @@ class _AuditLogItem extends StatelessWidget {
         ? ts.split('T').last.substring(0, 8)
         : '';
 
-    IconData icon;
-    Color color;
+    Color chipColor;
+    String displayAction;
     switch (action) {
       case 'role_changed':
-        icon = Icons.admin_panel_settings_outlined;
-        color = const Color(0xFF8B5CF6);
+        chipColor = const Color(0xFF8B5CF6);
+        displayAction = 'Role Changed';
         break;
       case 'password_reset_by_admin':
-        icon = Icons.lock_reset_outlined;
-        color = const Color(0xFFF59E0B);
+        chipColor = const Color(0xFFF59E0B);
+        displayAction = 'Password Reset';
         break;
       case 'account_unlocked':
-        icon = Icons.lock_open_outlined;
-        color = const Color(0xFF16A34A);
+        chipColor = const Color(0xFF16A34A);
+        displayAction = 'Account Unlocked';
         break;
       case 'user_deactivated':
+        chipColor = const Color(0xFFE11D48);
+        displayAction = 'User Deactivated';
+        break;
       case 'user_activated':
-        icon = Icons.block_outlined;
-        color = const Color(0xFFE11D48);
+        chipColor = const Color(0xFF16A34A);
+        displayAction = 'User Activated';
         break;
       case 'case_deleted':
-        icon = Icons.delete_outline;
-        color = const Color(0xFFE11D48);
+        chipColor = const Color(0xFFE11D48);
+        displayAction = 'Case Deleted';
         break;
       case 'sessions_terminated':
-        icon = Icons.logout_outlined;
-        color = const Color(0xFFEC4899);
+        chipColor = const Color(0xFFEC4899);
+        displayAction = 'Sessions Terminated';
         break;
       case 'notification_sent':
-        icon = Icons.notifications_outlined;
-        color = const Color(0xFF3B82F6);
+        chipColor = const Color(0xFF3B82F6);
+        displayAction = 'Notification Sent';
         break;
       default:
-        icon = Icons.circle_outlined;
-        color = const Color(0xFF64748B);
+        chipColor = const Color(0xFF64748B);
+        displayAction = action.replaceAll('_', ' ');
     }
 
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(action.replaceAll('_', ' ').toUpperCase(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: chipColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    displayAction.toUpperCase(),
                     style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w700,
-                        color: color)),
-                const SizedBox(height: 2),
-                Text('By: $adminName',
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF64748B))),
-                if (oldVal != null && oldVal.isNotEmpty)
-                  Text('Old: $oldVal',
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF94A3B8))),
-                if (newVal != null && newVal.isNotEmpty)
-                  Text('New: $newVal',
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF94A3B8))),
-                const SizedBox(height: 2),
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: chipColor),
+                  ),
+                ),
+                const Spacer(),
                 Text('$date $time',
                     style: const TextStyle(
-                        fontSize: 10, color: Color(0xFFCBD5E1))),
+                        fontSize: 11, color: Color(0xFF94A3B8))),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text('By: $adminName',
+                style: const TextStyle(
+                    fontSize: 12, color: Color(0xFF64748B))),
+            if (oldVal != null && oldVal.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text('Old: $oldVal',
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF94A3B8))),
+              ),
+            if (newVal != null && newVal.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text('New: $newVal',
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF94A3B8))),
+              ),
+          ],
+        ),
       ),
     );
   }

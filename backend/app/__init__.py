@@ -24,7 +24,21 @@ def _ensure_user_role_column():
 
     db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'"))
     db.session.commit()
-    print("✅ Added missing users.role column with default 'user'")
+    print("[MIGRATION] Added missing users.role column with default 'user'")
+
+
+def _ensure_password_changed_at_column():
+    """Add users.password_changed_at column for existing databases."""
+    inspector = db.inspect(db.engine)
+    tables = inspector.get_table_names()
+    if 'users' not in tables:
+        return
+    columns = {col['name'] for col in inspector.get_columns('users')}
+    if 'password_changed_at' in columns:
+        return
+    db.session.execute(text("ALTER TABLE users ADD COLUMN password_changed_at TIMESTAMP"))
+    db.session.commit()
+    print("[MIGRATION] Added missing users.password_changed_at column")
 
 
 def _ensure_is_active_column():
@@ -40,7 +54,7 @@ def _ensure_is_active_column():
 
     db.session.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE"))
     db.session.commit()
-    print("✅ Added missing users.is_active column with default TRUE")
+    print("[MIGRATION] Added missing users.is_active column with default TRUE")
 
 
 def _ensure_feedback_columns():
@@ -56,7 +70,7 @@ def _ensure_feedback_columns():
     if 'admin_reply' not in columns:
         db.session.execute(text("ALTER TABLE feedback ADD COLUMN admin_reply TEXT"))
     db.session.commit()
-    print("✅ Ensured feedback.status and feedback.admin_reply columns")
+    print("[MIGRATION] Ensured feedback.status and feedback.admin_reply columns")
 
 
 def create_app(config_name='development'):
@@ -90,17 +104,18 @@ def create_app(config_name='development'):
             db.create_all()
             _ensure_user_role_column()
             _ensure_is_active_column()
-            print("✅ Database tables initialized")
+            _ensure_password_changed_at_column()
+            print("[INIT] Database tables initialized")
         except Exception as e:
             db.session.rollback()
-            print(f"⚠️  Database initialization warning: {str(e)}")
+            print(f"[WARN] Database initialization warning: {str(e)}")
     
     # Run additional migrations
     with app.app_context():
         try:
             _ensure_feedback_columns()
         except Exception as e:
-            print(f"⚠️  Feedback migration warning: {str(e)}")
+            print(f"[WARN] Feedback migration warning: {str(e)}")
 
     # Register blueprints (route modules)
     from app.routes.health import health_bp

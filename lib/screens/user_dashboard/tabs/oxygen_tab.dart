@@ -16,7 +16,7 @@ class OxygenTab extends StatefulWidget {
 
 class _OxygenTabState extends State<OxygenTab> {
   List<dynamic> _oxygen = [];
-  int _page = 1, _pages = 1, _total = 0;
+  int _page = 1, _pages = 1;
   bool _loading = true;
   String? _error;
 
@@ -37,7 +37,6 @@ class _OxygenTabState extends State<OxygenTab> {
         final pag = result['pagination'] as Map<String, dynamic>? ?? {};
         setState(() {
           _oxygen = result['oxygen'] as List<dynamic>? ?? [];
-          _total = (pag['total'] as int?) ?? 0;
           _pages = (pag['pages'] as int?) ?? 1;
         });
       } else {
@@ -80,11 +79,12 @@ class _OxygenTabState extends State<OxygenTab> {
                           onRefresh: _load,
                           child: ListView(
                             children: [
-                              ..._oxygen.map((o) => _OxygenItem(
+                              ..._oxygen.map((o) => _OxygenCard(
                                     o: o as Map<String, dynamic>,
                                     onDelete: () => _deleteOxygen(o['id'] as int),
                                   )),
                               if (_pages > 1) _pagination(),
+                              const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -117,48 +117,64 @@ class _OxygenTabState extends State<OxygenTab> {
   }
 }
 
-class _OxygenItem extends StatelessWidget {
+class _OxygenCard extends StatelessWidget {
   final Map<String, dynamic> o;
   final VoidCallback onDelete;
 
-  const _OxygenItem({required this.o, required this.onDelete});
+  const _OxygenCard({required this.o, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final type = o['cylinder_type']?.toString() ?? 'Unknown';
-    final psi = o['pressure_psi']?.toString() ?? '—';
-    final content = o['total_oxygen_content']?.toString() ?? '—';
+    final psi = o['pressure_psi']?.toString() ?? '\u2014';
+    final content = o['total_oxygen_content']?.toString() ?? '\u2014';
     final date = (o['created_at']?.toString() ?? '').split('T').first;
 
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF0FDFB),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.air_outlined,
-              color: Color(0xFF0D9488), size: 20),
-        ),
-        title: Text(type,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14,
-                color: Color(0xFF1E293B))),
-        subtitle: Text('$psi PSI · $content L\n$date',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline,
-              color: Color(0xFFE11D48), size: 20),
-          tooltip: 'Delete',
-          onPressed: onDelete,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDFB),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.air_outlined,
+                  color: Color(0xFF0D9488), size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(type,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14,
+                          color: Color(0xFF1E293B))),
+                  const SizedBox(height: 2),
+                  Text('$psi PSI \u00b7 $content L',
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF64748B))),
+                  Text(date,
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF94A3B8))),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline,
+                  color: Color(0xFFE11D48), size: 20),
+              tooltip: 'Delete',
+              onPressed: onDelete,
+            ),
+          ],
         ),
       ),
     );

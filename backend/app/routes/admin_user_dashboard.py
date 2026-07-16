@@ -76,12 +76,35 @@ def get_user_dashboard(current_user, user_id):
 
         most_used = _get_most_used_calculator(user_id)
 
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        has_recent_activity = False
+        if last_activity:
+            try:
+                last_dt = datetime.fromisoformat(last_activity)
+                has_recent_activity = last_dt >= seven_days_ago
+            except Exception:
+                pass
+
+        active_sessions = LoginHistory.query.filter_by(
+            user_id=user_id, status='success', logout_time=None
+        ).count()
+
+        if user.is_active is False:
+            computed_status = 'deactivated'
+        elif has_recent_activity:
+            computed_status = 'active'
+        elif active_sessions > 0:
+            computed_status = 'active'
+        else:
+            computed_status = 'inactive'
+
         last_login_data = None
         if last_login:
             last_login_data = {
                 'time': last_login.login_time.isoformat(),
                 'platform': last_login.platform,
                 'device': last_login.device,
+                'browser': last_login.browser,
             }
 
         return jsonify({
@@ -92,6 +115,8 @@ def get_user_dashboard(current_user, user_id):
                 'email': user.email,
                 'role': user.role,
                 'is_active': user.is_active if user.is_active is not None else True,
+                'status': computed_status,
+                'password_changed_at': user.password_changed_at.isoformat() if user.password_changed_at else None,
                 'created_at': user.created_at.isoformat() if user.created_at else None,
                 'case_count': case_count,
                 'oxygen_count': oxygen_count,
@@ -105,11 +130,12 @@ def get_user_dashboard(current_user, user_id):
                 'account_age_days': account_age,
                 'average_daily_usage_mins': avg_daily,
                 'most_used_calculator': most_used,
+                'current_sessions': active_sessions,
                 'storage_used': '—',
                 'app_version': '—',
                 'country': '—',
-                'platform': last_login.platform if last_login else '—',
-                'device': last_login.device if last_login else '—',
+                'platform': last_login.platform if last_login else 'Unknown',
+                'device': last_login.device if last_login else 'Unknown',
             }
         }), 200
     except Exception as e:
@@ -593,26 +619,50 @@ def get_user_security(current_user, user_id):
             return jsonify({'success': False, 'message': 'User not found'}), 404
 
         failed_logins = LoginHistory.query.filter_by(user_id=user_id, status='failed').count()
-        known_devices = (
-            db.session.query(LoginHistory.device, LoginHistory.platform)
-            .filter_by(user_id=user_id)
-            .distinct()
-            .all()
-        )
         recent_sessions = LoginHistory.query.filter_by(
             user_id=user_id, status='success', logout_time=None
         ).count()
 
+        last_successful_login = LoginHistory.query.filter_by(
+            user_id=user_id, status='success'
+        ).order_by(LoginHistory.login_time.desc()).first()
+
+        last_login_data = None
+        current_device = 'Unknown'
+        current_platform = 'Unknown'
+        if last_successful_login:
+            last_login_data = last_successful_login.login_time.isoformat()
+            current_device = last_successful_login.device or 'Unknown'
+            current_platform = last_successful_login.platform or 'Unknown'
+
+        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        last_activity = _get_latest_activity(user_id)
+        has_recent_activity = False
+        if last_activity:
+            try:
+                last_dt = datetime.fromisoformat(last_activity)
+                has_recent_activity = last_dt >= seven_days_ago
+            except Exception:
+                pass
+
+        if user.is_active is False:
+            computed_status = 'deactivated'
+        elif has_recent_activity or recent_sessions > 0:
+            computed_status = 'active'
+        else:
+            computed_status = 'inactive'
+
         return jsonify({
             'success': True,
             'security': {
-                'password_last_changed': user.created_at.isoformat() if user.created_at else None,
+                'password_last_changed': user.password_changed_at.isoformat() if user.password_changed_at else None,
+                'last_login': last_login_data,
+                'current_device': current_device,
+                'current_platform': current_platform,
                 'failed_logins': failed_logins,
-                'known_devices': [
-                    {'device': d, 'platform': p} for d, p in known_devices if d
-                ],
                 'current_sessions': recent_sessions,
                 'is_blocked': user.is_active is False,
+                'account_status': computed_status,
                 'two_factor_enabled': False,
             }
         }), 200
@@ -642,10 +692,18 @@ def admin_reset_user_password(current_user, user_id):
         user = User.find_by_id(user_id)
         if not user:
             return jsonify({'success': False, 'message': 'User not found'}), 404
-        import secrets
         from app.utils.security import hash_password
-        new_password = secrets.token_urlsafe(12)
+
+        data = request.get_json(silent=True) or {}
+        new_password = data.get('new_password')
+        if not new_password:
+            import secrets
+            new_password = secrets.token_urlsafe(12)
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'Password must be at least 6 characters'}), 400
+
         user.password = hash_password(new_password)
+        user.password_changed_at = datetime.utcnow()
         db.session.commit()
         _log_audit(current_user, user_id, 'password_reset_by_admin')
         return jsonify({
@@ -763,104 +821,6 @@ def get_user_audit_log(current_user, user_id):
         }), 200
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-
-
-# ---------------------------------------------------------------------------
-# User Analytics
-# ---------------------------------------------------------------------------
-
-@admin_user_bp.route('/admin/users/<int:user_id>/analytics', methods=['GET'])
-@admin_required
-def get_user_analytics(current_user, user_id):
-    try:
-        user = User.find_by_id(user_id)
-        if not user:
-            return jsonify({'success': False, 'message': 'User not found'}), 404
-
-        case_count = Case.query.filter_by(user_id=user_id).count()
-        oxygen_count = OxygenCalculation.query.filter_by(user_id=user_id).count()
-        most_used = _get_most_used_calculator(user_id)
-
-        days_since_creation = max(1, (datetime.utcnow() - user.created_at).days) if user.created_at else 1
-        avg_per_week = round((case_count + oxygen_count) / days_since_creation * 7, 1)
-
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        cases_30 = Case.query.filter(
-            Case.user_id == user_id, Case.created_at >= thirty_days_ago
-        ).count()
-        oxygen_30 = OxygenCalculation.query.filter(
-            OxygenCalculation.user_id == user_id, OxygenCalculation.created_at >= thirty_days_ago
-        ).count()
-
-        last_activity = _get_latest_activity(user_id)
-        days_since_last = 0
-        if last_activity:
-            try:
-                last_dt = datetime.fromisoformat(last_activity)
-                days_since_last = (datetime.utcnow() - last_dt).days
-            except Exception:
-                pass
-
-        weekly = _build_time_series(user_id, 7)
-        monthly = _build_time_series(user_id, 30)
-
-        feature_usage = [
-            {'name': 'Volatile Anesthetic', 'count': case_count, 'percentage': round(case_count / max(1, case_count + oxygen_count) * 100, 1)},
-            {'name': 'Oxygen Cylinder', 'count': oxygen_count, 'percentage': round(oxygen_count / max(1, case_count + oxygen_count) * 100, 1)},
-        ]
-
-        return jsonify({
-            'success': True,
-            'analytics': {
-                'total_cases': case_count,
-                'total_oxygen': oxygen_count,
-                'most_used_calculator': most_used,
-                'avg_calculations_per_week': avg_per_week,
-                'registration_date': user.created_at.isoformat() if user.created_at else None,
-                'last_active_date': last_activity,
-                'cases_last_30_days': cases_30,
-                'oxygen_last_30_days': oxygen_30,
-                'days_since_last_activity': days_since_last,
-                'weekly_activity': weekly,
-                'monthly_activity': monthly,
-                'calculator_usage': feature_usage,
-                'feature_usage_breakdown': feature_usage,
-            }
-        }), 200
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-def _build_time_series(user_id, days):
-    since = datetime.utcnow() - timedelta(days=days)
-    case_daily = (
-        db.session.query(
-            func.date(Case.created_at).label('day'),
-            func.count(Case.id).label('cnt'),
-        )
-        .filter(Case.user_id == user_id, Case.created_at >= since)
-        .group_by(func.date(Case.created_at))
-        .all()
-    )
-    oxygen_daily = (
-        db.session.query(
-            func.date(OxygenCalculation.created_at).label('day'),
-            func.count(OxygenCalculation.id).label('cnt'),
-        )
-        .filter(OxygenCalculation.user_id == user_id, OxygenCalculation.created_at >= since)
-        .group_by(func.date(OxygenCalculation.created_at))
-        .all()
-    )
-    daily_map = {}
-    for row in case_daily:
-        d = str(row.day)
-        daily_map.setdefault(d, {'date': d, 'cases': 0, 'oxygen': 0})
-        daily_map[d]['cases'] = row.cnt
-    for row in oxygen_daily:
-        d = str(row.day)
-        daily_map.setdefault(d, {'date': d, 'cases': 0, 'oxygen': 0})
-        daily_map[d]['oxygen'] = row.cnt
-    return sorted(daily_map.values(), key=lambda x: x['date'])
 
 
 # ---------------------------------------------------------------------------

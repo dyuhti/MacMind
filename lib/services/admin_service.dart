@@ -357,8 +357,12 @@ class AdminService {
   static Future<Map<String, dynamic>> terminateUserSessions(int userId) =>
       _post('/api/admin/users/$userId/terminate-sessions', {});
 
-  static Future<Map<String, dynamic>> adminResetUserPassword(int userId) =>
-      _post('/api/admin/users/$userId/reset-password', {});
+  static Future<Map<String, dynamic>> adminResetUserPassword(
+    int userId, {
+    String? newPassword,
+  }) =>
+      _post('/api/admin/users/$userId/reset-password',
+          newPassword != null ? {'new_password': newPassword} : {});
 
   static Future<Map<String, dynamic>> unlockUserAccount(int userId) =>
       _post('/api/admin/users/$userId/unlock', {});
@@ -400,11 +404,6 @@ class AdminService {
     }).query;
     return _get('/api/admin/users/$userId/audit-log?$q');
   }
-
-  // ── Analytics ────────────────────────────────────────────────────────────
-
-  static Future<Map<String, dynamic>> getUserAnalytics(int userId) =>
-      _get('/api/admin/users/$userId/analytics');
 
   // ── Quick Actions ────────────────────────────────────────────────────────
 

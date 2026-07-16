@@ -57,31 +57,137 @@ class _SecurityTabState extends State<SecurityTab> {
   }
 
   Future<void> _resetPassword() async {
-    final confirmed = await showConfirmDialog(
-      context, 'Reset Password',
-      'Reset this user password?',
+    final newPasswordCtrl = TextEditingController();
+    final confirmPasswordCtrl = TextEditingController();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    String? error;
+
+    final result = await showDialog<Map<String, String>?>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Reset Password',
+                  style: TextStyle(fontWeight: FontWeight.w700)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: newPasswordCtrl,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined),
+                          onPressed: () {
+                            setDialogState(() {
+                              obscureNew = !obscureNew;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmPasswordCtrl,
+                      obscureText: obscureConfirm,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureConfirm
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined),
+                          onPressed: () {
+                            setDialogState(() {
+                              obscureConfirm = !obscureConfirm;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    if (error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(error!,
+                            style: const TextStyle(
+                                color: Color(0xFFE11D48), fontSize: 12)),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(null),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final np = newPasswordCtrl.text.trim();
+                    final cp = confirmPasswordCtrl.text.trim();
+                    if (np.length < 6) {
+                      setDialogState(() =>
+                          error = 'Password must be at least 6 characters');
+                      return;
+                    }
+                    if (np != cp) {
+                      setDialogState(() =>
+                          error = 'Passwords do not match');
+                      return;
+                    }
+                    Navigator.of(ctx).pop({
+                      'new_password': np,
+                    });
+                  },
+                  child: const Text('Reset'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
-    if (!confirmed) return;
-    final result = await AdminService.adminResetUserPassword(widget.userId);
-    if (result['success'] == true && result['new_password'] != null) {
+
+    if (result == null) return;
+
+    final apiResult = await AdminService.adminResetUserPassword(
+      widget.userId,
+      newPassword: result['new_password'],
+    );
+    if (apiResult['success'] == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('New password: ${result['new_password']} (copied to clipboard)'),
-            duration: const Duration(seconds: 10),
+          const SnackBar(
+            content: Text('Password reset successfully'),
+            backgroundColor: Color(0xFF16A34A),
           ),
         );
       }
+      _load();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(apiResult['message']?.toString() ?? 'Failed'),
+          backgroundColor: const Color(0xFFE11D48),
+        ),
+      );
     }
   }
 
-  Future<void> _unlock() async {
-    final result = await AdminService.unlockUserAccount(widget.userId);
-    if (result['success'] == true) _load();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message']?.toString() ?? 'Done')),
-      );
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return 'Never';
+    try {
+      final parts = iso.split('T');
+      if (parts.length != 2) return iso;
+      return '${parts[0]} ${parts[1].substring(0, 8)}';
+    } catch (_) {
+      return iso;
     }
   }
 
@@ -102,29 +208,30 @@ class _SecurityTabState extends State<SecurityTab> {
                       : RefreshIndicator(
                           onRefresh: _load,
                           child: ListView(
+                            padding: const EdgeInsets.only(bottom: 16),
                             children: [
                               _infoCard('Password Last Changed',
-                                  _security!['password_last_changed']?.toString() ?? '—'),
-                              _infoCard('Failed Logins',
+                                  _formatDate(_security!['password_last_changed']?.toString())),
+                              _infoCard('Last Login',
+                                  _formatDate(_security!['last_login']?.toString())),
+                              _infoCard('Current Device',
+                                  _security!['current_device']?.toString() ?? 'Unknown'),
+                              _infoCard('Current Platform',
+                                  _security!['current_platform']?.toString() ?? 'Unknown'),
+                              _infoCard('Failed Login Attempts',
                                   '${_security!['failed_logins'] ?? 0}'),
                               _infoCard('Current Sessions',
                                   '${_security!['current_sessions'] ?? 0}'),
-                              _infoCard('Blocked',
+                              _infoCard('Account Status',
+                                  _statusLabelText(_security!['account_status']?.toString() ?? 'active')),
+                              _infoCard('Blocked Status',
                                   _security!['is_blocked'] == true ? 'Yes' : 'No'),
-                              _infoCard('2FA Enabled',
-                                  _security!['two_factor_enabled'] == true ? 'Yes' : 'No'),
                               const SizedBox(height: 16),
-                              if (_security!['known_devices'] is List)
-                                ...(_security!['known_devices'] as List).map(
-                                  (d) => _infoCard('Device', d['device'] ?? '—'),
-                                ),
-                              const SizedBox(height: 16),
-                              _actionButton('Terminate Sessions',
-                                  Icons.logout_outlined, Colors.orange, _terminateSessions),
+                              if ((_security!['current_sessions'] as int? ?? 0) > 0)
+                                _actionButton('Terminate Sessions',
+                                    Icons.logout_outlined, const Color(0xFFF59E0B), _terminateSessions),
                               _actionButton('Reset Password',
-                                  Icons.lock_reset_outlined, Colors.purple, _resetPassword),
-                              _actionButton('Unlock Account',
-                                  Icons.lock_open_outlined, Colors.green, _unlock),
+                                  Icons.lock_reset_outlined, const Color(0xFF8B5CF6), _resetPassword),
                             ],
                           ),
                         ),
@@ -133,10 +240,19 @@ class _SecurityTabState extends State<SecurityTab> {
     );
   }
 
+  String _statusLabelText(String status) {
+    switch (status) {
+      case 'active': return 'Active';
+      case 'inactive': return 'Inactive';
+      case 'deactivated': return 'Deactivated';
+      default: return status;
+    }
+  }
+
   Widget _infoCard(String label, String value) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -149,7 +265,10 @@ class _SecurityTabState extends State<SecurityTab> {
                 style: const TextStyle(
                     fontSize: 13, color: Color(0xFF64748B))),
           ),
+          const SizedBox(width: 12),
           Text(value,
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
               style: const TextStyle(
                   fontSize: 14, fontWeight: FontWeight.w600,
                   color: Color(0xFF1E293B))),
@@ -160,7 +279,7 @@ class _SecurityTabState extends State<SecurityTab> {
 
   Widget _actionButton(String label, IconData icon, Color color, VoidCallback onTap) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: MaterialButton(
         onPressed: onTap,
         height: 52,

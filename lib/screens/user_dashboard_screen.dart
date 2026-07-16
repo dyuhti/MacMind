@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/admin_service.dart';
 import 'user_dashboard/widgets/user_header_card.dart';
 import 'user_dashboard/widgets/quick_actions.dart';
-import 'user_dashboard/widgets/loading_skeleton.dart';
 import 'user_dashboard/widgets/error_banner.dart';
+import 'user_dashboard/widgets/confirm_dialog.dart';
 import 'user_dashboard/tabs/overview_tab.dart';
 import 'user_dashboard/tabs/activity_tab.dart';
 import 'user_dashboard/tabs/cases_tab.dart';
@@ -15,7 +15,6 @@ import 'user_dashboard/tabs/login_history_tab.dart';
 import 'user_dashboard/tabs/security_tab.dart';
 import 'user_dashboard/tabs/admin_notes_tab.dart';
 import 'user_dashboard/tabs/audit_log_tab.dart';
-import 'user_dashboard/tabs/user_analytics_tab.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   final int userId;
@@ -34,17 +33,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   late TabController _tabController;
 
   static const _tabs = [
-    'Overview',
-    'Activity',
-    'Cases',
-    'Oxygen',
-    'Favorites',
-    'Feedback',
-    'Login History',
-    'Security',
-    'Admin Notes',
-    'Audit Logs',
-    'User Analytics',
+    _TabDef('Overview', Icons.dashboard_outlined),
+    _TabDef('Activity', Icons.timeline_outlined),
+    _TabDef('Cases', Icons.science_outlined),
+    _TabDef('Oxygen', Icons.air_outlined),
+    _TabDef('Favorites', Icons.star_outline),
+    _TabDef('Feedback', Icons.feedback_outlined),
+    _TabDef('Login History', Icons.login_outlined),
+    _TabDef('Security', Icons.security_outlined),
+    _TabDef('Admin Notes', Icons.note_outlined),
+    _TabDef('Audit Logs', Icons.history_outlined),
   ];
 
   @override
@@ -80,9 +78,50 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
 
   String get _userName => _user?['full_name']?.toString() ?? 'User Dashboard';
 
+  Future<void> _deleteUser() async {
+    final confirmed = await showConfirmDialog(
+      context, 'Delete User',
+      'Permanently delete this user? This cannot be undone.',
+      destructive: true, confirmText: 'Delete',
+    );
+    if (!confirmed) return;
+    final result = await AdminService.deleteUser(widget.userId);
+    if (result['success'] == true && context.mounted) {
+      Navigator.of(context).pop();
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message']?.toString() ?? 'Done')),
+      );
+    }
+  }
+
+  Future<void> _toggleRole() async {
+    final role = _user?['role']?.toString() ?? 'user';
+    final isAdmin = role == 'admin';
+    final action = isAdmin ? 'remove admin from' : 'promote';
+    final confirmed = await showConfirmDialog(
+      context,
+      isAdmin ? 'Remove Admin' : 'Promote to Admin',
+      'Are you sure you want to $action this user?',
+    );
+    if (!confirmed) return;
+    final newRole = isAdmin ? 'user' : 'admin';
+    final result = await AdminService.updateUserRole(widget.userId, newRole);
+    if (result['success'] == true) {
+      _user!['role'] = newRole;
+      if (mounted) setState(() {});
+      _load();
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message']?.toString() ?? 'Done')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isActive = _user?['is_active'] as bool? ?? true;
     final role = _user?['role']?.toString() ?? 'user';
 
     return Scaffold(
@@ -108,8 +147,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (val) async {
-                if (val == 'refresh') {
-                  _load();
+                switch (val) {
+                  case 'refresh':
+                    _load();
+                    break;
+                  case 'delete':
+                    await _deleteUser();
+                    break;
+                  case 'promote':
+                    await _toggleRole();
+                    break;
                 }
               },
               itemBuilder: (_) => [
@@ -119,6 +166,32 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                     Icon(Icons.refresh_outlined, size: 18),
                     SizedBox(width: 8),
                     Text('Refresh'),
+                  ]),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'promote',
+                  child: Row(children: [
+                    Icon(
+                      role == 'admin'
+                          ? Icons.arrow_downward
+                          : Icons.arrow_upward,
+                      size: 18,
+                      color: const Color(0xFF2563EB),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(role == 'admin' ? 'Remove Admin' : 'Promote to Admin'),
+                  ]),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(children: [
+                    Icon(Icons.delete_outline,
+                        color: Color(0xFFE11D48), size: 18),
+                    SizedBox(width: 8),
+                    Text('Delete User',
+                        style: TextStyle(color: Color(0xFFE11D48))),
                   ]),
                 ),
               ],
@@ -195,16 +268,21 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
           SecurityTab(userId: widget.userId),
           AdminNotesTab(userId: widget.userId),
           AuditLogTab(userId: widget.userId),
-          UserAnalyticsTab(userId: widget.userId),
         ],
       ),
     );
   }
 }
 
+class _TabDef {
+  final String label;
+  final IconData icon;
+  const _TabDef(this.label, this.icon);
+}
+
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabController tabController;
-  final List<String> tabs;
+  final List<_TabDef> tabs;
 
   _TabBarDelegate({required this.tabController, required this.tabs});
 
@@ -224,15 +302,20 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
             fontSize: 13, fontWeight: FontWeight.w500),
         indicatorColor: const Color(0xFF2563EB),
         indicatorWeight: 3,
-        tabs: tabs.map((t) => Tab(text: t)).toList(),
+        tabAlignment: TabAlignment.start,
+        tabs: tabs.map((t) => Tab(
+          icon: Icon(t.icon, size: 18),
+          iconMargin: const EdgeInsets.only(bottom: 2),
+          child: Text(t.label),
+        )).toList(),
       ),
     );
   }
 
   @override
-  double get maxExtent => 48;
+  double get maxExtent => 56;
   @override
-  double get minExtent => 48;
+  double get minExtent => 56;
 
   @override
   bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;

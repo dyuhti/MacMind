@@ -123,114 +123,154 @@ class _AdminNotesTabState extends State<AdminNotesTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
       children: [
-        const SizedBox(height: 12),
-        Row(
+        Column(
           children: [
-            const Text('Admin Notes',
-                style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B))),
-            const Spacer(),
-            TextButton.icon(
-              onPressed: _createNote,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Note'),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _loading
+                  ? const LoadingSkeleton()
+                  : _error != null
+                      ? ErrorBanner(message: _error!)
+                      : _notes.isEmpty
+                          ? const EmptyState(
+                              icon: Icons.note_outlined,
+                              message: 'No admin notes',
+                              subtitle: 'Add private notes only visible to admins')
+                          : RefreshIndicator(
+                              onRefresh: _load,
+                              child: ListView(
+                                padding: const EdgeInsets.only(bottom: 80),
+                                children: _notes.map((n) => _NoteCard(
+                                  note: n as Map<String, dynamic>,
+                                  onEdit: () => _editNote(
+                                      n['id'] as int,
+                                      n['note']?.toString() ?? ''),
+                                  onDelete: () => _deleteNote(n['id'] as int),
+                                )).toList(),
+                              ),
+                            ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: _loading
-              ? const LoadingSkeleton()
-              : _error != null
-                  ? ErrorBanner(message: _error!)
-                  : _notes.isEmpty
-                      ? const EmptyState(
-                          icon: Icons.note_outlined,
-                          message: 'No admin notes',
-                          subtitle: 'Add private notes only visible to admins')
-                      : RefreshIndicator(
-                          onRefresh: _load,
-                          child: ListView(
-                            children: _notes.map((n) => _NoteItem(
-                              note: n as Map<String, dynamic>,
-                              onEdit: () => _editNote(
-                                  n['id'] as int,
-                                  n['note']?.toString() ?? ''),
-                              onDelete: () => _deleteNote(n['id'] as int),
-                            )).toList(),
-                          ),
-                        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            heroTag: 'admin_notes_fab',
+            backgroundColor: const Color(0xFF2563EB),
+            foregroundColor: Colors.white,
+            onPressed: _createNote,
+            child: const Icon(Icons.add),
+          ),
         ),
       ],
     );
   }
 }
 
-class _NoteItem extends StatelessWidget {
+class _NoteCard extends StatefulWidget {
   final Map<String, dynamic> note;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _NoteItem({
+  const _NoteCard({
     required this.note,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final content = note['note']?.toString() ?? '';
-    final author = note['admin_name']?.toString() ?? 'Admin';
-    final date = (note['created_at']?.toString() ?? '').split('T').first;
+  State<_NoteCard> createState() => _NoteCardState();
+}
 
-    return Container(
+class _NoteCardState extends State<_NoteCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = widget.note['note']?.toString() ?? '';
+    final author = widget.note['admin_name']?.toString() ?? 'Admin';
+    final date = (widget.note['created_at']?.toString() ?? '').split('T').first;
+
+    return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => setState(() => _expanded = !_expanded),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 28, height: 28,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.admin_panel_settings_outlined,
+                        size: 16, color: Color(0xFF2563EB)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('$author \u00b7 $date',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11, color: Color(0xFF94A3B8))),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined,
+                        color: Color(0xFF2563EB), size: 18),
+                    onPressed: widget.onEdit,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline,
+                        color: Color(0xFFE11D48), size: 18),
+                    onPressed: widget.onDelete,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 200),
+                crossFadeState: _expanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: Text(
+                  content,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 13, color: Color(0xFF475569)),
                 ),
-                child: const Icon(Icons.admin_panel_settings_outlined,
-                    size: 16, color: Color(0xFF2563EB)),
+                secondChild: Text(
+                  content,
+                  style: const TextStyle(
+                      fontSize: 13, color: Color(0xFF475569)),
+                ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('$author · $date',
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF94A3B8))),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined,
-                    color: Color(0xFF2563EB), size: 18),
-                onPressed: onEdit,
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline,
-                    color: Color(0xFFE11D48), size: 18),
-                onPressed: onDelete,
-              ),
+              if (content.length > 100)
+                GestureDetector(
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _expanded ? 'Show less' : 'Show more',
+                      style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                          color: Color(0xFF2563EB)),
+                    ),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(content,
-              style: const TextStyle(
-                  fontSize: 13, color: Color(0xFF475569))),
-        ],
+        ),
       ),
     );
   }

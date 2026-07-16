@@ -15,7 +15,7 @@ class ActivityTab extends StatefulWidget {
 
 class _ActivityTabState extends State<ActivityTab> {
   List<dynamic> _activities = [];
-  int _page = 1, _pages = 1, _total = 0;
+  int _page = 1, _pages = 1;
   bool _loading = true;
   String? _error;
   String _search = '';
@@ -45,7 +45,6 @@ class _ActivityTabState extends State<ActivityTab> {
         final pag = result['pagination'] as Map<String, dynamic>? ?? {};
         setState(() {
           _activities = result['activities'] as List<dynamic>? ?? [];
-          _total = (pag['total'] as int?) ?? 0;
           _pages = (pag['pages'] as int?) ?? 1;
         });
       } else {
@@ -65,7 +64,7 @@ class _ActivityTabState extends State<ActivityTab> {
           onSubmitted: (v) { _search = v; _page = 1; _load(); },
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search activities…',
+            hintText: 'Search activities\u2026',
             hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
             prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
             suffixIcon: _searchCtrl.text.isNotEmpty
@@ -118,9 +117,10 @@ class _ActivityTabState extends State<ActivityTab> {
                           onRefresh: _load,
                           child: ListView(
                             children: [
-                              ..._activities.map((a) => _ActivityItem(a: a as Map<String, dynamic>)),
-                              if (_pages > 1)
-                                _pagination(),
+                              ..._activities.map((a) => _ActivityItem(
+                                  a: a as Map<String, dynamic>)),
+                              if (_pages > 1) _pagination(),
+                              const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -182,76 +182,113 @@ class _ActivityItem extends StatelessWidget {
 
     IconData icon;
     Color color;
+    String category;
     switch (type) {
       case 'case_created':
         icon = Icons.science_outlined;
         color = const Color(0xFF2563EB);
+        category = 'Case';
         break;
       case 'oxygen_created':
         icon = Icons.air_outlined;
         color = const Color(0xFF0D9488);
+        category = 'Oxygen';
         break;
       case 'feedback_submitted':
         icon = Icons.feedback_outlined;
         color = const Color(0xFFF59E0B);
+        category = 'Feedback';
         break;
       case 'login':
         icon = Icons.login_outlined;
         color = const Color(0xFF16A34A);
+        category = 'Login';
         break;
       case 'login_failed':
         icon = Icons.error_outline;
         color = const Color(0xFFE11D48);
+        category = 'Failed';
         break;
       case 'favorite_added':
         icon = Icons.star_outline;
         color = const Color(0xFF8B5CF6);
+        category = 'Favorite';
         break;
       default:
         icon = Icons.circle_outlined;
         color = const Color(0xFF64748B);
+        category = type;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(desc,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500,
-                        color: Color(0xFF1E293B))),
-                const SizedBox(height: 2),
-                Text('$date $time',
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF94A3B8))),
-                if (platform != '—' || device != '—')
-                  Text('$platform · $device',
-                      style: const TextStyle(
-                          fontSize: 10, color: Color(0xFFCBD5E1))),
-              ],
-            ),
-          ),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x06000000),
+              blurRadius: 6,
+              offset: Offset(0, 2))
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(desc,
+                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w500,
+                                color: Color(0xFF1E293B))),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Text(category,
+                            style: TextStyle(
+                                fontSize: 10, fontWeight: FontWeight.w700,
+                                color: color)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text('$date $time',
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF94A3B8))),
+                  if (platform != '\u2014' || device != '\u2014')
+                    Text('$platform \u00b7 $device',
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 10, color: Color(0xFFCBD5E1))),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

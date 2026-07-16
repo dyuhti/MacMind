@@ -16,7 +16,7 @@ class CasesTab extends StatefulWidget {
 
 class _CasesTabState extends State<CasesTab> {
   List<dynamic> _cases = [];
-  int _page = 1, _pages = 1, _total = 0;
+  int _page = 1, _pages = 1;
   bool _loading = true;
   String? _error;
   String _search = '';
@@ -45,7 +45,6 @@ class _CasesTabState extends State<CasesTab> {
         final pag = result['pagination'] as Map<String, dynamic>? ?? {};
         setState(() {
           _cases = result['cases'] as List<dynamic>? ?? [];
-          _total = (pag['total'] as int?) ?? 0;
           _pages = (pag['pages'] as int?) ?? 1;
         });
       } else {
@@ -93,7 +92,7 @@ class _CasesTabState extends State<CasesTab> {
           onSubmitted: (v) { _search = v; _page = 1; _load(); },
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search cases…',
+            hintText: 'Search cases\u2026',
             hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
             prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
             filled: true, fillColor: Colors.white,
@@ -126,12 +125,13 @@ class _CasesTabState extends State<CasesTab> {
                           onRefresh: _load,
                           child: ListView(
                             children: [
-                              ..._cases.map((c) => _CaseItem(
+                              ..._cases.map((c) => _CaseCard(
                                     c: c as Map<String, dynamic>,
                                     onDelete: () => _deleteCase(c['id'] as int),
                                     onDuplicate: () => _duplicateCase(c),
                                   )),
                               if (_pages > 1) _pagination(),
+                              const SizedBox(height: 16),
                             ],
                           ),
                         ),
@@ -164,12 +164,12 @@ class _CasesTabState extends State<CasesTab> {
   }
 }
 
-class _CaseItem extends StatelessWidget {
+class _CaseCard extends StatelessWidget {
   final Map<String, dynamic> c;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
 
-  const _CaseItem({
+  const _CaseCard({
     required this.c,
     required this.onDelete,
     required this.onDuplicate,
@@ -182,33 +182,45 @@ class _CaseItem extends StatelessWidget {
     final agent = c['anesthetic_agent']?.toString() ?? '';
     final date = (c['created_at']?.toString() ?? '').split('T').first;
 
-    return Container(
+    return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFFBEB),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.science_outlined,
-              color: Color(0xFFF59E0B), size: 20),
-        ),
-        title: Text(name,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14,
-                color: Color(0xFF1E293B))),
-        subtitle: Text('$surgery · $agent\n$date',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Row(
           children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.science_outlined,
+                  color: Color(0xFFF59E0B), size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14,
+                          color: Color(0xFF1E293B))),
+                  const SizedBox(height: 2),
+                  Text(surgery,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF64748B))),
+                  Text('$agent \u00b7 $date',
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF94A3B8))),
+                ],
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.content_copy_outlined,
                   color: Color(0xFF2563EB), size: 20),

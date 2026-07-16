@@ -4,13 +4,50 @@ Handles user registration, login, and token management
 """
 from flask import Blueprint, request, jsonify
 from app.models.user import User
+from app.models.login_history import LoginHistory
 from app.utils.security import create_token
 from app.utils.decorators import require_json, validate_fields, require_token
 from app.utils.email import send_otp_email
+from app import db
+from datetime import datetime
 import re
 
 # Create blueprint for auth routes
 auth_bp = Blueprint('auth', __name__)
+
+
+def _detect_platform(ua):
+    ua_lower = ua.lower()
+    if 'android' in ua_lower:
+        return 'Android'
+    if 'iphone' in ua_lower or 'ipad' in ua_lower:
+        return 'iOS'
+    if 'windows' in ua_lower:
+        return 'Windows'
+    if 'macintosh' in ua_lower or 'mac os' in ua_lower:
+        return 'macOS'
+    if 'linux' in ua_lower:
+        return 'Linux'
+    return None
+
+
+def _detect_device(ua):
+    ua_lower = ua.lower()
+    if 'samsung' in ua_lower:
+        return 'Samsung'
+    if 'pixel' in ua_lower:
+        return 'Pixel'
+    if 'iphone' in ua_lower:
+        return 'iPhone'
+    if 'ipad' in ua_lower:
+        return 'iPad'
+    if 'macintosh' in ua_lower or 'mac os' in ua_lower:
+        return 'Mac'
+    if 'windows' in ua_lower:
+        return 'Windows PC'
+    if 'linux' in ua_lower:
+        return 'Linux PC'
+    return None
 
 
 @auth_bp.route('/register', methods=['POST'])
@@ -114,6 +151,24 @@ def login():
         result = User.verify_password(data['email'], data['password'])
         
         if not result['success']:
+            # Record failed login attempt
+            try:
+                login_data = request.get_json(silent=True) or {}
+                ua = request.headers.get('User-Agent', '')
+                failed_record = LoginHistory(
+                    user_id=0,
+                    status='failed',
+                    platform=login_data.get('platform') or _detect_platform(ua),
+                    device=login_data.get('device') or _detect_device(ua),
+                    browser=login_data.get('browser') or ua[:100] if ua else None,
+                )
+                user = User.find_by_email(data['email'])
+                if user:
+                    failed_record.user_id = user.id
+                db.session.add(failed_record)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
             return {'success': False, 'message': result['error']}, 401
         
         # Create JWT token
@@ -121,6 +176,22 @@ def login():
 
         name = result['full_name']
         role = result.get('role', User.ROLE_USER)
+
+        # Record login history
+        try:
+            login_data = request.get_json(silent=True) or {}
+            ua = request.headers.get('User-Agent', '')
+            login_record = LoginHistory(
+                user_id=result['id'],
+                status='success',
+                platform=login_data.get('platform') or _detect_platform(ua),
+                device=login_data.get('device') or _detect_device(ua),
+                browser=login_data.get('browser') or ua[:100] if ua else None,
+            )
+            db.session.add(login_record)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
         
         return {
             'success': True,

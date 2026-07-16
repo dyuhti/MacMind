@@ -21,6 +21,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')
     is_active = db.Column(db.Boolean, nullable=False, default=True)  # False = deactivated by admin
+    password_changed_at = db.Column(db.DateTime, nullable=True)
     otp = db.Column(db.String(10), nullable=True)
     otp_expiry = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -48,6 +49,7 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'is_active': self.is_active if self.is_active is not None else True,
+            'password_changed_at': self.password_changed_at.isoformat() if self.password_changed_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
         
@@ -86,6 +88,7 @@ class User(db.Model):
                 email=email,
                 password=hash_password(password),
                 role=normalized_role,
+                password_changed_at=datetime.utcnow(),
             )
             
             # Add to database session
@@ -252,6 +255,7 @@ class User(db.Model):
         
         try:
             user.password = hash_password(new_password)
+            user.password_changed_at = datetime.utcnow()
             user.otp = None
             user.otp_expiry = None
             db.session.commit()
@@ -290,6 +294,7 @@ class User(db.Model):
         
         try:
             user.password = hash_password(new_password)
+            user.password_changed_at = datetime.utcnow()
             db.session.commit()
             
             return {'success': True, 'message': 'Password updated successfully'}
