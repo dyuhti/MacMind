@@ -1186,7 +1186,6 @@ class _EntryTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
