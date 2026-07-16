@@ -99,7 +99,12 @@ class Case(db.Model):
             'final_dion': self.final_dion,
             'maintenance_rows': maintenance_rows,
             'maintenance_calculations': maintenance_calculations,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_by': {
+                'id': self.user.id,
+                'name': self.user.full_name,
+                'email': self.user.email
+            } if self.user else None
         }
     
     @staticmethod

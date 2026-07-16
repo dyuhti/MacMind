@@ -32,4 +32,9 @@ class OxygenCalculation(db.Model):
             'pressure_psi': self.pressure_psi,
             'total_oxygen_content': self.total_oxygen_content,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_by': {
+                'id': self.user.id,
+                'name': self.user.full_name,
+                'email': self.user.email
+            } if self.user else None
         }

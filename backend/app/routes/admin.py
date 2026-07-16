@@ -364,9 +364,14 @@ def get_admin_entries(current_user):
         oxygen_data = []
 
         if entry_type in ('case', 'all'):
-            q = Case.query.order_by(Case.created_at.desc())
+            q = Case.query.outerjoin(Case.user).order_by(Case.created_at.desc())
             if search:
-                q = q.filter(Case.patient_name.ilike(f'%{search}%'))
+                like = f'%{search}%'
+                q = q.filter(
+                    Case.patient_name.ilike(like) |
+                    User.full_name.ilike(like) |
+                    User.email.ilike(like)
+                )
             if entry_type == 'case':
                 items, total, pages = _paginate_query(q, page, per_page)
                 cases_data = [c.to_dict() for c in items]
@@ -381,9 +386,14 @@ def get_admin_entries(current_user):
                 cases_data = [c.to_dict() for c in q.all()]
 
         if entry_type in ('oxygen', 'all'):
-            q = OxygenCalculation.query.order_by(OxygenCalculation.created_at.desc())
+            q = OxygenCalculation.query.outerjoin(OxygenCalculation.user).order_by(OxygenCalculation.created_at.desc())
             if search:
-                q = q.filter(OxygenCalculation.cylinder_type.ilike(f'%{search}%'))
+                like = f'%{search}%'
+                q = q.filter(
+                    OxygenCalculation.cylinder_type.ilike(like) |
+                    User.full_name.ilike(like) |
+                    User.email.ilike(like)
+                )
             if entry_type == 'oxygen':
                 items, total, pages = _paginate_query(q, page, per_page)
                 oxygen_data = [o.to_dict() for o in items]

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import 'user_dashboard_screen.dart';
+import 'user_dashboard/case_detail_screen.dart';
+import 'user_dashboard/oxygen_detail_screen.dart';
 
 // ── Section enum ─────────────────────────────────────────────────────────────
 
@@ -233,89 +235,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // Actions — Entries
   // =========================================================================
 
-  Future<void> _editEntry(Map<String, dynamic> entry) async {
-    final type = (entry['_entry_type'] ?? 'case').toString();
-    if (type != 'case') {
-      _showSnack('Only case entries can be edited.');
-      return;
-    }
-    final nameCtrl =
-        TextEditingController(text: entry['patient_name']?.toString() ?? '');
-    final notesCtrl =
-        TextEditingController(text: entry['notes']?.toString() ?? '');
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 24,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Edit Case Entry',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Patient Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: notesCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: _blue),
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  final result = await AdminService.updateEntry(
-                    entry['id'] as int,
-                    {
-                      'patient_name': nameCtrl.text.trim(),
-                      'notes': notesCtrl.text.trim(),
-                    },
-                  );
-                  _showSnack(result['message']?.toString() ??
-                      (result['success'] == true ? 'Updated' : 'Failed'));
-                  if (result['success'] == true) {
-                    await _loadSection(resetPage: false);
-                  }
-                },
-                child: const Text(
-                  'Save Changes',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    nameCtrl.dispose();
-    notesCtrl.dispose();
-  }
-
   Future<void> _deleteEntry(Map<String, dynamic> entry) async {
     final type = (entry['_entry_type'] ?? 'case').toString();
     final label = type == 'oxygen' ? 'oxygen calculation' : 'case';
@@ -331,6 +250,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     _showSnack(result['message']?.toString() ??
         (result['success'] == true ? 'Deleted' : 'Failed'));
     if (result['success'] == true) await _loadSection(resetPage: false);
+  }
+
+  void _openEntryDetail(Map<String, dynamic> entry) {
+    final type = (entry['_entry_type'] ?? 'case').toString();
+    final userId = entry['user_id'] as int?;
+    final entryId = entry['id'] as int?;
+    if (userId == null || entryId == null) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => type == 'oxygen'
+            ? OxygenDetailScreen(userId: userId, oxygenId: entryId)
+            : CaseDetailScreen(userId: userId, caseId: entryId),
+      ),
+    ).then((_) => _loadSection(resetPage: false));
   }
 
   // =========================================================================
@@ -708,7 +642,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         const SizedBox(height: 12),
         _SearchBar(
           controller: _entriesSearchCtrl,
-          hint: 'Search entries…',
+          hint: 'Search by patient, cylinder, creator name or email\u2026',
           onSubmitted: (v) {
             _entriesSearch = v;
             _loadSection();
@@ -720,8 +654,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         else
           ..._entries.map((e) => _EntryTile(
                 entry: e as Map<String, dynamic>,
-                onEdit: () => _editEntry(e),
                 onDelete: () => _deleteEntry(e),
+                onTap: () => _openEntryDetail(e),
               )),
         if (_entriesPages > 1)
           _PaginationBar(
@@ -1214,14 +1148,27 @@ class _StatusBadge extends StatelessWidget {
 
 class _EntryTile extends StatelessWidget {
   final Map<String, dynamic> entry;
-  final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onTap;
 
   const _EntryTile({
     required this.entry,
-    required this.onEdit,
     required this.onDelete,
+    required this.onTap,
   });
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '\u2014';
+    try {
+      final parts = iso.split('T');
+      if (parts.length == 2) {
+        final dp = parts[0].split('-');
+        final tp = parts[1].substring(0, 8);
+        if (dp.length == 3) return '${dp[2]}/${dp[1]}/${dp[0]} $tp';
+      }
+      return iso.substring(0, 16);
+    } catch (_) { return iso; }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1230,73 +1177,146 @@ class _EntryTile extends StatelessWidget {
     final title = isCase
         ? (entry['patient_name']?.toString() ?? 'Unknown Patient')
         : (entry['cylinder_type']?.toString() ?? 'Oxygen Calculation');
-    final subtitle = isCase
-        ? (entry['surgery_type']?.toString() ?? '')
-        : 'Pressure: ${entry['pressure_psi'] ?? '—'} PSI';
-    final date =
-        (entry['created_at']?.toString() ?? '').split('T').first;
+    final cb = entry['created_by'] as Map<String, dynamic>?;
+    final cbName = cb?['name']?.toString() ?? '\u2014';
+    final cbEmail = cb?['email']?.toString() ?? '';
+    final createdAt = _formatDate(entry['created_at']?.toString());
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isCase
-                ? const Color(0xFFFFFBEB)
-                : const Color(0xFFF0FDFB),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            isCase ? Icons.science_outlined : Icons.air_outlined,
-            color: isCase
-                ? const Color(0xFFF59E0B)
-                : const Color(0xFF0D9488),
-            size: 20,
-          ),
+        borderRadius: BorderRadius.circular(16),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: const Color(0xFFE2E8F0)),
         ),
-        title: Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: Color(0xFF1E293B))),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (subtitle.isNotEmpty)
-              Text(subtitle,
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF64748B))),
-            Text(date,
-                style: const TextStyle(
-                    fontSize: 11, color: Color(0xFF94A3B8))),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isCase)
-              IconButton(
-                icon: const Icon(Icons.edit_outlined,
-                    color: Color(0xFF2563EB), size: 20),
-                onPressed: onEdit,
-                tooltip: 'Edit',
-              ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFE11D48), size: 20),
-              onPressed: onDelete,
-              tooltip: 'Delete',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isCase
+                        ? const Color(0xFFFFFBEB)
+                        : const Color(0xFFF0FDFB),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    isCase ? Icons.science_outlined : Icons.air_outlined,
+                    color: isCase
+                        ? const Color(0xFFF59E0B)
+                        : const Color(0xFF0D9488),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: Color(0xFF1E293B))),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isCase
+                                  ? const Color(0xFF2563EB).withValues(alpha: 0.1)
+                                  : const Color(0xFF0D9488).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              isCase ? 'Case' : 'O\u2082',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: isCase
+                                    ? const Color(0xFF2563EB)
+                                    : const Color(0xFF0D9488),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(Icons.person_outline,
+                              size: 12, color: const Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Text('Created by: ',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xFF94A3B8))),
+                          Text(cbName,
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1E293B))),
+                        ],
+                      ),
+                      if (cbEmail.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(Icons.email_outlined,
+                                size: 12, color: const Color(0xFF94A3B8)),
+                            const SizedBox(width: 4),
+                            Text(cbEmail,
+                                style: const TextStyle(
+                                    fontSize: 11, color: Color(0xFF64748B))),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time_outlined,
+                              size: 12, color: const Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Text(createdAt,
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xFF94A3B8))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Color(0xFFE11D48), size: 20),
+                      onPressed: onDelete,
+                      tooltip: 'Delete',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    const Icon(Icons.chevron_right,
+                        size: 18, color: Color(0xFFCBD5E1)),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
