@@ -142,29 +142,3 @@ def get_user_feedback(current_user):
         print('ERROR:', str(e))
         return jsonify({'error': str(e)}), 500
 
-
-@feedback_bp.route('/admin/feedback', methods=['GET'])
-@require_token
-def get_all_feedback(current_user):
-    """
-    Get all feedback entries (admin endpoint).
-    
-    Headers:
-        Authorization: Bearer <token>
-    
-    Returns:
-        200: List of all feedback entries
-        401: Unauthorized
-        500: Server error
-    """
-    try:
-        feedbacks = Feedback.get_all()
-
-        return jsonify({
-            'feedbacks': [f.to_dict() for f in feedbacks],
-            'count': len(feedbacks)
-        }), 200
-
-    except Exception as e:
-        print('ERROR:', str(e))
-        return jsonify({'error': str(e)}), 500

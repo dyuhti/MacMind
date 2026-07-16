@@ -7,7 +7,48 @@ from flask import request, jsonify
 from app.utils.security import verify_token
 
 
-def require_token(f):
+def _extract_bearer_token():
+    """Extract Bearer token from Authorization header."""
+    if 'Authorization' not in request.headers:
+        return None, ({'success': False, 'message': 'Token is missing'}, 401)
+
+    auth_header = request.headers['Authorization']
+    parts = auth_header.split(' ')
+    if len(parts) != 2 or parts[0].lower() != 'bearer' or not parts[1].strip():
+        return None, ({'success': False, 'message': 'Invalid Authorization header format'}, 401)
+
+    return parts[1].strip(), None
+
+
+def _resolve_authenticated_user(payload):
+    """Resolve user from token payload and merge trusted role from database."""
+    from app.models.user import User
+
+    user = None
+    user_id = payload.get('user_id')
+    email = payload.get('email')
+
+    try:
+        if user_id is not None:
+            user = User.find_by_id(int(user_id))
+    except (TypeError, ValueError):
+        user = None
+
+    if not user and email:
+        user = User.find_by_email(email)
+
+    if not user:
+        return None, ({'success': False, 'message': 'User not found'}, 401)
+
+    trusted_payload = dict(payload)
+    trusted_payload['user_id'] = str(user.id)
+    trusted_payload['email'] = user.email
+    trusted_payload['role'] = user.role
+
+    return trusted_payload, None
+
+
+def login_required(f):
     """
     Decorator to require JWT token for protected routes
     Extracts and validates token from Authorization header
@@ -23,29 +64,54 @@ def require_token(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = None
-        
-        # Check for token in Authorization header
-        if 'Authorization' in request.headers:
-            auth_header = request.headers['Authorization']
-            try:
-                token = auth_header.split(' ')[1]
-            except IndexError:
-                return {'success': False, 'message': 'Invalid Authorization header format'}, 401
-        
-        if not token:
-            return {'success': False, 'message': 'Token is missing'}, 401
+        token, token_error = _extract_bearer_token()
+        if token_error:
+            return token_error
         
         # Verify token
         result = verify_token(token)
         if not result['success']:
             return {'success': False, 'message': result['error']}, 401
+
+        current_user, user_error = _resolve_authenticated_user(result['payload'])
+        if user_error:
+            return user_error
         
         # Pass user data to route handler
-        kwargs['current_user'] = result['payload']
+        kwargs['current_user'] = current_user
         return f(*args, **kwargs)
-    
+
     return decorated_function
+
+
+def admin_required(f):
+    """Decorator requiring authenticated admin user."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token, token_error = _extract_bearer_token()
+        if token_error:
+            return token_error
+
+        result = verify_token(token)
+        if not result['success']:
+            return {'success': False, 'message': result['error']}, 401
+
+        current_user, user_error = _resolve_authenticated_user(result['payload'])
+        if user_error:
+            return user_error
+
+        if current_user.get('role') != 'admin':
+            return {'success': False, 'message': 'Admin access required'}, 403
+
+        kwargs['current_user'] = current_user
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def require_token(f):
+    """Backward-compatible alias for login_required."""
+    return login_required(f)
 
 
 def require_json(f):

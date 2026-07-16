@@ -19,9 +19,14 @@ class User(db.Model):
     full_name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')
     otp = db.Column(db.String(10), nullable=True)
     otp_expiry = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    ROLE_USER = 'user'
+    ROLE_ADMIN = 'admin'
+    ALLOWED_ROLES = {ROLE_USER, ROLE_ADMIN}
     
     def __repr__(self):
         return f'<User {self.full_name}>'
@@ -40,6 +45,7 @@ class User(db.Model):
             'id': self.id,
             'full_name': self.full_name,
             'email': self.email,
+            'role': self.role,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
         
@@ -49,7 +55,7 @@ class User(db.Model):
         return data
     
     @staticmethod
-    def create(full_name, email, password):
+    def create(full_name, email, password, role=ROLE_USER):
         """
         Create a new user in the database
         
@@ -61,6 +67,10 @@ class User(db.Model):
         Returns:
             Dictionary with user data or error information
         """
+        normalized_role = (role or User.ROLE_USER).strip().lower()
+        if normalized_role not in User.ALLOWED_ROLES:
+            return {'success': False, 'error': 'Invalid role'}
+
         # Check if email already exists
         existing_user = User.query.filter_by(email=email).first()
         
@@ -72,7 +82,8 @@ class User(db.Model):
             new_user = User(
                 full_name=full_name,
                 email=email,
-                password=hash_password(password)
+                password=hash_password(password),
+                role=normalized_role,
             )
             
             # Add to database session
@@ -83,7 +94,8 @@ class User(db.Model):
                 'success': True,
                 'id': new_user.id,
                 'email': new_user.email,
-                'full_name': new_user.full_name
+                'full_name': new_user.full_name,
+                'role': new_user.role,
             }
         
         except Exception as e:
@@ -142,7 +154,8 @@ class User(db.Model):
                 'success': True,
                 'id': user.id,
                 'email': user.email,
-                'full_name': user.full_name
+                'full_name': user.full_name,
+                'role': user.role,
             }
         else:
             return {'success': False, 'error': 'Invalid password'}

@@ -40,13 +40,14 @@ def verify_password(password, hashed):
         return False
 
 
-def create_token(user_id, email, expires_in_days=30):
+def create_token(user_id, email, role='user', expires_in_days=30):
     """
     Create JWT token for user authentication
     
     Args:
         user_id: User's MongoDB ID
         email: User's email
+        role: User role for authorization checks
         expires_in_days: Token expiration in days
     
     Returns:
@@ -57,6 +58,7 @@ def create_token(user_id, email, expires_in_days=30):
     payload = {
         'user_id': str(user_id),
         'email': email,
+        'role': role,
         'iat': datetime.utcnow(),
         'exp': datetime.utcnow() + timedelta(days=expires_in_days)
     }

@@ -13,6 +13,8 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/speech_smoke_test_screen.dart';
 import 'screens/delete_account_screen.dart';
+import 'screens/admin_login_screen.dart';
+import 'screens/admin_dashboard_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
 import 'services/notification_service.dart';
@@ -68,6 +70,33 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Widget _adminRoute(AdminSection section) {
+    return FutureBuilder<bool>(
+      future: AuthService.isAdmin(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
+        if (snapshot.data == true) {
+          return AdminDashboardScreen(initialSection: section);
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await AuthService.logout();
+          if (context.mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil('/admin/login', (route) => false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('You are not authorized.')),
+            );
+          }
+        });
+
+        return const Scaffold(body: SizedBox.expand());
+      },
+    );
+  }
+
   Future<bool> _bootstrapApp() async {
     // Check if user should auto-login (has remember me flag)
     final shouldAutoLogin = await AuthService.shouldAutoLogin();
@@ -110,6 +139,11 @@ class MyApp extends StatelessWidget {
           '/speech-smoke-test': (context) => const SpeechSmokeTestScreen(),
           '/delete-account': (context) => const DeleteAccountScreen(),
           '/login': (context) => const LoginScreen(),
+          '/admin/login': (context) => const AdminLoginScreen(),
+          '/admin/dashboard': (context) => _adminRoute(AdminSection.dashboard),
+          '/admin/users': (context) => _adminRoute(AdminSection.users),
+          '/admin/calculators': (context) => _adminRoute(AdminSection.calculators),
+          '/admin/feedback': (context) => _adminRoute(AdminSection.feedback),
         },
         scrollBehavior: const AppScrollBehavior(),
         home: FutureBuilder<bool>(

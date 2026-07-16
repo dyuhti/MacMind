@@ -5,9 +5,26 @@ Initializes Flask app with blueprints and extensions
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 
 # Global database object
 db = SQLAlchemy()
+
+
+def _ensure_user_role_column():
+    """Add users.role column for existing databases that predate admin roles."""
+    inspector = db.inspect(db.engine)
+    tables = inspector.get_table_names()
+    if 'users' not in tables:
+        return
+
+    columns = {col['name'] for col in inspector.get_columns('users')}
+    if 'role' in columns:
+        return
+
+    db.session.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'"))
+    db.session.commit()
+    print("✅ Added missing users.role column with default 'user'")
 
 
 def create_app(config_name='development'):
@@ -39,8 +56,10 @@ def create_app(config_name='development'):
     with app.app_context():
         try:
             db.create_all()
+            _ensure_user_role_column()
             print("✅ Database tables initialized")
         except Exception as e:
+            db.session.rollback()
             print(f"⚠️  Database initialization warning: {str(e)}")
     
     # Register blueprints (route modules)
@@ -52,6 +71,7 @@ def create_app(config_name='development'):
     from app.routes.profile import profile_bp
     from app.routes.feedback import feedback_bp
     from app.routes.oxygen import oxygen_bp
+    from app.routes.admin import admin_bp
     
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -61,6 +81,7 @@ def create_app(config_name='development'):
     app.register_blueprint(profile_bp, url_prefix='/api')
     app.register_blueprint(feedback_bp, url_prefix='/api')
     app.register_blueprint(oxygen_bp, url_prefix='/api/oxygen')
+    app.register_blueprint(admin_bp, url_prefix='/api')
     
     # Error handlers
     @app.errorhandler(404)

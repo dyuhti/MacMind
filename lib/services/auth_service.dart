@@ -11,6 +11,7 @@ class AuthService {
   static const String _loggedInEmailKey = "loggedInEmail";
   static const String _rememberMeKey = "rememberMe";
   static const String _tokenKey = "authToken";
+  static const String _roleKey = "userRole";
   
   // HTTP client with connection pooling
   static final http.Client _httpClient = http.Client();
@@ -116,7 +117,11 @@ class AuthService {
     }
   }
 
-  static Future<bool> login(String email, String password, {bool rememberMe = false}) async {
+  static Future<Map<String, dynamic>> loginWithResult(
+    String email,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     try {
       final url = Uri.parse("$baseUrl/api/auth/login");
       print('🔐 Login Request: $url');
@@ -135,40 +140,56 @@ class AuthService {
       print('📩 Login Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        // Extract token and user data from response
+        // Accept both legacy and new login payloads.
         final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final token = body['token'] as String?;
+        final token = (body['access_token'] ?? body['token']) as String?;
         final userData = body['user'] as Map<String, dynamic>?;
-        final fullName = userData?['full_name'] as String?;
+        final userId = body['id'] ?? userData?['id'];
+        final fullName = (body['name'] ?? userData?['full_name'] ?? userData?['name']) as String?;
+        final userEmail = (body['email'] ?? userData?['email'] ?? email).toString();
+        final role = (body['role'] ?? userData?['role'] ?? 'user').toString();
         
         // Store user name in global session
         if (fullName != null && fullName.isNotEmpty) {
           UserSession.name = fullName;
           print('✅ UserSession name set: $fullName');
         }
+        UserSession.email = userEmail;
         
         // Save login status, email, and token to shared preferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool(_isLoggedInKey, true);
-        await prefs.setString(_loggedInEmailKey, email);
+        await prefs.setString(_loggedInEmailKey, userEmail);
         await prefs.setBool(_rememberMeKey, rememberMe);
+        await prefs.setString(_roleKey, role);
         if (token != null) {
           await prefs.setString(_tokenKey, token);
           print('✅ Token stored: ${token.substring(0, 20)}...');
         }
-        return true;
+        return {
+          'success': true,
+          'id': userId,
+          'name': fullName,
+          'email': userEmail,
+          'role': role,
+          'access_token': token,
+        };
       } else if (response.statusCode == 401) {
         print('❌ Login failed: Invalid credentials');
-        return false;
+        return {'success': false, 'error': 'Invalid email or password'};
       } else {
         print('❌ Login failed with status ${response.statusCode}');
-        return false;
+        return {'success': false, 'error': 'Login failed'};
       }
-      return false;
     } catch (e) {
       print('❌ Login Error: $e');
-      return false;
+      return {'success': false, 'error': 'Network error: $e'};
     }
+  }
+
+  static Future<bool> login(String email, String password, {bool rememberMe = false}) async {
+    final result = await loginWithResult(email, password, rememberMe: rememberMe);
+    return result['success'] == true;
   }
 
   static Future<Map<String, dynamic>> register(
@@ -200,9 +221,10 @@ class AuthService {
       if (response.statusCode == 201) {
         // Extract token and user data from response
         final body = jsonDecode(response.body) as Map<String, dynamic>;
-        final token = body['token'] as String?;
+        final token = (body['access_token'] ?? body['token']) as String?;
         final userData = body['user'] as Map<String, dynamic>?;
         final userFullName = userData?['full_name'] as String?;
+        final role = (userData?['role'] ?? body['role'] ?? 'user').toString();
         
         // Store user name in global session
         if (userFullName != null && userFullName.isNotEmpty) {
@@ -214,6 +236,7 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool(_isLoggedInKey, true);
         await prefs.setString(_loggedInEmailKey, email);
+        await prefs.setString(_roleKey, role);
         if (token != null) {
           await prefs.setString(_tokenKey, token);
           print('✅ Token stored after registration: ${token.substring(0, 20)}...');
@@ -317,6 +340,15 @@ class AuthService {
     return prefs.getString(_tokenKey);
   }
 
+  static Future<String> getRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_roleKey) ?? 'user';
+  }
+
+  static Future<bool> isAdmin() async {
+    return (await getRole()).toLowerCase() == 'admin';
+  }
+
   static Future<Map<String, dynamic>> deleteAccount(
     String email,
     String password,
@@ -360,6 +392,7 @@ class AuthService {
     await prefs.remove(_loggedInEmailKey);
     await prefs.remove(_rememberMeKey);
     await prefs.remove(_tokenKey);
+    await prefs.remove(_roleKey);
     // Clear user session
     UserSession.clear();
     print('✅ Logged out successfully');

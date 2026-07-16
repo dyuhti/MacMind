@@ -34,6 +34,13 @@ def register():
     """
     try:
         data = request.get_json()
+
+        requested_role = str(data.get('role', User.ROLE_USER)).strip().lower()
+        if requested_role != User.ROLE_USER:
+            return {
+                'success': False,
+                'message': 'Admin registration is not allowed from this endpoint'
+            }, 403
         
         # Validate email format
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -56,14 +63,15 @@ def register():
         result = User.create(
             full_name=data['full_name'],
             email=data['email'],
-            password=data['password']
+            password=data['password'],
+            role=User.ROLE_USER,
         )
         
         if not result['success']:
             return {'success': False, 'message': result['error']}, 400
         
         # Create JWT token for auto-login
-        token = create_token(result['id'], result['email'])
+        token = create_token(result['id'], result['email'], result.get('role', User.ROLE_USER))
         
         return {
             'success': True,
@@ -71,9 +79,11 @@ def register():
             'user': {
                 'id': result['id'],
                 'email': result['email'],
-                'full_name': result['full_name']
+                'full_name': result['full_name'],
+                'role': result.get('role', User.ROLE_USER),
             },
-            'token': token
+            'token': token,
+            'access_token': token,
         }, 201
     
     except Exception as e:
@@ -107,15 +117,24 @@ def login():
             return {'success': False, 'message': result['error']}, 401
         
         # Create JWT token
-        token = create_token(result['id'], result['email'])
+        token = create_token(result['id'], result['email'], result.get('role', User.ROLE_USER))
+
+        name = result['full_name']
+        role = result.get('role', User.ROLE_USER)
         
         return {
             'success': True,
             'message': 'Login successful',
+            'id': result['id'],
+            'name': name,
+            'email': result['email'],
+            'role': role,
+            'access_token': token,
             'user': {
                 'id': result['id'],
                 'email': result['email'],
-                'full_name': result['full_name']
+                'full_name': name,
+                'role': role,
             },
             'token': token
         }, 200
