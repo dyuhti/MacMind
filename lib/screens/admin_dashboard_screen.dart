@@ -582,6 +582,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 onToggleActive: () =>
                     _toggleUserActive(u),
                 onDelete: () => _deleteUser(u),
+                onRefresh: () =>
+                    _loadSection(resetPage: false),
               )),
         if (_usersPages > 1)
           _PaginationBar(
@@ -986,11 +988,13 @@ class _UserTile extends StatelessWidget {
   final Map<String, dynamic> user;
   final VoidCallback onToggleActive;
   final VoidCallback onDelete;
+  final VoidCallback onRefresh;
 
   const _UserTile({
     required this.user,
     required this.onToggleActive,
     required this.onDelete,
+    required this.onRefresh,
   });
 
   @override
@@ -1006,7 +1010,7 @@ class _UserTile extends StatelessWidget {
               userId: user['id'] as int,
             ),
           ),
-        );
+        ).then((_) => onRefresh());
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
