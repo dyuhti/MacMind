@@ -162,15 +162,15 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: Theme.of(context).colorScheme.errorContainer,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFECACA)),
+                  border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Color(0xFFE11D48)),
+                    Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_error!, style: const TextStyle(color: Color(0xFF991B1B), fontSize: 14))),
+                    Expanded(child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 14))),
                   ],
                 ),
               ),
@@ -212,9 +212,9 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
             icon: Icons.air_outlined,
             title: 'Cylinder Information',
             children: [
-              _infoTile('Cylinder Type', type, Icons.air_outlined),
-              _infoTile('Pressure', '$psi PSI', Icons.speed),
-              _infoTile('Total Oxygen Content', '$content L', Icons.air_outlined),
+              _infoTile('Cylinder Type', type, Icons.air_outlined, text, subtext),
+              _infoTile('Pressure', '$psi PSI', Icons.speed, text, subtext),
+              _infoTile('Total Oxygen Content', '$content L', Icons.air_outlined, text, subtext),
             ],
             surface: surface,
             text: text,
@@ -256,10 +256,10 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
             icon: Icons.admin_panel_settings_outlined,
             title: 'Admin Information',
             children: [
-              _infoTile('Created By', cb?['name']?.toString() ?? 'Not provided', Icons.person_outline),
-              _infoTile('Email', cb?['email']?.toString() ?? 'Not provided', Icons.email_outlined),
-              _infoTile('Record ID', '${o['id']}', Icons.label_outlined),
-              _infoTile('Created', createdAt, Icons.calendar_today_outlined),
+              _infoTile('Created By', cb?['name']?.toString() ?? 'Not provided', Icons.person_outline, text, subtext),
+              _infoTile('Email', cb?['email']?.toString() ?? 'Not provided', Icons.email_outlined, text, subtext),
+              _infoTile('Record ID', '${o['id']}', Icons.label_outlined, text, subtext),
+              _infoTile('Created', createdAt, Icons.calendar_today_outlined, text, subtext),
             ],
             surface: surface,
             text: text,
@@ -382,20 +382,20 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
     );
   }
 
-  Widget _infoTile(String label, String value, IconData icon) {
+  Widget _infoTile(String label, String value, IconData icon, Color text, Color subtext) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          Icon(icon, size: 16, color: subtext),
           const SizedBox(width: 10),
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+          SizedBox(width: 120, child: Text(label, style: TextStyle(fontSize: 13, color: subtext))),
           Expanded(
             child: Text(
               value,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: text),
             ),
           ),
         ],
@@ -442,6 +442,7 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
   }
 
   Widget _editField(String label, String key, Color border, Color text, Color subtext) {
+    final cs = Theme.of(context).colorScheme;
     final controller = TextEditingController(text: _editData[key]?.toString() ?? '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -451,7 +452,7 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
           labelText: label,
           labelStyle: TextStyle(fontSize: 13, color: subtext),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: cs.surface,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

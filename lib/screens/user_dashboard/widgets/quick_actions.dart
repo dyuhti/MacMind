@@ -19,13 +19,14 @@ class QuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final isActive = user['is_active'] as bool? ?? true;
 
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Quick Actions',
+        Text('Quick Actions',
             style: TextStyle(
                 fontSize: 16, fontWeight: FontWeight.w700,
-                color: Color(0xFF1E293B))),
+                color: cs.onSurface)),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -43,8 +44,8 @@ class QuickActions extends StatelessWidget {
                         : Icons.check_circle_outline,
                     label: isActive ? 'Deactivate' : 'Activate',
                     color: isActive
-                        ? const Color(0xFFF59E0B)
-                        : const Color(0xFF16A34A),
+                        ? cs.tertiary
+                        : cs.primary,
                     onTap: () => _toggleActive(context),
                   ),
                 ),
@@ -53,7 +54,7 @@ class QuickActions extends StatelessWidget {
                   child: _ActionButton(
                     icon: Icons.lock_reset_outlined,
                     label: 'Reset Password',
-                    color: const Color(0xFF8B5CF6),
+                    color: cs.secondary,
                     onTap: () => _resetPassword(context),
                   ),
                 ),

@@ -14,22 +14,23 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
-            Icon(icon, size: 48, color: const Color(0xFF475569).withValues(alpha: 0.5)),
+            Icon(icon, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(message,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 15, fontWeight: FontWeight.w600,
-                    color: Color(0xFF475569))),
+                    color: cs.onSurfaceVariant)),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(subtitle!,
-                  style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF94A3B8))),
+                  style: TextStyle(
+                      fontSize: 13, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
             ],
           ],
         ),

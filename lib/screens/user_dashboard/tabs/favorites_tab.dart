@@ -47,10 +47,10 @@ class _FavoritesTabState extends State<FavoritesTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Favorite'),
+        title: Text('Add Favorite', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Calculator Name',
             border: OutlineInputBorder(),
           ),
@@ -58,11 +58,11 @@ class _FavoritesTabState extends State<FavoritesTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Add'),
+            child: Text('Add', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ),
         ],
       ),
@@ -100,10 +100,10 @@ class _FavoritesTabState extends State<FavoritesTab> {
         const SizedBox(height: 12),
         Row(
           children: [
-            const Text('Favorites',
-                style: TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B))),
+        Text('Favorites',
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface)),
             const Spacer(),
             TextButton.icon(
               onPressed: _addFavorite,
@@ -160,24 +160,25 @@ class _FavoriteItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final name = fav['calculator_name']?.toString() ?? 'Unknown';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        leading: const Icon(Icons.drag_handle, color: Color(0xFF94A3B8)),
+        leading: Icon(Icons.drag_handle, color: cs.onSurfaceVariant),
         title: Text(name,
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.w500, fontSize: 14,
-                color: Color(0xFF1E293B))),
+                color: cs.onSurface)),
         trailing: IconButton(
-          icon: const Icon(Icons.delete_outline,
-              color: Color(0xFFE11D48), size: 20),
+          icon: Icon(Icons.delete_outline,
+              color: cs.error, size: 20),
           onPressed: onRemove,
         ),
       ),

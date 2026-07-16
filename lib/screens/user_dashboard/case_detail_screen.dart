@@ -162,15 +162,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: Theme.of(context).colorScheme.errorContainer,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFECACA)),
+                  border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Color(0xFFE11D48)),
+                    Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_error!, style: const TextStyle(color: Color(0xFF991B1B), fontSize: 14))),
+                    Expanded(child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 14))),
                   ],
                 ),
               ),
@@ -235,11 +235,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             icon: Icons.person_outline,
             title: 'Patient Information',
             children: [
-              _infoTile('Patient Name', name, Icons.assignment_ind_outlined),
-              _infoTile('Patient ID', pid, Icons.label_outlined),
-              _infoTile('Date', date, Icons.calendar_today_outlined),
-              _infoTile('Surgery Type', surgery, Icons.local_hospital_outlined),
-              if (notes != null && notes.isNotEmpty) _infoTile('Notes', notes, Icons.notes_outlined, multiline: true),
+              _infoTile('Patient Name', name, Icons.assignment_ind_outlined, text, subtext),
+              _infoTile('Patient ID', pid, Icons.label_outlined, text, subtext),
+              _infoTile('Date', date, Icons.calendar_today_outlined, text, subtext),
+              _infoTile('Surgery Type', surgery, Icons.local_hospital_outlined, text, subtext),
+              if (notes != null && notes.isNotEmpty) _infoTile('Notes', notes, Icons.notes_outlined, text, subtext, multiline: true),
             ],
             surface: surface,
             text: text,
@@ -251,15 +251,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             icon: Icons.science_outlined,
             title: 'Anesthetic Details',
             children: [
-              _infoTile('Agent', agent, Icons.science_outlined),
-              _infoTile('Molecular Mass', mm, Icons.scale_outlined),
-              _infoTile('Vapor Constant', vc, Icons.science_outlined),
-              _infoTile('Density', den, Icons.scale_outlined),
-              if (fgf != null) _infoTile('Fresh Gas Flow', '$fgf L/min', Icons.air_outlined),
-              if (conc != null) _infoTile('Dial Concentration', '$conc %', Icons.tune_outlined),
-              if (time != null) _infoTile('Duration', '$time min', Icons.timer_outlined),
-              if (iw != null) _infoTile('Initial Weight', '$iw g', Icons.scale_outlined),
-              if (fw != null) _infoTile('Final Weight', '$fw g', Icons.scale_outlined),
+              _infoTile('Agent', agent, Icons.science_outlined, text, subtext),
+              _infoTile('Molecular Mass', mm, Icons.scale_outlined, text, subtext),
+              _infoTile('Vapor Constant', vc, Icons.science_outlined, text, subtext),
+              _infoTile('Density', den, Icons.scale_outlined, text, subtext),
+              if (fgf != null) _infoTile('Fresh Gas Flow', '$fgf L/min', Icons.air_outlined, text, subtext),
+              if (conc != null) _infoTile('Dial Concentration', '$conc %', Icons.tune_outlined, text, subtext),
+              if (time != null) _infoTile('Duration', '$time min', Icons.timer_outlined, text, subtext),
+              if (iw != null) _infoTile('Initial Weight', '$iw g', Icons.scale_outlined, text, subtext),
+              if (fw != null) _infoTile('Final Weight', '$fw g', Icons.scale_outlined, text, subtext),
             ],
             surface: surface,
             text: text,
@@ -276,10 +276,10 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             icon: Icons.admin_panel_settings_outlined,
             title: 'Admin Information',
             children: [
-              _infoTile('Created By', cb?['name']?.toString() ?? 'Not provided', Icons.person_outline),
-              _infoTile('Email', cb?['email']?.toString() ?? 'Not provided', Icons.email_outlined),
-              _infoTile('Record ID', '${c['id']}', Icons.label_outlined),
-              _infoTile('Created', createdAt, Icons.calendar_today_outlined),
+              _infoTile('Created By', cb?['name']?.toString() ?? 'Not provided', Icons.person_outline, text, subtext),
+              _infoTile('Email', cb?['email']?.toString() ?? 'Not provided', Icons.email_outlined, text, subtext),
+              _infoTile('Record ID', '${c['id']}', Icons.label_outlined, text, subtext),
+              _infoTile('Created', createdAt, Icons.calendar_today_outlined, text, subtext),
             ],
             surface: surface,
             text: text,
@@ -431,21 +431,21 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     );
   }
 
-  Widget _infoTile(String label, String value, IconData icon, {bool multiline = false}) {
+  Widget _infoTile(String label, String value, IconData icon, Color text, Color subtext, {bool multiline = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          Icon(icon, size: 16, color: subtext),
           const SizedBox(width: 10),
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)))),
+          SizedBox(width: 120, child: Text(label, style: TextStyle(fontSize: 13, color: subtext))),
           Expanded(
             child: Text(
               value,
               maxLines: multiline ? 5 : 2,
               overflow: multiline ? TextOverflow.ellipsis : TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: text),
             ),
           ),
         ],
@@ -510,13 +510,13 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
         icon: Icons.trending_up_outlined,
         title: 'Induction',
         children: [
-          if (inductionFgf != null) _infoTile('Induction FGF', '$inductionFgf L/min', Icons.air_outlined),
-          if (inductionConc != null) _infoTile('Induction Concentration', '$inductionConc %', Icons.tune_outlined),
-          if (inductionTime != null) _infoTile('Induction Time', '$inductionTime min', Icons.timer_outlined),
-          if (inductionBiro != null) _infoTile('Induction Biro', inductionBiro, Icons.calculate_outlined),
-          if (inductionDion != null) _infoTile('Induction Dion', inductionDion, Icons.calculate_outlined),
-          if (finalBiro != null) _infoTile('Final Biro', finalBiro, Icons.calculate_outlined),
-          if (finalDion != null) _infoTile('Final Dion', finalDion, Icons.calculate_outlined),
+          if (inductionFgf != null) _infoTile('Induction FGF', '$inductionFgf L/min', Icons.air_outlined, text, subtext),
+          if (inductionConc != null) _infoTile('Induction Concentration', '$inductionConc %', Icons.tune_outlined, text, subtext),
+          if (inductionTime != null) _infoTile('Induction Time', '$inductionTime min', Icons.timer_outlined, text, subtext),
+          if (inductionBiro != null) _infoTile('Induction Biro', inductionBiro, Icons.calculate_outlined, text, subtext),
+          if (inductionDion != null) _infoTile('Induction Dion', inductionDion, Icons.calculate_outlined, text, subtext),
+          if (finalBiro != null) _infoTile('Final Biro', finalBiro, Icons.calculate_outlined, text, subtext),
+          if (finalDion != null) _infoTile('Final Dion', finalDion, Icons.calculate_outlined, text, subtext),
         ],
         surface: surface,
         text: text,
@@ -596,6 +596,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   }
 
   Widget _editField(String label, String key, Color border, Color text, Color subtext, {bool multiline = false}) {
+    final cs = Theme.of(context).colorScheme;
     final controller = TextEditingController(text: _editData[key]?.toString() ?? '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -606,7 +607,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           labelText: label,
           labelStyle: TextStyle(fontSize: 13, color: subtext),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: cs.surface,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -618,7 +619,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+            borderSide: BorderSide(color: cs.primary, width: 1.5),
           ),
         ),
         style: TextStyle(fontSize: 14, color: text),

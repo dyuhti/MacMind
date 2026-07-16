@@ -106,14 +106,14 @@ class _OxygenTabState extends State<OxygenTab> {
           IconButton(
             onPressed: _page > 1 ? () { _page--; _load(); } : null,
             icon: const Icon(Icons.chevron_left),
-            color: _page > 1 ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: _page > 1 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
           ),
           Text('Page $_page of $_pages',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF475569))),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           IconButton(
             onPressed: _page < _pages ? () { _page++; _load(); } : null,
             icon: const Icon(Icons.chevron_right),
-            color: _page < _pages ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: _page < _pages ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
           ),
         ],
       ),
@@ -138,6 +138,7 @@ class _OxygenCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final type = o['cylinder_type']?.toString() ?? 'Unknown';
     final psi = o['pressure_psi']?.toString() ?? '\u2014';
     final content = o['total_oxygen_content']?.toString() ?? '\u2014';
@@ -145,8 +146,11 @@ class _OxygenCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
@@ -164,11 +168,11 @@ class _OxygenCard extends StatelessWidget {
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDFB),
+                  color: cs.secondaryContainer.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.air_outlined,
-                    color: Color(0xFF0D9488), size: 22),
+                child: Icon(Icons.air_outlined,
+                    color: cs.secondary, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -177,23 +181,23 @@ class _OxygenCard extends StatelessWidget {
                   children: [
                     Text(type,
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 14,
-                            color: Color(0xFF1E293B))),
+                            color: cs.onSurface)),
                     const SizedBox(height: 2),
                     Text('$psi PSI \u00b7 $content L',
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF64748B))),
+                        style: TextStyle(
+                            fontSize: 12, color: cs.onSurfaceVariant)),
                     Text(date,
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF94A3B8))),
+                        style: TextStyle(
+                            fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline,
-                    color: Color(0xFFE11D48), size: 20),
+                icon: Icon(Icons.delete_outline,
+                    color: cs.error, size: 20),
                 tooltip: 'Delete',
                 onPressed: onDelete,
               ),

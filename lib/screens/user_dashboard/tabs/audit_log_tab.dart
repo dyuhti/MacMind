@@ -155,10 +155,14 @@ class _AuditCard extends StatelessWidget {
         displayAction = action.replaceAll('_', ' ');
     }
 
+    final cs = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -182,29 +186,29 @@ class _AuditCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text('$date $time',
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF94A3B8))),
+                    style: TextStyle(
+                        fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
               ],
             ),
             const SizedBox(height: 6),
             Text('By: $adminName',
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF64748B))),
+                style: TextStyle(
+                    fontSize: 12, color: cs.onSurfaceVariant)),
             if (oldVal != null && oldVal.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text('Old: $oldVal',
                     maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF94A3B8))),
+                    style: TextStyle(
+                        fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
               ),
             if (newVal != null && newVal.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text('New: $newVal',
                     maxLines: 2, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF94A3B8))),
+                    style: TextStyle(
+                        fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
               ),
           ],
         ),

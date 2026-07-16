@@ -77,13 +77,13 @@ class _LoginHistoryTabState extends State<LoginHistoryTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              const Icon(Icons.login_outlined, size: 16, color: Color(0xFF64748B)),
+              Icon(Icons.login_outlined, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 6),
               Text('${_history.length} session${_history.length == 1 ? '' : 's'}',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               const Spacer(),
               Text('Page $_page of $_pages',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7))),
             ],
           ),
         ),
@@ -183,22 +183,23 @@ class _LoginCard extends StatelessWidget {
     final date = loginTime.contains('T') ? loginTime.split('T').first : loginTime;
     final time = loginTime.contains('T') ? loginTime.split('T').last.substring(0, 8) : '';
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isActive
-              ? const Color(0xFF16A34A).withValues(alpha: 0.4)
+              ? cs.primary.withValues(alpha: 0.4)
               : isLatest
-                  ? const Color(0xFF2563EB).withValues(alpha: 0.2)
-                  : const Color(0xFFE2E8F0),
+                  ? cs.primary.withValues(alpha: 0.2)
+                  : cs.outlineVariant,
           width: isActive ? 1.5 : 1,
         ),
         boxShadow: isActive
-            ? [BoxShadow(color: const Color(0xFF16A34A).withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]
-            : [const BoxShadow(color: Color(0x06000000), blurRadius: 6, offset: Offset(0, 2))],
+            ? [BoxShadow(color: cs.primary.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]
+            : [BoxShadow(color: cs.shadow.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -226,25 +227,25 @@ class _LoginCard extends StatelessWidget {
                             isActive ? 'Active Session' : (isLatest ? 'Latest Session' : (isSuccess ? 'Successful Login' : 'Failed Login')),
                             style: TextStyle(
                                 fontSize: 13, fontWeight: FontWeight.w600,
-                                color: isActive ? const Color(0xFF16A34A) : const Color(0xFF1E293B)),
+                                color: isActive ? cs.primary : cs.onSurface),
                           ),
                           if (isActive) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                                color: cs.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(99),
                               ),
-                              child: const Text('LIVE',
-                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF16A34A))),
+                              child: Text('LIVE',
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: cs.primary)),
                             ),
                           ],
                         ],
                       ),
                       const SizedBox(height: 1),
                       Text('$date  $time',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
                     ],
                   ),
                 ),
@@ -252,31 +253,31 @@ class _LoginCard extends StatelessWidget {
                   width: 8, height: 8,
                   decoration: BoxDecoration(
                     color: isActive
-                        ? const Color(0xFF16A34A)
-                        : (isSuccess ? const Color(0xFF94A3B8) : const Color(0xFFE11D48)),
+                        ? cs.primary
+                        : (isSuccess ? cs.onSurfaceVariant : cs.error),
                     shape: BoxShape.circle,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            const Divider(height: 1),
+            Divider(height: 1, color: cs.outlineVariant),
             const SizedBox(height: 8),
             Wrap(
               spacing: 16,
               runSpacing: 6,
               children: [
-                _detailChip(Icons.timer_outlined, 'Duration', _formatDuration(sessionDuration)),
-                _detailChip(Icons.smartphone_outlined, 'Platform', platform ?? '\u2014'),
-                _detailChip(Icons.devices_outlined, 'Device', device),
+                _detailChip(Icons.timer_outlined, 'Duration', _formatDuration(sessionDuration), cs),
+                _detailChip(Icons.smartphone_outlined, 'Platform', platform ?? '\u2014', cs),
+                _detailChip(Icons.devices_outlined, 'Device', device, cs),
                 if (browser != null && browser.isNotEmpty)
-                  _detailChip(Icons.language_outlined, 'Browser', browser),
+                  _detailChip(Icons.language_outlined, 'Browser', browser, cs),
                 if (ip != null && ip.isNotEmpty)
-                  _detailChip(Icons.wifi_outlined, 'IP', ip),
-                _detailChip(Icons.info_outlined, 'Status', isSuccess ? 'Success' : 'Failed'),
+                  _detailChip(Icons.wifi_outlined, 'IP', ip, cs),
+                _detailChip(Icons.info_outlined, 'Status', isSuccess ? 'Success' : 'Failed', cs),
                 if (logoutTime.isNotEmpty)
                   _detailChip(Icons.logout_outlined, 'Logged Out',
-                      logoutTime.contains('T') ? logoutTime.split('T').last.substring(0, 8) : ''),
+                      logoutTime.contains('T') ? logoutTime.split('T').last.substring(0, 8) : '', cs),
               ],
             ),
           ],
@@ -285,16 +286,16 @@ class _LoginCard extends StatelessWidget {
     );
   }
 
-  Widget _detailChip(IconData icon, String label, String value) {
+  Widget _detailChip(IconData icon, String label, String value, ColorScheme cs) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: const Color(0xFF94A3B8)),
+        Icon(icon, size: 12, color: cs.onSurfaceVariant),
         const SizedBox(width: 4),
         Text('$label ',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
         Text(value,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface)),
       ],
     );
   }

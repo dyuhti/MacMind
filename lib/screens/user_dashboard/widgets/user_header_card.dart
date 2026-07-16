@@ -19,6 +19,7 @@ class UserHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isActive = user['is_active'] as bool? ?? true;
     final role = (user['role']?.toString() ?? 'user').toUpperCase();
     final status = user['status']?.toString() ?? 'active';
@@ -41,19 +42,19 @@ class UserHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isOnline
-              ? const Color(0xFF16A34A).withValues(alpha: 0.3)
-              : const Color(0xFFE2E8F0),
+              ? cs.primary.withValues(alpha: 0.3)
+              : cs.outlineVariant,
           width: isOnline ? 1.5 : 1,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-              color: Color(0x08000000),
+              color: cs.shadow.withValues(alpha: 0.05),
               blurRadius: 8,
-              offset: Offset(0, 4))
+              offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -65,16 +66,16 @@ class UserHeaderCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 32,
                     backgroundColor: isActive
-                        ? const Color(0xFFEFF6FF)
-                        : const Color(0xFFF8FAFC),
+                        ? cs.primaryContainer.withValues(alpha: 0.5)
+                        : cs.surfaceContainerHighest,
                     child: Text(
                       initial,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                         color: isActive
-                            ? const Color(0xFF2563EB)
-                            : const Color(0xFF94A3B8),
+                            ? cs.primary
+                            : cs.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -84,9 +85,9 @@ class UserHeaderCard extends StatelessWidget {
                       child: Container(
                         width: 14, height: 14,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF16A34A),
+                          color: cs.primary,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: cs.surface, width: 2),
                         ),
                       ),
                     ),
@@ -103,25 +104,25 @@ class UserHeaderCard extends StatelessWidget {
                           child: Text(name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 20, fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1E293B))),
+                                  color: cs.onSurface)),
                         ),
                         if (isOnline) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF16A34A).withValues(alpha: 0.1),
+                              color: cs.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(99),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.circle, size: 6, color: Color(0xFF16A34A)),
-                                SizedBox(width: 4),
+                                Icon(Icons.circle, size: 6, color: cs.primary),
+                                const SizedBox(width: 4),
                                 Text('Online',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF16A34A))),
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary)),
                               ],
                             ),
                           ),
@@ -132,8 +133,8 @@ class UserHeaderCard extends StatelessWidget {
                     Text(email,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13, color: Color(0xFF64748B))),
+                        style: TextStyle(
+                            fontSize: 13, color: cs.onSurfaceVariant)),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
@@ -141,15 +142,15 @@ class UserHeaderCard extends StatelessWidget {
                       children: [
                         _chip(role,
                             role == 'ADMIN'
-                                ? const Color(0xFF2563EB)
-                                : const Color(0xFF16A34A),
+                                ? cs.primary
+                                : cs.secondary,
                             role == 'ADMIN'
-                                ? const Color(0xFFEFF6FF)
-                                : const Color(0xFFF0FDF4)),
-                        _statusChip(status),
+                                ? cs.primaryContainer.withValues(alpha: 0.5)
+                                : cs.secondaryContainer.withValues(alpha: 0.5)),
+                        _statusChip(status, cs),
                         if (currentSessions > 0)
                           _chip('$currentSessions session${currentSessions == 1 ? '' : 's'}',
-                              const Color(0xFF7C3AED), const Color(0xFFF5F3FF)),
+                              cs.tertiary, cs.tertiaryContainer.withValues(alpha: 0.5)),
                       ],
                     ),
                   ],
@@ -158,7 +159,7 @@ class UserHeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1),
+          Divider(height: 1, color: cs.outlineVariant),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -167,16 +168,16 @@ class UserHeaderCard extends StatelessWidget {
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _buildLeftColumn(createdAt, lastLogin, platform)),
+                        Expanded(child: _buildLeftColumn(createdAt, lastLogin, platform, cs)),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildRightColumn(device, accountAge, lastActivity)),
+                        Expanded(child: _buildRightColumn(device, accountAge, lastActivity, cs)),
                       ],
                     )
                   : Column(
                       children: [
-                        _buildLeftColumn(createdAt, lastLogin, platform),
+                        _buildLeftColumn(createdAt, lastLogin, platform, cs),
                         const SizedBox(height: 8),
-                        _buildRightColumn(device, accountAge, lastActivity),
+                        _buildRightColumn(device, accountAge, lastActivity, cs),
                       ],
                     );
             },
@@ -186,28 +187,28 @@ class UserHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLeftColumn(String createdAt, String lastLogin, String platform) {
+  Widget _buildLeftColumn(String createdAt, String lastLogin, String platform, ColorScheme cs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoRow(Icons.calendar_today_outlined, 'Registered', createdAt),
+        _infoRow(Icons.calendar_today_outlined, 'Registered', createdAt, cs),
         const SizedBox(height: 6),
-        _infoRow(Icons.login_outlined, 'Last Login', lastLogin),
+        _infoRow(Icons.login_outlined, 'Last Login', lastLogin, cs),
         const SizedBox(height: 6),
-        _infoRow(_platformIcon(platform), 'Platform', platform),
+        _infoRow(_platformIcon(platform), 'Platform', platform, cs),
       ],
     );
   }
 
-  Widget _buildRightColumn(String device, String accountAge, String lastActivity) {
+  Widget _buildRightColumn(String device, String accountAge, String lastActivity, ColorScheme cs) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoRow(Icons.devices_outlined, 'Device', device),
+        _infoRow(Icons.devices_outlined, 'Device', device, cs),
         const SizedBox(height: 6),
-        _infoRow(Icons.timer_outlined, 'Account Age', '$accountAge days'),
+        _infoRow(Icons.timer_outlined, 'Account Age', '$accountAge days', cs),
         const SizedBox(height: 6),
-        _infoRow(Icons.circle_outlined, 'Last Active', lastActivity),
+        _infoRow(Icons.circle_outlined, 'Last Active', lastActivity, cs),
       ],
     );
   }
@@ -227,24 +228,24 @@ class UserHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _statusChip(String status) {
+  Widget _statusChip(String status, ColorScheme cs) {
     Color color;
     String label;
     switch (status) {
       case 'active':
-        color = const Color(0xFF16A34A);
+        color = cs.primary;
         label = 'Active';
         break;
       case 'inactive':
-        color = const Color(0xFFF59E0B);
+        color = cs.tertiary;
         label = 'Inactive';
         break;
       case 'deactivated':
-        color = const Color(0xFFE11D48);
+        color = cs.error;
         label = 'Deactivated';
         break;
       default:
-        color = const Color(0xFF94A3B8);
+        color = cs.onSurfaceVariant;
         label = status.toUpperCase();
     }
     return Container(
@@ -269,21 +270,21 @@ class UserHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value, ColorScheme cs) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: const Color(0xFF94A3B8)),
+        Icon(icon, size: 14, color: cs.onSurfaceVariant),
         const SizedBox(width: 8),
         Text('$label: ',
-            style: const TextStyle(
-                fontSize: 12, color: Color(0xFF64748B))),
+            style: TextStyle(
+                fontSize: 12, color: cs.onSurfaceVariant)),
         Expanded(
           child: Text(value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12, fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B))),
+                  color: cs.onSurface)),
         ),
       ],
     );

@@ -122,14 +122,15 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
   Widget build(BuildContext context) {
     final role = _user?['role']?.toString() ?? 'user';
 
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: cs.surfaceContainerLow,
       appBar: AppBar(
         title: Text(_userName,
-            style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
-        backgroundColor: const Color(0xFF1E293B),
-        foregroundColor: Colors.white,
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface)),
+        backgroundColor: cs.surfaceContainerHighest,
+        foregroundColor: cs.onSurface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -158,11 +159,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                 }
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'refresh',
                   child: Row(children: [
                     Icon(Icons.refresh_outlined, size: 18),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text('Refresh'),
                   ]),
                 ),
@@ -175,21 +176,21 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
                           ? Icons.arrow_downward
                           : Icons.arrow_upward,
                       size: 18,
-                      color: const Color(0xFF2563EB),
+                      color: cs.primary,
                     ),
                     const SizedBox(width: 8),
                     Text(role == 'admin' ? 'Remove Admin' : 'Promote to Admin'),
                   ]),
                 ),
                 const PopupMenuDivider(),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(children: [
                     Icon(Icons.delete_outline,
-                        color: Color(0xFFE11D48), size: 18),
-                    SizedBox(width: 8),
+                        color: cs.error, size: 18),
+                    const SizedBox(width: 8),
                     Text('Delete User',
-                        style: TextStyle(color: Color(0xFFE11D48))),
+                        style: TextStyle(color: cs.error)),
                   ]),
                 ),
               ],
@@ -286,18 +287,19 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFFF8FAFC),
+      color: cs.surfaceContainerLow,
       child: TabBar(
         controller: tabController,
         isScrollable: true,
-        labelColor: const Color(0xFF2563EB),
-        unselectedLabelColor: const Color(0xFF64748B),
+        labelColor: cs.primary,
+        unselectedLabelColor: cs.onSurfaceVariant,
         labelStyle: const TextStyle(
             fontSize: 13, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(
             fontSize: 13, fontWeight: FontWeight.w500),
-        indicatorColor: const Color(0xFF2563EB),
+        indicatorColor: cs.primary,
         indicatorWeight: 3,
         tabAlignment: TabAlignment.start,
         tabs: tabs.map((t) => Tab(

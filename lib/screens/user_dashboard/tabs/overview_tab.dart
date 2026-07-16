@@ -132,23 +132,23 @@ class _OverviewTabState extends State<OverviewTab> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: Row(children: [
-                const Icon(Icons.star_outlined,
-                    color: Color(0xFFF59E0B), size: 20),
+                Icon(Icons.star_outlined,
+                    color: Theme.of(context).colorScheme.tertiary, size: 20),
                 const SizedBox(width: 8),
-                const Text('Most Used: ',
+                Text('Most Used: ',
                     style: TextStyle(
-                        fontSize: 13, color: Color(0xFF64748B))),
+                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 Expanded(
                   child: Text(u['most_used_calculator'].toString(),
                       maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w700,
-                          color: Color(0xFF1E293B))),
+                          color: Theme.of(context).colorScheme.onSurface)),
                 ),
               ]),
             ),

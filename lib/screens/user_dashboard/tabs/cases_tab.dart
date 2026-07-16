@@ -94,21 +94,21 @@ class _CasesTabState extends State<CasesTab> {
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: 'Search cases\u2026',
-            hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-            prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
-            filled: true, fillColor: Colors.white,
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
+            prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            filled: true, fillColor: Theme.of(context).colorScheme.surface,
             contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
             ),
           ),
         ),
@@ -153,14 +153,14 @@ class _CasesTabState extends State<CasesTab> {
           IconButton(
             onPressed: _page > 1 ? () { _page--; _load(); } : null,
             icon: const Icon(Icons.chevron_left),
-            color: _page > 1 ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: _page > 1 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
           ),
           Text('Page $_page of $_pages',
-              style: const TextStyle(fontSize: 13, color: Color(0xFF475569))),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           IconButton(
             onPressed: _page < _pages ? () { _page++; _load(); } : null,
             icon: const Icon(Icons.chevron_right),
-            color: _page < _pages ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: _page < _pages ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outlineVariant,
           ),
         ],
       ),
@@ -187,6 +187,7 @@ class _CaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final name = c['patient_name']?.toString() ?? 'Unknown';
     final surgery = c['surgery_type']?.toString() ?? '';
     final agent = c['anesthetic_agent']?.toString() ?? '';
@@ -194,8 +195,11 @@ class _CaseCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
@@ -213,11 +217,11 @@ class _CaseCard extends StatelessWidget {
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFFBEB),
+                  color: cs.tertiaryContainer.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.science_outlined,
-                    color: Color(0xFFF59E0B), size: 22),
+                child: Icon(Icons.science_outlined,
+                    color: cs.tertiary, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -226,30 +230,30 @@ class _CaseCard extends StatelessWidget {
                   children: [
                     Text(name,
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 14,
-                            color: Color(0xFF1E293B))),
+                            color: cs.onSurface)),
                     const SizedBox(height: 2),
                     Text(surgery,
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF64748B))),
+                        style: TextStyle(
+                            fontSize: 12, color: cs.onSurfaceVariant)),
                     Text('$agent \u00b7 $date',
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF94A3B8))),
+                        style: TextStyle(
+                            fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.content_copy_outlined,
-                    color: Color(0xFF2563EB), size: 20),
+                icon: Icon(Icons.content_copy_outlined,
+                    color: cs.primary, size: 20),
                 tooltip: 'Duplicate',
                 onPressed: onDuplicate,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline,
-                    color: Color(0xFFE11D48), size: 20),
+                icon: Icon(Icons.delete_outlined,
+                    color: cs.error, size: 20),
                 tooltip: 'Delete',
                 onPressed: onDelete,
               ),

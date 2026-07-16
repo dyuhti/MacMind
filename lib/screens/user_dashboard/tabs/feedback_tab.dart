@@ -54,11 +54,11 @@ class _FeedbackTabState extends State<FeedbackTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Reply to Feedback'),
+        title: Text('Reply to Feedback', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
         content: TextField(
           controller: ctrl,
           maxLines: 3,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Reply',
             border: OutlineInputBorder(),
           ),
@@ -66,11 +66,11 @@ class _FeedbackTabState extends State<FeedbackTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Send'),
+            child: Text('Send', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ),
         ],
       ),
@@ -143,6 +143,7 @@ class _FeedbackItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final rating = (item['rating'] as num?)?.toInt() ?? 0;
     final name = item['user_name']?.toString() ?? '';
     final category = item['category']?.toString() ?? 'General';
@@ -150,15 +151,15 @@ class _FeedbackItem extends StatelessWidget {
     final status = item['status']?.toString() ?? 'pending';
     final reply = item['admin_reply']?.toString();
     final date = (item['created_at']?.toString() ?? '').split('T').first;
-    final stars = '⭐' * rating.clamp(0, 5);
+    final stars = '\u2b50' * rating.clamp(0, 5);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,72 +169,72 @@ class _FeedbackItem extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: status == 'resolved'
-                    ? const Color(0xFFF0FDF4)
-                    : const Color(0xFFFFFBEB),
+                    ? cs.primaryContainer.withValues(alpha: 0.5)
+                    : cs.tertiaryContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(99),
               ),
               child: Text(status.toUpperCase(),
                   style: TextStyle(
                       fontSize: 10, fontWeight: FontWeight.w700,
                       color: status == 'resolved'
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFF59E0B))),
+                          ? cs.primary
+                          : cs.tertiary)),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(category,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w700, fontSize: 14,
-                      color: Color(0xFF1E293B))),
+                      color: cs.onSurface)),
             ),
             Text(stars, style: const TextStyle(fontSize: 13)),
           ]),
           const SizedBox(height: 6),
           Text(message,
-              style: const TextStyle(
-                  fontSize: 13, color: Color(0xFF475569))),
+              style: TextStyle(
+                  fontSize: 13, color: cs.onSurfaceVariant)),
           if (reply != null && reply.isNotEmpty) ...[
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: cs.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('Reply: $reply',
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF2563EB))),
+                  style: TextStyle(
+                      fontSize: 12, color: cs.primary)),
             ),
           ],
           const SizedBox(height: 6),
           Row(children: [
-            Text('$name · $date',
-                style: const TextStyle(
-                    fontSize: 11, color: Color(0xFF94A3B8))),
+            Text('$name \u00b7 $date',
+                style: TextStyle(
+                    fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.reply_outlined,
-                  color: Color(0xFF2563EB), size: 18),
+              icon: Icon(Icons.reply_outlined,
+                  color: cs.primary, size: 18),
               tooltip: 'Reply',
               onPressed: onReply,
             ),
             if (status == 'pending')
               IconButton(
-                icon: const Icon(Icons.check_circle_outline,
-                    color: Color(0xFF16A34A), size: 18),
+                icon: Icon(Icons.check_circle_outline,
+                    color: cs.primary, size: 18),
                 tooltip: 'Mark Resolved',
                 onPressed: onResolve,
               ),
             if (status == 'resolved')
               IconButton(
-                icon: const Icon(Icons.pending_outlined,
-                    color: Color(0xFFF59E0B), size: 18),
+                icon: Icon(Icons.pending_outlined,
+                    color: cs.tertiary, size: 18),
                 tooltip: 'Mark Pending',
                 onPressed: onPending,
               ),
             IconButton(
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFE11D48), size: 18),
+              icon: Icon(Icons.delete_outline,
+                  color: cs.error, size: 18),
               tooltip: 'Delete',
               onPressed: onDelete,
             ),

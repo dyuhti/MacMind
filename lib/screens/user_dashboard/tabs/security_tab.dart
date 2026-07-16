@@ -250,28 +250,29 @@ class _SecurityTabState extends State<SecurityTab> {
   }
 
   Widget _infoCard(String label, String value) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: Color(0xFF64748B))),
+                style: TextStyle(
+                    fontSize: 13, color: cs.onSurfaceVariant)),
           ),
           const SizedBox(width: 12),
           Text(value,
               maxLines: 2, overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14, fontWeight: FontWeight.w600,
-                  color: Color(0xFF1E293B))),
+                  color: cs.onSurface)),
         ],
       ),
     );

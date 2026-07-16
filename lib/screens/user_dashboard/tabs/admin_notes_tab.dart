@@ -47,11 +47,11 @@ class _AdminNotesTabState extends State<AdminNotesTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Add Note'),
+        title: Text('Add Note', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
         content: TextField(
           controller: ctrl,
           maxLines: 4,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Note',
             border: OutlineInputBorder(),
             alignLabelWithHint: true,
@@ -60,11 +60,11 @@ class _AdminNotesTabState extends State<AdminNotesTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Save'),
+            child: Text('Save', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ),
         ],
       ),
@@ -82,11 +82,11 @@ class _AdminNotesTabState extends State<AdminNotesTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Note'),
+        title: Text('Edit Note', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
         content: TextField(
           controller: ctrl,
           maxLines: 4,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Note',
             border: OutlineInputBorder(),
             alignLabelWithHint: true,
@@ -95,11 +95,11 @@ class _AdminNotesTabState extends State<AdminNotesTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('Update'),
+            child: Text('Update', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ),
         ],
       ),
@@ -190,14 +190,18 @@ class _NoteCardState extends State<_NoteCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final content = widget.note['note']?.toString() ?? '';
     final author = widget.note['admin_name']?.toString() ?? 'Admin';
     final date = (widget.note['created_at']?.toString() ?? '').split('T').first;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
       child: InkWell(
         onTap: () => setState(() => _expanded = !_expanded),
         borderRadius: BorderRadius.circular(12),
@@ -211,27 +215,27 @@ class _NoteCardState extends State<_NoteCard> {
                   Container(
                     width: 28, height: 28,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEEF2FF),
+                      color: cs.primaryContainer.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.admin_panel_settings_outlined,
-                        size: 16, color: Color(0xFF2563EB)),
+                    child: Icon(Icons.admin_panel_settings_outlined,
+                        size: 16, color: cs.primary),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('$author \u00b7 $date',
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 11, color: Color(0xFF94A3B8))),
+                        style: TextStyle(
+                            fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.edit_outlined,
-                        color: Color(0xFF2563EB), size: 18),
+                    icon: Icon(Icons.edit_outlined,
+                        color: cs.primary, size: 18),
                     onPressed: widget.onEdit,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Color(0xFFE11D48), size: 18),
+                    icon: Icon(Icons.delete_outline,
+                        color: cs.error, size: 18),
                     onPressed: widget.onDelete,
                   ),
                 ],
@@ -246,13 +250,13 @@ class _NoteCardState extends State<_NoteCard> {
                   content,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF475569)),
+                  style: TextStyle(
+                      fontSize: 13, color: cs.onSurfaceVariant),
                 ),
                 secondChild: Text(
                   content,
-                  style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF475569)),
+                  style: TextStyle(
+                      fontSize: 13, color: cs.onSurfaceVariant),
                 ),
               ),
               if (content.length > 100)
@@ -262,9 +266,9 @@ class _NoteCardState extends State<_NoteCard> {
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       _expanded ? 'Show less' : 'Show more',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11, fontWeight: FontWeight.w600,
-                          color: Color(0xFF2563EB)),
+                          color: cs.primary),
                     ),
                   ),
                 ),

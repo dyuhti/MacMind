@@ -7,26 +7,27 @@ Future<bool> showConfirmDialog(
   bool destructive = false,
   String confirmText = 'Confirm',
 }) async {
+  final cs = Theme.of(context).colorScheme;
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(title,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface)),
       content: Text(body,
-          style: const TextStyle(color: Color(0xFF475569))),
+          style: TextStyle(color: cs.onSurfaceVariant)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel',
-              style: TextStyle(color: Color(0xFF475569))),
+          child: Text('Cancel',
+              style: TextStyle(color: cs.onSurfaceVariant)),
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           child: Text(
             confirmText,
             style: TextStyle(
-              color: destructive ? const Color(0xFFE11D48) : const Color(0xFF2563EB),
+              color: destructive ? cs.error : cs.primary,
               fontWeight: FontWeight.w700,
             ),
           ),

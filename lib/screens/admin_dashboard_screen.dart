@@ -57,13 +57,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   List<dynamic> _feedback = [];
 
   // ── Brand colours (matches app theme) ──────────────────────────────────
-  static const _navy = Color(0xFF1E293B);
-  static const _surface = Color(0xFFF8FAFC);
   static const _blue = Color(0xFF2563EB);
   static const _teal = Color(0xFF0D9488);
   static const _amber = Color(0xFFF59E0B);
   static const _rose = Color(0xFFE11D48);
-  static const _textLight = Color(0xFF475569);
 
   // =========================================================================
   // Lifecycle
@@ -276,25 +273,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     String body, {
     bool destructive = false,
   }) async {
+    final cs = Theme.of(context).colorScheme;
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-        content: Text(body, style: const TextStyle(color: _textLight)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: cs.onSurface)),
+        content: Text(body, style: TextStyle(color: cs.onSurfaceVariant)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel',
-                style: TextStyle(color: _textLight)),
+            child: Text('Cancel',
+                style: TextStyle(color: cs.onSurfaceVariant)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(
               'Confirm',
               style: TextStyle(
-                color: destructive ? _rose : _blue,
+                color: destructive ? cs.error : cs.primary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -340,14 +338,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
     final isWide = MediaQuery.of(context).size.width >= 960;
 
     return Scaffold(
-      backgroundColor: _surface,
+      backgroundColor: cs.surfaceContainerLow,
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
-        backgroundColor: _navy,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.surfaceContainerHighest,
+        foregroundColor: cs.onSurface,
         elevation: 0,
         actions: [
           IconButton(
@@ -398,22 +397,23 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ── Sidebar ───────────────────────────────────────────────────────────────
 
   Widget _buildSidebar() {
+    final cs = Theme.of(context).colorScheme;
     return ListView(
       padding: EdgeInsets.zero,
       children: [
         DrawerHeader(
-          decoration: const BoxDecoration(color: _navy),
+          decoration: BoxDecoration(color: cs.surfaceContainerHighest),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.end,
-            children: const [
+            children: [
               Icon(Icons.admin_panel_settings_outlined,
-                  color: Colors.white70, size: 28),
-              SizedBox(height: 8),
+                  color: cs.onSurface.withValues(alpha: 0.7), size: 28),
+              const SizedBox(height: 8),
               Text(
                 'Admin Console',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: cs.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
@@ -427,11 +427,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         _sidebarTile('Entries', AdminSection.entries, Icons.calculate_outlined),
         _sidebarTile('Feedback', AdminSection.feedback,
             Icons.feedback_outlined),
-        const Divider(height: 1),
+        Divider(height: 1, color: cs.outlineVariant),
         ListTile(
-          leading: const Icon(Icons.logout, color: _rose),
-          title: const Text('Logout',
-              style: TextStyle(color: _rose, fontWeight: FontWeight.w600)),
+          leading: Icon(Icons.logout, color: cs.error),
+          title: Text('Logout',
+              style: TextStyle(color: cs.error, fontWeight: FontWeight.w600)),
           onTap: _logout,
         ),
       ],
@@ -439,17 +439,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _sidebarTile(String label, AdminSection section, IconData icon) {
+    final cs = Theme.of(context).colorScheme;
     final selected = _section == section;
     return ListTile(
-      leading: Icon(icon, color: selected ? _blue : _textLight),
+      leading: Icon(icon, color: selected ? cs.primary : cs.onSurfaceVariant),
       title: Text(
         label,
         style: TextStyle(
-          color: selected ? _blue : _navy,
+          color: selected ? cs.primary : cs.onSurface,
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         ),
       ),
-      tileColor: selected ? const Color(0xFFEFF6FF) : null,
+      tileColor: selected ? cs.primaryContainer.withValues(alpha: 0.3) : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -630,8 +631,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: FilterChip(
                   label: Text(labels[i]),
                   selected: selected,
-                  selectedColor: _blue.withValues(alpha: 0.15),
-                  checkmarkColor: _blue,
+                  selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                  checkmarkColor: Theme.of(context).colorScheme.primary,
                   onSelected: (_) {
                     _entriesType = types[i];
                     _loadSection();
@@ -705,51 +706,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // =========================================================================
 
   Widget _sectionHeader(String title, String subtitle) {
+    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
         Text(title,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _navy)),
+                color: cs.onSurface)),
         const Spacer(),
         if (subtitle.isNotEmpty)
           Text(subtitle,
-              style: const TextStyle(fontSize: 12, color: _textLight)),
+              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
       ],
     );
   }
 
   Widget _errorBanner(String msg) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1F2),
+        color: cs.errorContainer,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _rose.withValues(alpha: 0.3)),
+        border: Border.all(color: cs.error.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: _rose, size: 20),
+          Icon(Icons.error_outline, color: cs.error, size: 20),
           const SizedBox(width: 8),
           Expanded(
               child: Text(msg,
-                  style: const TextStyle(color: _rose, fontSize: 13))),
+                  style: TextStyle(color: cs.onErrorContainer, fontSize: 13))),
         ],
       ),
     );
   }
 
   Widget _emptyState(String label, IconData icon) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
-            Icon(icon, size: 48, color: _textLight.withValues(alpha: 0.5)),
+            Icon(icon, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
-            Text(label, style: const TextStyle(color: _textLight)),
+            Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
           ],
         ),
       ),
@@ -780,16 +784,17 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 180,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
+        border: Border.all(color: cs.outlineVariant),
+        boxShadow: [
           BoxShadow(
-              color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 4))
+              color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -806,7 +811,7 @@ class _StatCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(label,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           const SizedBox(height: 4),
           Text(value,
               style: TextStyle(
@@ -860,13 +865,14 @@ class _EntriesBarChart extends StatelessWidget {
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
     return Container(
       height: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -874,13 +880,13 @@ class _EntriesBarChart extends StatelessWidget {
           Row(children: [
             _legendDot(const Color(0xFF2563EB)),
             const SizedBox(width: 4),
-            const Text('Cases',
-                style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+            Text('Cases',
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
             const SizedBox(width: 12),
             _legendDot(const Color(0xFF0D9488)),
             const SizedBox(width: 4),
-            const Text('Oxygen',
-                style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+            Text('Oxygen',
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           ]),
           const SizedBox(height: 8),
           Expanded(
@@ -939,14 +945,15 @@ class _TopCalculatorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final fraction = total > 0 ? count / total : 0.0;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -955,15 +962,15 @@ class _TopCalculatorTile extends StatelessWidget {
             children: [
               Expanded(
                   child: Text(name,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
-                          color: Color(0xFF1E293B)))),
+                          color: cs.onSurface))),
               Text('$count',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
-                      color: Color(0xFF2563EB))),
+                      color: cs.primary)),
             ],
           ),
           const SizedBox(height: 8),
@@ -972,8 +979,8 @@ class _TopCalculatorTile extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fraction.clamp(0.0, 1.0),
               minHeight: 6,
-              backgroundColor: const Color(0xFFE2E8F0),
-              color: const Color(0xFF2563EB),
+              backgroundColor: cs.outlineVariant,
+              color: cs.primary,
             ),
           ),
         ],
@@ -999,6 +1006,7 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isActive = user['is_active'] as bool? ?? true;
     final isAdmin = (user['role']?.toString() ?? 'user') == 'admin';
 
@@ -1016,51 +1024,51 @@ class _UserTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           leading: CircleAvatar(
             backgroundColor:
-                isActive ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+                isActive ? cs.primaryContainer.withValues(alpha: 0.5) : cs.surfaceContainerHighest,
             child: Text(
               (user['name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 color:
-                    isActive ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+                    isActive ? cs.primary : cs.onSurfaceVariant,
               ),
             ),
           ),
           title: Text(
-            user['name']?.toString() ?? '—',
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)),
+            user['name']?.toString() ?? '\u2014',
+            style: TextStyle(
+                fontWeight: FontWeight.w600, fontSize: 14, color: cs.onSurface),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(user['email']?.toString() ?? '',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
               const SizedBox(height: 4),
               Row(children: [
                 _RoleBadge(role: user['role']?.toString() ?? 'user'),
                 const SizedBox(width: 6),
                 if (!isActive)
-                  _StatusBadge(label: 'Inactive', color: const Color(0xFFE11D48)),
+                  _StatusBadge(label: 'Inactive', color: cs.error),
               ]),
             ],
           ),
           trailing: isAdmin
-              ? const Tooltip(
+              ? Tooltip(
                   message: 'Admin account protected',
                   child: Icon(Icons.shield_outlined,
-                      color: Color(0xFF2563EB), size: 20))
+                      color: cs.primary, size: 20))
               : PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
+                  icon: Icon(Icons.more_vert, color: cs.onSurfaceVariant),
                   onSelected: (val) {
                     if (val == 'toggle') onToggleActive();
                     if (val == 'delete') onDelete();
@@ -1074,21 +1082,21 @@ class _UserTile extends StatelessWidget {
                               ? Icons.block_outlined
                               : Icons.check_circle_outline,
                           color:
-                              isActive ? const Color(0xFFF59E0B) : const Color(0xFF0D9488),
+                              isActive ? cs.tertiary : cs.secondary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(isActive ? 'Deactivate' : 'Reactivate'),
                       ]),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(children: [
                         Icon(Icons.delete_outline,
-                            color: Color(0xFFE11D48), size: 18),
+                            color: cs.error, size: 18),
                         SizedBox(width: 8),
                         Text('Delete',
-                            style: TextStyle(color: Color(0xFFE11D48))),
+                            style: TextStyle(color: cs.error)),
                       ]),
                     ),
                   ],
@@ -1105,13 +1113,14 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isAdmin = role == 'admin';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: isAdmin
-            ? const Color(0xFFEFF6FF)
-            : const Color(0xFFF0FDF4),
+            ? cs.primaryContainer.withValues(alpha: 0.5)
+            : cs.secondaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
@@ -1120,7 +1129,7 @@ class _RoleBadge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color:
-              isAdmin ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
+              isAdmin ? cs.primary : cs.secondary,
         ),
       ),
     );
@@ -1176,6 +1185,7 @@ class _EntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final type = (entry['_entry_type'] ?? 'case').toString();
     final isCase = type == 'case';
     final title = isCase
@@ -1189,12 +1199,12 @@ class _EntryTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: Colors.white,
+        color: cs.surface,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: const Color(0xFFE2E8F0)),
+          side: BorderSide(color: cs.outlineVariant),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1209,15 +1219,15 @@ class _EntryTile extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: isCase
-                        ? const Color(0xFFFFFBEB)
-                        : const Color(0xFFF0FDFB),
+                        ? cs.tertiaryContainer.withValues(alpha: 0.6)
+                        : cs.secondaryContainer.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     isCase ? Icons.science_outlined : Icons.air_outlined,
                     color: isCase
-                        ? const Color(0xFFF59E0B)
-                        : const Color(0xFF0D9488),
+                        ? cs.tertiary
+                        : cs.secondary,
                     size: 24,
                   ),
                 ),
@@ -1232,18 +1242,18 @@ class _EntryTile extends StatelessWidget {
                             child: Text(title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 15,
-                                    color: Color(0xFF1E293B))),
+                                    color: cs.onSurface)),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: isCase
-                                  ? const Color(0xFF2563EB).withValues(alpha: 0.1)
-                                  : const Color(0xFF0D9488).withValues(alpha: 0.1),
+                                  ? cs.primary.withValues(alpha: 0.1)
+                                  : cs.secondary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
@@ -1252,8 +1262,8 @@ class _EntryTile extends StatelessWidget {
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: isCase
-                                    ? const Color(0xFF2563EB)
-                                    : const Color(0xFF0D9488),
+                                    ? cs.primary
+                                    : cs.secondary,
                               ),
                             ),
                           ),
@@ -1263,16 +1273,16 @@ class _EntryTile extends StatelessWidget {
                       Row(
                         children: [
                           Icon(Icons.person_outline,
-                              size: 12, color: const Color(0xFF94A3B8)),
+                              size: 12, color: cs.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Text('Created by: ',
-                              style: const TextStyle(
-                                  fontSize: 11, color: Color(0xFF94A3B8))),
+                              style: TextStyle(
+                                  fontSize: 11, color: cs.onSurfaceVariant)),
                           Text(cbName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E293B))),
+                                  color: cs.onSurface)),
                         ],
                       ),
                       if (cbEmail.isNotEmpty) ...[
@@ -1280,11 +1290,11 @@ class _EntryTile extends StatelessWidget {
                         Row(
                           children: [
                             Icon(Icons.email_outlined,
-                                size: 12, color: const Color(0xFF94A3B8)),
+                                size: 12, color: cs.onSurfaceVariant),
                             const SizedBox(width: 4),
                             Text(cbEmail,
-                                style: const TextStyle(
-                                    fontSize: 11, color: Color(0xFF64748B))),
+                                style: TextStyle(
+                                    fontSize: 11, color: cs.onSurfaceVariant)),
                           ],
                         ),
                       ],
@@ -1292,11 +1302,11 @@ class _EntryTile extends StatelessWidget {
                       Row(
                         children: [
                           Icon(Icons.access_time_outlined,
-                              size: 12, color: const Color(0xFF94A3B8)),
+                              size: 12, color: cs.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Text(createdAt,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Color(0xFF94A3B8))),
+                              style: TextStyle(
+                                  fontSize: 11, color: cs.onSurfaceVariant)),
                         ],
                       ),
                     ],
@@ -1307,14 +1317,14 @@ class _EntryTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Color(0xFFE11D48), size: 20),
+                      icon: Icon(Icons.delete_outline,
+                          color: cs.error, size: 20),
                       onPressed: onDelete,
                       tooltip: 'Delete',
                       visualDensity: VisualDensity.compact,
                     ),
-                    const Icon(Icons.chevron_right,
-                        size: 18, color: Color(0xFFCBD5E1)),
+                    Icon(Icons.chevron_right,
+                        size: 18, color: cs.outlineVariant),
                   ],
                 ),
               ],
@@ -1334,15 +1344,16 @@ class _FeedbackTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final rating = (item['rating'] as num?)?.toInt() ?? 0;
-    final stars = '⭐' * rating.clamp(0, 5);
+    final stars = '\u2b50' * rating.clamp(0, 5);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1351,9 +1362,9 @@ class _FeedbackTile extends StatelessWidget {
             Expanded(
               child: Text(
                 item['category']?.toString() ?? 'General',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w700, fontSize: 14,
-                    color: Color(0xFF1E293B)),
+                    color: cs.onSurface),
               ),
             ),
             Text(stars, style: const TextStyle(fontSize: 13)),
@@ -1361,12 +1372,12 @@ class _FeedbackTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             item['feedback_message']?.toString() ?? '',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 6),
           Text(
-            '${item['user_name'] ?? ''} · ${(item['created_at']?.toString() ?? '').split('T').first}',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+            '${item['user_name'] ?? ''} \u00b7 ${(item['created_at']?.toString() ?? '').split('T').first}',
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
           ),
         ],
       ),
@@ -1389,17 +1400,18 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return TextField(
       controller: controller,
       onSubmitted: onSubmitted,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-        prefixIcon: const Icon(Icons.search, color: Color(0xFF94A3B8)),
+        hintStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
+        prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
         suffixIcon: controller.text.isNotEmpty
             ? IconButton(
-                icon: const Icon(Icons.clear, size: 18),
+                icon: Icon(Icons.clear, size: 18),
                 onPressed: () {
                   controller.clear();
                   onSubmitted('');
@@ -1407,21 +1419,21 @@ class _SearchBar extends StatelessWidget {
               )
             : null,
         filled: true,
-        fillColor: Colors.white,
+        fillColor: cs.surface,
         contentPadding:
             const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(color: cs.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(color: cs.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide:
-              const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+              BorderSide(color: cs.primary, width: 1.5),
         ),
       ),
     );
@@ -1445,6 +1457,7 @@ class _PaginationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -1453,15 +1466,15 @@ class _PaginationBar extends StatelessWidget {
           IconButton(
             onPressed: onPrev,
             icon: const Icon(Icons.chevron_left),
-            color: onPrev != null ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: onPrev != null ? cs.primary : cs.outlineVariant,
           ),
           Text('Page $page of $pages',
-              style: const TextStyle(
-                  fontSize: 13, color: Color(0xFF475569))),
+              style: TextStyle(
+                  fontSize: 13, color: cs.onSurfaceVariant)),
           IconButton(
             onPressed: onNext,
             icon: const Icon(Icons.chevron_right),
-            color: onNext != null ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: onNext != null ? cs.primary : cs.outlineVariant,
           ),
         ],
       ),

@@ -20,19 +20,20 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AspectRatio(
       aspectRatio: 1.6,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: const [
+          border: Border.all(color: cs.outlineVariant),
+          boxShadow: [
             BoxShadow(
-                color: Color(0x08000000),
+                color: cs.shadow.withValues(alpha: 0.05),
                 blurRadius: 8,
-                offset: Offset(0, 4))
+                offset: const Offset(0, 4))
           ],
         ),
         child: Column(
@@ -52,7 +53,7 @@ class StatCard extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 2),
             Text(
@@ -70,7 +71,7 @@ class StatCard extends StatelessWidget {
                 subtitle!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
               ),
             ],
           ],
