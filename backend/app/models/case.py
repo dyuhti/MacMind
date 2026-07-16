@@ -73,6 +73,7 @@ class Case(db.Model):
 
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'patient_name': self.patient_name,
             'patient_id': self.patient_id,
             'date': self.date,

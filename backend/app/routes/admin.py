@@ -374,7 +374,7 @@ def get_admin_entries(current_user):
                 )
             if entry_type == 'case':
                 items, total, pages = _paginate_query(q, page, per_page)
-                cases_data = [c.to_dict() for c in items]
+                cases_data = [{'_entry_type': 'case', **c.to_dict()} for c in items]
                 return jsonify({
                     'success': True,
                     'type': 'case',
@@ -396,7 +396,7 @@ def get_admin_entries(current_user):
                 )
             if entry_type == 'oxygen':
                 items, total, pages = _paginate_query(q, page, per_page)
-                oxygen_data = [o.to_dict() for o in items]
+                oxygen_data = [{'_entry_type': 'oxygen', **o.to_dict()} for o in items]
                 return jsonify({
                     'success': True,
                     'type': 'oxygen',

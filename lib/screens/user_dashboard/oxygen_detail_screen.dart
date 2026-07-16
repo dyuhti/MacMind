@@ -198,8 +198,8 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
     final o = _oxygen!;
     final cb = o['created_by'] as Map<String, dynamic>?;
     final type = o['cylinder_type']?.toString() ?? 'Unknown';
-    final psi = o['pressure_psi']?.toString() ?? '\u2014';
-    final content = o['total_oxygen_content']?.toString() ?? '\u2014';
+    final psi = o['pressure_psi']?.toString() ?? 'Not provided';
+    final content = o['total_oxygen_content']?.toString() ?? 'Not provided';
     final createdAt = _formatDateTime(o['created_at']?.toString());
 
     return SingleChildScrollView(
@@ -256,8 +256,8 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
             icon: Icons.admin_panel_settings_outlined,
             title: 'Admin Information',
             children: [
-              _infoTile('Created By', cb?['name']?.toString() ?? '\u2014', Icons.person_outline),
-              _infoTile('Email', cb?['email']?.toString() ?? '\u2014', Icons.email_outlined),
+              _infoTile('Created By', cb?['name']?.toString() ?? 'Not provided', Icons.person_outline),
+              _infoTile('Email', cb?['email']?.toString() ?? 'Not provided', Icons.email_outlined),
               _infoTile('Record ID', '${o['id']}', Icons.label_outlined),
               _infoTile('Created', createdAt, Icons.calendar_today_outlined),
             ],
@@ -313,7 +313,6 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
   }
 
   Widget _buildHeaderCard(String type, String createdAt, Color surface, Color text, Color subtext, Color border) {
-    final initial = type.isNotEmpty ? type[0].toUpperCase() : 'O';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(

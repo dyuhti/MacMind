@@ -204,30 +204,26 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
   Widget _buildViewMode(Map<String, dynamic> c, Color surface, Color text, Color subtext, Color border, bool isDark) {
     final cb = c['created_by'] as Map<String, dynamic>?;
     final name = c['patient_name']?.toString() ?? 'Unknown';
-    final pid = c['patient_id']?.toString() ?? '\u2014';
+    final pid = c['patient_id']?.toString() ?? 'Not provided';
     final createdAt = _formatDateTime(c['created_at']?.toString());
-    final surgery = c['surgery_type']?.toString() ?? '\u2014';
-    final agent = c['anesthetic_agent']?.toString() ?? '\u2014';
+    final surgery = c['surgery_type']?.toString() ?? 'Not provided';
+    final agent = c['anesthetic_agent']?.toString() ?? 'Not provided';
     final fgf = c['fresh_gas_flow']?.toString();
     final conc = c['dial_concentration']?.toString();
     final time = c['time_minutes']?.toString();
-    final mm = c['molecular_mass']?.toString() ?? '\u2014';
-    final vc = c['vapor_constant']?.toString() ?? '\u2014';
-    final den = c['density']?.toString() ?? '\u2014';
+    final mm = c['molecular_mass']?.toString() ?? 'Not provided';
+    final vc = c['vapor_constant']?.toString() ?? 'Not provided';
+    final den = c['density']?.toString() ?? 'Not provided';
     final iw = c['initial_weight']?.toString();
     final fw = c['final_weight']?.toString();
     final biro = c['biro_formula']?.toString();
     final dion = c['dion_formula']?.toString();
     final wb = c['weight_based']?.toString();
     final notes = c['notes']?.toString();
-    final date = c['date']?.toString() ?? '\u2014';
+    final date = c['date']?.toString() ?? 'Not provided';
     final inductionFgf = c['induction_fgf']?.toString();
     final inductionConc = c['induction_concentration']?.toString();
     final inductionTime = c['induction_time']?.toString();
-    final inductionBiro = c['induction_biro']?.toString();
-    final inductionDion = c['induction_dion']?.toString();
-    final finalBiro = c['final_biro']?.toString();
-    final finalDion = c['final_dion']?.toString();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -280,8 +276,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             icon: Icons.admin_panel_settings_outlined,
             title: 'Admin Information',
             children: [
-              _infoTile('Created By', cb?['name']?.toString() ?? '\u2014', Icons.person_outline),
-              _infoTile('Email', cb?['email']?.toString() ?? '\u2014', Icons.email_outlined),
+              _infoTile('Created By', cb?['name']?.toString() ?? 'Not provided', Icons.person_outline),
+              _infoTile('Email', cb?['email']?.toString() ?? 'Not provided', Icons.email_outlined),
               _infoTile('Record ID', '${c['id']}', Icons.label_outlined),
               _infoTile('Created', createdAt, Icons.calendar_today_outlined),
             ],
@@ -461,7 +457,6 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     final biro = c['biro_formula']?.toString();
     final dion = c['dion_formula']?.toString();
     final wb = c['weight_based']?.toString();
-    final agent = c['anesthetic_agent']?.toString() ?? '\u2014';
     final time = c['time_minutes']?.toString();
 
     return Container(
