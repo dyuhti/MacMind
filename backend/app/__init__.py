@@ -27,6 +27,22 @@ def _ensure_user_role_column():
     print("✅ Added missing users.role column with default 'user'")
 
 
+def _ensure_is_active_column():
+    """Add users.is_active column for existing databases that predate account deactivation."""
+    inspector = db.inspect(db.engine)
+    tables = inspector.get_table_names()
+    if 'users' not in tables:
+        return
+
+    columns = {col['name'] for col in inspector.get_columns('users')}
+    if 'is_active' in columns:
+        return
+
+    db.session.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE"))
+    db.session.commit()
+    print("✅ Added missing users.is_active column with default TRUE")
+
+
 def create_app(config_name='development'):
     """
     Application factory function
@@ -57,6 +73,7 @@ def create_app(config_name='development'):
         try:
             db.create_all()
             _ensure_user_role_column()
+            _ensure_is_active_column()
             print("✅ Database tables initialized")
         except Exception as e:
             db.session.rollback()

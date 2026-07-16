@@ -20,6 +20,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')
+    is_active = db.Column(db.Boolean, nullable=False, default=True)  # False = deactivated by admin
     otp = db.Column(db.String(10), nullable=True)
     otp_expiry = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -46,6 +47,7 @@ class User(db.Model):
             'full_name': self.full_name,
             'email': self.email,
             'role': self.role,
+            'is_active': self.is_active if self.is_active is not None else True,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
         
@@ -148,6 +150,10 @@ class User(db.Model):
         
         if not user:
             return {'success': False, 'error': 'User not found'}
+
+        # Reject deactivated accounts (is_active defaults True for legacy rows)
+        if user.is_active is False:
+            return {'success': False, 'error': 'Account has been deactivated. Please contact support.'}
         
         if verify_password(password, user.password):
             return {

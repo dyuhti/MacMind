@@ -17,6 +17,35 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminStatus();
+  }
+
+  Future<void> _loadAdminStatus() async {
+    final result = await AuthService.isAdmin();
+    if (mounted) setState(() => _isAdmin = result);
+  }
+
+  /// Returns the Admin Dashboard card wrapped in a [SizedBox] + spacing
+  /// so it can be spread into the ListView with `..._buildAdminCard()`.
+  List<Widget> _buildAdminCard() {
+    return [
+      _buildSettingsCard(
+        icon: Icons.admin_panel_settings_outlined,
+        iconColor: const Color(0xFF7C3AED),
+        iconBackground: const Color(0xFFF5F3FF),
+        title: 'Admin Dashboard',
+        subtitle: 'Manage users, entries & analytics',
+        onTap: () => Navigator.of(context).pushNamed('/admin/dashboard'),
+      ),
+      const SizedBox(height: 12),
+    ];
+  }
+
   Future<void> _navigateWithFade(Widget screen) async {
     await Navigator.push(
       context,
@@ -73,13 +102,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop();
+                final nav = Navigator.of(context);
+                nav.pop();
                 await AuthService.logout();
                 if (!mounted) {
                   return;
                 }
-                Navigator.pushAndRemoveUntil(
-                  context,
+                nav.pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
                   (route) => false,
                 );
@@ -242,6 +271,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   const SizedBox(height: 12),
+                  if (_isAdmin) ..._buildAdminCard(),
                   _buildSettingsCard(
                     icon: Icons.smartphone_outlined,
                     iconColor: const Color(0xFF6B7280),
