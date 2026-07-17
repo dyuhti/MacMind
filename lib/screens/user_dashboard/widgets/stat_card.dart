@@ -20,62 +20,69 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AspectRatio(
-      aspectRatio: 1.6,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outlineVariant),
-          boxShadow: [
-            BoxShadow(
-                color: cs.shadow.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 4))
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: background,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 18),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const Spacer(),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
             Text(
-              label,
+              subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: color),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtitle!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                color: Color(0xFF9CA3AF),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

@@ -53,7 +53,7 @@ class _OverviewTabState extends State<OverviewTab> {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.6,
+          childAspectRatio: 1.15,
           children: List.generate(6, (_) => const DashboardCardSkeleton()),
         ),
       );
@@ -120,7 +120,7 @@ class _OverviewTabState extends State<OverviewTab> {
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.6,
+              childAspectRatio: 1.15,
             ),
             itemCount: cards.length,
             shrinkWrap: true,
@@ -130,25 +130,50 @@ class _OverviewTabState extends State<OverviewTab> {
           const SizedBox(height: 20),
           if (u['most_used_calculator'] != null)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(children: [
-                Icon(Icons.star_outlined,
-                    color: Theme.of(context).colorScheme.tertiary, size: 20),
-                const SizedBox(width: 8),
-                Text('Most Used: ',
-                    style: TextStyle(
-                        fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                Expanded(
-                  child: Text(u['most_used_calculator'].toString(),
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.onSurface)),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.star_rounded,
+                      color: Color(0xFFF59E0B), size: 24),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Most Used Calculator',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w500,
+                        )),
+                    const SizedBox(height: 4),
+                    Text(u['most_used_calculator'].toString(),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                        )),
+                  ],
                 ),
               ]),
             ),

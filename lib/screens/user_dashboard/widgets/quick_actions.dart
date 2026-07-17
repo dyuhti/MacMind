@@ -19,18 +19,22 @@ class QuickActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final isActive = user['is_active'] as bool? ?? true;
 
-    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick Actions',
-            style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700,
-                color: cs.onSurface)),
-        const SizedBox(height: 12),
+        const Text(
+          'Quick Actions',
+          style: TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, constraints) {
-            final spacing = 8.0;
+            final spacing = 12.0;
             final buttonWidth = (constraints.maxWidth - spacing) / 2;
             return Wrap(
               spacing: spacing,
@@ -39,13 +43,9 @@ class QuickActions extends StatelessWidget {
                 SizedBox(
                   width: buttonWidth,
                   child: _ActionButton(
-                    icon: isActive
-                        ? Icons.block_outlined
-                        : Icons.check_circle_outline,
+                    icon: isActive ? Icons.block_outlined : Icons.check_circle_outline,
                     label: isActive ? 'Deactivate' : 'Activate',
-                    color: isActive
-                        ? cs.tertiary
-                        : cs.primary,
+                    color: isActive ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
                     onTap: () => _toggleActive(context),
                   ),
                 ),
@@ -54,7 +54,7 @@ class QuickActions extends StatelessWidget {
                   child: _ActionButton(
                     icon: Icons.lock_reset_outlined,
                     label: 'Reset Password',
-                    color: cs.secondary,
+                    color: const Color(0xFF4A90E2),
                     onTap: () => _resetPassword(context),
                   ),
                 ),
@@ -216,34 +216,35 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: color),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

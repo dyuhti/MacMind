@@ -20,11 +20,34 @@ class _OxygenTabState extends State<OxygenTab> {
   int _page = 1, _pages = 1;
   bool _loading = true;
   String? _error;
+  String _search = '';
+  final TextEditingController _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<dynamic> get _filteredOxygen {
+    if (_search.isEmpty) return _oxygen;
+    final q = _search.toLowerCase();
+    return _oxygen.where((o) {
+      final m = o as Map<String, dynamic>;
+      final cb = m['created_by'] as Map<String, dynamic>?;
+      return (m['cylinder_type']?.toString() ?? '').toLowerCase().contains(q)
+          || (m['pressure_psi']?.toString() ?? '').toLowerCase().contains(q)
+          || (m['total_oxygen_content']?.toString() ?? '').toLowerCase().contains(q)
+          || (m['created_at']?.toString() ?? '').toLowerCase().contains(q)
+          || (cb?['name']?.toString() ?? '').toLowerCase().contains(q)
+          || (cb?['email']?.toString() ?? '').toLowerCase().contains(q);
+    }).toList();
   }
 
   Future<void> _load() async {
@@ -67,12 +90,37 @@ class _OxygenTabState extends State<OxygenTab> {
     return Column(
       children: [
         const SizedBox(height: 12),
+        TextField(
+          controller: _searchCtrl,
+          onChanged: (v) { setState(() => _search = v); },
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: 'Search oxygen calculations\u2026',
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14),
+            prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            filled: true, fillColor: Theme.of(context).colorScheme.surface,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         Expanded(
           child: _loading
               ? const LoadingSkeleton()
               : _error != null
                   ? ErrorBanner(message: _error!)
-                  : _oxygen.isEmpty
+                  : _filteredOxygen.isEmpty
                       ? const EmptyState(
                           icon: Icons.air_outlined,
                           message: 'No oxygen calculations')
@@ -80,7 +128,7 @@ class _OxygenTabState extends State<OxygenTab> {
                           onRefresh: _load,
                           child: ListView(
                             children: [
-                              ..._oxygen.map((o) => _OxygenCard(
+                              ..._filteredOxygen.map((o) => _OxygenCard(
                                     o: o as Map<String, dynamic>,
                                     userId: widget.userId,
                                     oxygenId: o['id'] as int,

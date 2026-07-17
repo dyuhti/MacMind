@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    final success = await AuthService.login(
+    final result = await AuthService.loginWithResult(
       _userIdController.text.trim(),
       _passwordController.text.trim(),
       rememberMe: _rememberMe,
@@ -61,13 +61,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    if (success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+    if (result['success'] == true) {
+      final role = (result['role'] ?? 'user').toString().toLowerCase();
+      if (role == 'admin') {
+        Navigator.pushReplacementNamed(context, '/admin/dashboard');
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     } else {
-      _showErrorSnackBar("Invalid email or password");
+      _showErrorSnackBar(result['error']?.toString() ?? "Invalid email or password");
     }
   }
 
@@ -295,29 +300,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Center(
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed('/admin/login');
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(0, 0),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text(
-                              'Admin Login',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0F172A),
-                                decoration: TextDecoration.underline,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
                           ),
                         ),
                         const SizedBox(height: 12),

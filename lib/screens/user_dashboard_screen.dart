@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/app_colors.dart';
 import '../services/admin_service.dart';
 import 'user_dashboard/widgets/user_header_card.dart';
 import 'user_dashboard/widgets/quick_actions.dart';
@@ -120,84 +121,130 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final role = _user?['role']?.toString() ?? 'user';
-
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: cs.surfaceContainerLow,
-      appBar: AppBar(
-        title: Text(_userName,
-            style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.w700, color: cs.onSurface)),
-        backgroundColor: cs.surfaceContainerHighest,
-        foregroundColor: cs.onSurface,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined),
-            tooltip: 'Refresh',
-            onPressed: _load,
-          ),
-          if (_user != null)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (val) async {
-                switch (val) {
-                  case 'refresh':
-                    _load();
-                    break;
-                  case 'delete':
-                    await _deleteUser();
-                    break;
-                  case 'promote':
-                    await _toggleRole();
-                    break;
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'refresh',
-                  child: Row(children: [
-                    Icon(Icons.refresh_outlined, size: 18),
-                    const SizedBox(width: 8),
-                    Text('Refresh'),
-                  ]),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'promote',
-                  child: Row(children: [
-                    Icon(
-                      role == 'admin'
-                          ? Icons.arrow_downward
-                          : Icons.arrow_upward,
-                      size: 18,
-                      color: cs.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(role == 'admin' ? 'Remove Admin' : 'Promote to Admin'),
-                  ]),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(children: [
-                    Icon(Icons.delete_outline,
-                        color: cs.error, size: 18),
-                    const SizedBox(width: 8),
-                    Text('Delete User',
-                        style: TextStyle(color: cs.error)),
-                  ]),
-                ),
-              ],
-            ),
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(child: _buildBody()),
         ],
       ),
-      body: _buildBody(),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D3B66), Color(0xFF1E5F9A)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                  ),
+                  child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                ),
+              ),
+              const Spacer(),
+              if (_user != null)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  onSelected: (val) async {
+                    switch (val) {
+                      case 'refresh':
+                        _load();
+                        break;
+                      case 'delete':
+                        await _deleteUser();
+                        break;
+                      case 'promote':
+                        await _toggleRole();
+                        break;
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'refresh',
+                      child: Row(children: [
+                        const Icon(Icons.refresh_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        const Text('Refresh'),
+                      ]),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'promote',
+                      child: Row(children: [
+                        Icon(
+                          (_user?['role']?.toString() ?? 'user') == 'admin'
+                              ? Icons.arrow_downward
+                              : Icons.arrow_upward,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text((_user?['role']?.toString() ?? 'user') == 'admin' ? 'Remove Admin' : 'Promote to Admin'),
+                      ]),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        const Icon(Icons.delete_outline,
+                            color: Color(0xFFEF4444), size: 18),
+                        const SizedBox(width: 8),
+                        const Text('Delete User',
+                            style: TextStyle(color: Color(0xFFEF4444))),
+                      ]),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _userName,
+            style: const TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'User Management',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -287,19 +334,18 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: cs.surfaceContainerLow,
+      color: const Color(0xFFF5F7FA),
       child: TabBar(
         controller: tabController,
         isScrollable: true,
-        labelColor: cs.primary,
-        unselectedLabelColor: cs.onSurfaceVariant,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: const Color(0xFF6B7280),
         labelStyle: const TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w600),
+            fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(
-            fontSize: 13, fontWeight: FontWeight.w500),
-        indicatorColor: cs.primary,
+            fontFamily: 'Inter', fontSize: 13, fontWeight: FontWeight.w500),
+        indicatorColor: AppColors.primary,
         indicatorWeight: 3,
         tabAlignment: TabAlignment.start,
         tabs: tabs.map((t) => Tab(

@@ -82,7 +82,15 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   Future<void> _fetchEconomyInsights() async {
     if (_surgeryDuration <= 0 || _concentration < 0.1) {
       if (!mounted) return;
-      setState(() { _isAiLoading = false; _aiInsights = []; _aiWarning = null; });
+      setState(() {
+        _isAiLoading = false;
+        _aiInsights = [];
+        _aiWarning = _surgeryDuration <= 0 && _concentration < 0.1
+            ? 'Enter duration and concentration to generate the analysis.'
+            : _surgeryDuration <= 0
+                ? 'Enter a surgery duration to generate the analysis.'
+                : 'Enter a concentration to generate the analysis.';
+      });
       return;
     }
     if (!mounted) return;
@@ -162,11 +170,14 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   }
 
   void _updateDuration(String v) {
-    setState(() => _surgeryDuration = double.tryParse(v) ?? 60);
+    _clearGraphSelection();
+    final parsed = double.tryParse(v);
+    setState(() => _surgeryDuration = parsed ?? 0);
     _scheduleEconomyInsightFetch();
   }
 
   void _updateConcentration(String v) {
+    _clearGraphSelection();
     setState(() {
       final agentInfo = agents[_selectedAgent]!;
       final minConc = (agentInfo['minConc'] as num).toDouble();
@@ -174,21 +185,50 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
       
       final p = double.tryParse(v);
       if (p == null || p.isNaN || p <= 0) {
-        _concentration = (p != null && p <= 0) ? minConc : 2.0;
+        _concentration = (p != null && p <= 0) ? minConc : 0;
       } else {
         _concentration = p.clamp(minConc, maxConc);
       }
     });
+    if (v.isNotEmpty && _concentrationController.text != _concentration.toStringAsFixed(1)) {
+      _concentrationController.text = _concentration.toStringAsFixed(1);
+    }
     _scheduleEconomyInsightFetch();
   }
 
   void _updateAgent(String? v) {
     if (v == null) return;
+    _clearGraphSelection();
     setState(() => _selectedAgent = v);
     _scheduleEconomyInsightFetch();
   }
 
-  void _onItemTapped(int i) => setState(() => _selectedIndex = i);
+  void _clearGraphSelection() {
+    _selectedPointFGF = null;
+    _selectedPointConc = null;
+    _selectedPointIndex = null;
+    _showDetailedTooltip = false;
+  }
+
+  void _onItemTapped(int i) {
+    if (i == 0 && _selectedIndex != 0) _resetState();
+    setState(() => _selectedIndex = i);
+  }
+
+  void _resetState() {
+    _durationController.text = '0';
+    _concentrationController.text = '0';
+    _surgeryDuration = 0;
+    _concentration = 0;
+    _selectedAgent = 'Isoflurane';
+    _isAiLoading = false;
+    _aiInsights = [];
+    _aiWarning = null;
+    _selectedPointFGF = null;
+    _selectedPointConc = null;
+    _selectedPointIndex = null;
+    _showDetailedTooltip = false;
+  }
 
   List<Widget> get _screens => [
         _buildEconomyContent(),
@@ -359,7 +399,8 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   double _getAgentMaxConc() => (agents[_selectedAgent]?['maxConc'] as num?)?.toDouble() ?? 5.0;
 
   Widget _buildConcentrationAnalysisCard() {
-    final spots     = _generateConcentrationData();
+    final bool showPlaceholder = _surgeryDuration <= 0 || _concentration < 0.1;
+    final spots     = showPlaceholder ? <FlSpot>[] : _generateConcentrationData();
     final agentInfo = agents[_selectedAgent]!;
     final color     = agentInfo['color'] as Color;
     final mw        = (agentInfo['mw']  as num).toDouble();
@@ -451,7 +492,10 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
             const SizedBox(height: 20),
 
             // ── CHART WITH ENHANCED INTERACTION ──
-            Stack(
+            if (showPlaceholder)
+              _buildChartPlaceholder()
+            else
+              Stack(
               children: [
                 SizedBox(
                   height: 280,
@@ -484,7 +528,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                           children: [
                             Expanded(
                               child: LineChart(
-                                duration: const Duration(milliseconds: 200),
+                                duration: Duration.zero,
                                 LineChartData(
                                   gridData: FlGridData(
                                     show:               true,
@@ -661,6 +705,37 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                     ),
                   ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChartPlaceholder() {
+    return Container(
+      height: 280,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.bar_chart_outlined, size: 48, color: Color(0xFFD1D5DB)),
+            SizedBox(height: 12),
+            Text(
+              'Enter duration and concentration\nto generate the analysis.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'DM Sans',
+                fontSize: 14,
+                color: Color(0xFF9CA3AF),
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
             ),
           ],
         ),

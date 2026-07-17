@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../config/app_colors.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
 import 'user_dashboard_screen.dart';
@@ -92,7 +93,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       await AuthService.logout();
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/admin/login',
+        '/login',
         (route) => false,
       );
       ScaffoldMessenger.of(context).showSnackBar(
@@ -313,7 +314,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     await AuthService.logout();
     if (!mounted) return;
     Navigator.of(context)
-        .pushNamedAndRemoveUntil('/admin/login', (r) => false);
+        .pushNamedAndRemoveUntil('/login', (r) => false);
   }
 
   // =========================================================================
@@ -338,55 +339,127 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       );
     }
 
-    final cs = Theme.of(context).colorScheme;
     final isWide = MediaQuery.of(context).size.width >= 960;
 
     return Scaffold(
-      backgroundColor: cs.surfaceContainerLow,
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-        backgroundColor: cs.surfaceContainerHighest,
-        foregroundColor: cs.onSurface,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined),
-            tooltip: 'Refresh',
-            onPressed: () => _loadSection(resetPage: true),
+      backgroundColor: const Color(0xFFF5F7FA),
+      drawer: isWide ? null : Drawer(child: _buildSidebar()),
+      body: Column(
+        children: [
+          // Custom blue header matching app design
+          _buildHeader(),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isWide)
+                  SizedBox(
+                    width: 240,
+                    child: Material(
+                      color: Colors.white,
+                      elevation: 1,
+                      child: _buildSidebar(),
+                    ),
+                  ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () => _loadSection(resetPage: true),
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                      children: [
+                        if (_isLoading) const LinearProgressIndicator(),
+                        if (_error != null) _errorBanner(_error!),
+                        const SizedBox(height: 8),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: KeyedSubtree(
+                            key: ValueKey(_section),
+                            child: _buildSectionContent(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      drawer: isWide ? null : Drawer(child: _buildSidebar()),
-      body: Row(
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D3B66), Color(0xFF1E5F9A)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 48, 16, 24),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (isWide)
-            SizedBox(
-              width: 240,
-              child: Material(
-                color: Colors.white,
-                elevation: 1,
-                child: _buildSidebar(),
-              ),
-            ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => _loadSection(resetPage: true),
-              child: ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
-                  if (_isLoading) const LinearProgressIndicator(),
-                  if (_error != null) _errorBanner(_error!),
-                  const SizedBox(height: 8),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    child: KeyedSubtree(
-                      key: ValueKey(_section),
-                      child: _buildSectionContent(),
+          Row(
+            children: [
+              Builder(
+                builder: (context) => GestureDetector(
+                  onTap: () => Scaffold.of(context).openDrawer(),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
                     ),
+                    child: const Icon(Icons.menu, color: Colors.white, size: 20),
                   ),
-                ],
+                ),
               ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => _loadSection(resetPage: true),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+                  ),
+                  child: const Icon(Icons.refresh_outlined, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Admin Dashboard',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Manage users, entries and application data',
+            style: TextStyle(
+              fontFamily: 'DM Sans',
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: Colors.white70,
             ),
           ),
         ],
@@ -397,67 +470,112 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ── Sidebar ───────────────────────────────────────────────────────────────
 
   Widget _buildSidebar() {
-    final cs = Theme.of(context).colorScheme;
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        DrawerHeader(
-          decoration: BoxDecoration(color: cs.surfaceContainerHighest),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Icon(Icons.admin_panel_settings_outlined,
-                  color: cs.onSurface.withValues(alpha: 0.7), size: 28),
-              const SizedBox(height: 8),
-              Text(
-                'Admin Console',
-                style: TextStyle(
-                  color: cs.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+    return Container(
+      color: Colors.white,
+      child: Column(
+        children: [
+          // Blue header
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF0D3B66), Color(0xFF1E5F9A)],
               ),
-            ],
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.admin_panel_settings_outlined, color: Colors.white, size: 32),
+                SizedBox(height: 12),
+                Text(
+                  'Admin Console',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Administrator',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              children: [
+                _sidebarTile('Overview', AdminSection.dashboard, Icons.dashboard_outlined),
+                const SizedBox(height: 4),
+                _sidebarTile('Users', AdminSection.users, Icons.people_outline),
+                const SizedBox(height: 4),
+                _sidebarTile('Entries', AdminSection.entries, Icons.calculate_outlined),
+                const SizedBox(height: 4),
+                _sidebarTile('Feedback', AdminSection.feedback, Icons.feedback_outlined),
+                const Divider(height: 24),
+                _buildLogoutTile(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutTile() {
+    return Container(
+      height: 52,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      child: ListTile(
+        leading: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 22),
+        title: const Text(
+          'Logout',
+          style: TextStyle(
+            color: Color(0xFFEF4444),
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
           ),
         ),
-        _sidebarTile('Overview', AdminSection.dashboard,
-            Icons.dashboard_outlined),
-        _sidebarTile('Users', AdminSection.users, Icons.people_outline),
-        _sidebarTile('Entries', AdminSection.entries, Icons.calculate_outlined),
-        _sidebarTile('Feedback', AdminSection.feedback,
-            Icons.feedback_outlined),
-        Divider(height: 1, color: cs.outlineVariant),
-        ListTile(
-          leading: Icon(Icons.logout, color: cs.error),
-          title: Text('Logout',
-              style: TextStyle(color: cs.error, fontWeight: FontWeight.w600)),
-          onTap: _logout,
-        ),
-      ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        onTap: _logout,
+      ),
     );
   }
 
   Widget _sidebarTile(String label, AdminSection section, IconData icon) {
-    final cs = Theme.of(context).colorScheme;
     final selected = _section == section;
-    return ListTile(
-      leading: Icon(icon, color: selected ? cs.primary : cs.onSurfaceVariant),
-      title: Text(
-        label,
-        style: TextStyle(
-          color: selected ? cs.primary : cs.onSurface,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        ),
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: selected ? const Color(0xFFEFF6FF) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
       ),
-      tileColor: selected ? cs.primaryContainer.withValues(alpha: 0.3) : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      onTap: () {
-        Navigator.of(context).maybePop();
-        _navigateTo(section);
-      },
+      child: ListTile(
+        leading: Icon(icon, color: selected ? AppColors.primary : Colors.black87, size: 22),
+        title: Text(
+          label,
+          style: TextStyle(
+            color: selected ? AppColors.primary : Colors.black87,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 15,
+          ),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        onTap: () {
+          Navigator.of(context).maybePop();
+          _navigateTo(section);
+        },
+      ),
     );
   }
 
@@ -620,7 +738,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       children: [
         _sectionHeader('Calculator Entries', '$_entriesTotal total'),
         const SizedBox(height: 12),
-        // Type filter chips
+        // Type filter pills
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -628,15 +746,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               final selected = _entriesType == types[i];
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(labels[i]),
-                  selected: selected,
-                  selectedColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                  checkmarkColor: Theme.of(context).colorScheme.primary,
-                  onSelected: (_) {
+                child: GestureDetector(
+                  onTap: () {
                     _entriesType = types[i];
                     _loadSection();
                   },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected ? const Color(0xFF4A90E2) : Colors.white,
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(
+                        color: selected ? const Color(0xFF4A90E2) : const Color(0xFF4A90E2),
+                      ),
+                      boxShadow: selected
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    child: Text(
+                      labels[i],
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? Colors.white : const Color(0xFF4A90E2),
+                      ),
+                    ),
+                  ),
                 ),
               );
             }),
@@ -706,54 +848,67 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // =========================================================================
 
   Widget _sectionHeader(String title, String subtitle) {
-    final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Text(title,
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: cs.onSurface)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'DM Sans',
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1F2937),
+          ),
+        ),
         const Spacer(),
         if (subtitle.isNotEmpty)
-          Text(subtitle,
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+            ),
+          ),
       ],
     );
   }
 
   Widget _errorBanner(String msg) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cs.errorContainer,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFECACA)),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: cs.error, size: 20),
+          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 20),
           const SizedBox(width: 8),
           Expanded(
-              child: Text(msg,
-                  style: TextStyle(color: cs.onErrorContainer, fontSize: 13))),
+            child: Text(
+              msg,
+              style: const TextStyle(color: Color(0xFF991B1B), fontSize: 13, fontFamily: 'Inter'),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _emptyState(String label, IconData icon) {
-    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48),
         child: Column(
           children: [
-            Icon(icon, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            Icon(icon, size: 48, color: const Color(0xFF9CA3AF)),
             const SizedBox(height: 12),
-            Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
+            Text(
+              label,
+              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 14, fontFamily: 'Inter'),
+            ),
           ],
         ),
       ),
@@ -784,38 +939,52 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 180,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-              color: cs.shadow.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 4))
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 24),
           ),
-          const SizedBox(height: 12),
-          Text(label,
-              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w800, color: color)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: color,
+              fontFamily: 'DM Sans',
+            ),
+          ),
         ],
       ),
     );
@@ -865,14 +1034,19 @@ class _EntriesBarChart extends StatelessWidget {
       );
     }
 
-    final cs = Theme.of(context).colorScheme;
     return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
+      height: 220,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -880,13 +1054,13 @@ class _EntriesBarChart extends StatelessWidget {
           Row(children: [
             _legendDot(const Color(0xFF2563EB)),
             const SizedBox(width: 4),
-            Text('Cases',
-                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+            const Text('Cases',
+                style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
             const SizedBox(width: 12),
             _legendDot(const Color(0xFF0D9488)),
             const SizedBox(width: 4),
-            Text('Oxygen',
-                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+            const Text('Oxygen',
+                style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
           ]),
           const SizedBox(height: 8),
           Expanded(
@@ -945,15 +1119,20 @@ class _TopCalculatorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final fraction = total > 0 ? count / total : 0.0;
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -961,26 +1140,35 @@ class _TopCalculatorTile extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                  child: Text(name,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: cs.onSurface))),
-              Text('$count',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: cs.primary)),
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+              ),
+              Text(
+                '$count',
+                style: const TextStyle(
+                  fontFamily: 'DM Sans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  color: Color(0xFF4A90E2),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
               value: fraction.clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: cs.outlineVariant,
-              color: cs.primary,
+              minHeight: 8,
+              backgroundColor: const Color(0xFFE5E7EB),
+              color: const Color(0xFF4A90E2),
             ),
           ),
         ],
@@ -1006,69 +1194,107 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final isActive = user['is_active'] as bool? ?? true;
     final isAdmin = (user['role']?.toString() ?? 'user') == 'admin';
 
-    return InkWell(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => UserDashboardScreen(
-              userId: user['id'] as int,
-            ),
-          ),
-        ).then((_) => onRefresh());
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.outlineVariant),
-        ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: CircleAvatar(
-            backgroundColor:
-                isActive ? cs.primaryContainer.withValues(alpha: 0.5) : cs.surfaceContainerHighest,
-            child: Text(
-              (user['name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color:
-                    isActive ? cs.primary : cs.onSurfaceVariant,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => UserDashboardScreen(
+                userId: user['id'] as int,
               ),
             ),
-          ),
-          title: Text(
-            user['name']?.toString() ?? '\u2014',
-            style: TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 14, color: cs.onSurface),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(user['email']?.toString() ?? '',
-                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-              const SizedBox(height: 4),
-              Row(children: [
-                _RoleBadge(role: user['role']?.toString() ?? 'user'),
-                const SizedBox(width: 6),
-                if (!isActive)
-                  _StatusBadge(label: 'Inactive', color: cs.error),
-              ]),
+          ).then((_) => onRefresh());
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
-          trailing: isAdmin
-              ? Tooltip(
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: const Color(0xFF4A90E2),
+                child: Text(
+                  (user['name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user['name']?.toString() ?? '\u2014',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user['email']?.toString() ?? '',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        _RoleBadge(role: user['role']?.toString() ?? 'user'),
+                        if (!isActive) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Text(
+                              'INACTIVE',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFEF4444),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (isAdmin)
+                const Tooltip(
                   message: 'Admin account protected',
-                  child: Icon(Icons.shield_outlined,
-                      color: cs.primary, size: 20))
-              : PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: cs.onSurfaceVariant),
+                  child: Icon(Icons.shield_outlined, color: Color(0xFF4A90E2), size: 22),
+                )
+              else
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Color(0xFF9CA3AF)),
                   onSelected: (val) {
                     if (val == 'toggle') onToggleActive();
                     if (val == 'delete') onDelete();
@@ -1076,31 +1302,32 @@ class _UserTile extends StatelessWidget {
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'toggle',
-                      child: Row(children: [
-                        Icon(
-                          isActive
-                              ? Icons.block_outlined
-                              : Icons.check_circle_outline,
-                          color:
-                              isActive ? cs.tertiary : cs.secondary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(isActive ? 'Deactivate' : 'Reactivate'),
-                      ]),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isActive ? Icons.block_outlined : Icons.check_circle_outline,
+                            color: isActive ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(isActive ? 'Deactivate' : 'Reactivate'),
+                        ],
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Row(children: [
-                        Icon(Icons.delete_outline,
-                            color: cs.error, size: 18),
-                        SizedBox(width: 8),
-                        Text('Delete',
-                            style: TextStyle(color: cs.error)),
-                      ]),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Delete', style: TextStyle(color: Color(0xFFEF4444))),
+                        ],
+                      ),
                     ),
                   ],
                 ),
+            ],
+          ),
         ),
       ),
     );
@@ -1113,14 +1340,13 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final isAdmin = role == 'admin';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: isAdmin
-            ? cs.primaryContainer.withValues(alpha: 0.5)
-            : cs.secondaryContainer.withValues(alpha: 0.5),
+            ? const Color(0xFFEFF6FF)
+            : const Color(0xFFF3F4F6),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
@@ -1128,30 +1354,9 @@ class _RoleBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color:
-              isAdmin ? cs.primary : cs.secondary,
+          fontFamily: 'Inter',
+          color: isAdmin ? const Color(0xFF4A90E2) : const Color(0xFF6B7280),
         ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-  const _StatusBadge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }
@@ -1185,7 +1390,6 @@ class _EntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final type = (entry['_entry_type'] ?? 'case').toString();
     final isCase = type == 'case';
     final title = isCase
@@ -1197,138 +1401,140 @@ class _EntryTile extends StatelessWidget {
     final createdAt = _formatDate(entry['created_at']?.toString());
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: cs.surface,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: cs.outlineVariant),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isCase
-                        ? cs.tertiaryContainer.withValues(alpha: 0.6)
-                        : cs.secondaryContainer.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    isCase ? Icons.science_outlined : Icons.air_outlined,
-                    color: isCase
-                        ? cs.tertiary
-                        : cs.secondary,
-                    size: 24,
-                  ),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isCase
+                      ? const Color(0xFFEFF6FF)
+                      : const Color(0xFFF0FDFB),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                    color: cs.onSurface)),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: isCase
-                                  ? cs.primary.withValues(alpha: 0.1)
-                                  : cs.secondary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              isCase ? 'Case' : 'O\u2082',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: isCase
-                                    ? cs.primary
-                                    : cs.secondary,
-                              ),
+                child: Icon(
+                  isCase ? Icons.science_outlined : Icons.air_outlined,
+                  color: isCase ? const Color(0xFF4A90E2) : const Color(0xFF0D9488),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: Color(0xFF1F2937),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline,
-                              size: 12, color: cs.onSurfaceVariant),
-                          const SizedBox(width: 4),
-                          Text('Created by: ',
-                              style: TextStyle(
-                                  fontSize: 11, color: cs.onSurfaceVariant)),
-                          Text(cbName,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: cs.onSurface)),
-                        ],
-                      ),
-                      if (cbEmail.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Icon(Icons.email_outlined,
-                                size: 12, color: cs.onSurfaceVariant),
-                            const SizedBox(width: 4),
-                            Text(cbEmail,
-                                style: TextStyle(
-                                    fontSize: 11, color: cs.onSurfaceVariant)),
-                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isCase
+                                ? const Color(0xFFEFF6FF)
+                                : const Color(0xFFF0FDFB),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Text(
+                            isCase ? 'Case' : 'O\u2082',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: isCase ? const Color(0xFF4A90E2) : const Color(0xFF0D9488),
+                            ),
+                          ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, size: 13, color: Color(0xFF9CA3AF)),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Created by: ',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontFamily: 'Inter'),
+                        ),
+                        Text(
+                          cbName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1F2937),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (cbEmail.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.access_time_outlined,
-                              size: 12, color: cs.onSurfaceVariant),
+                          const Icon(Icons.email_outlined, size: 13, color: Color(0xFF9CA3AF)),
                           const SizedBox(width: 4),
-                          Text(createdAt,
-                              style: TextStyle(
-                                  fontSize: 11, color: cs.onSurfaceVariant)),
+                          Text(
+                            cbEmail,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontFamily: 'Inter'),
+                          ),
                         ],
                       ),
                     ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.delete_outline,
-                          color: cs.error, size: 20),
-                      onPressed: onDelete,
-                      tooltip: 'Delete',
-                      visualDensity: VisualDensity.compact,
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time_outlined, size: 13, color: Color(0xFF9CA3AF)),
+                        const SizedBox(width: 4),
+                        Text(
+                          createdAt,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280), fontFamily: 'Inter'),
+                        ),
+                      ],
                     ),
-                    Icon(Icons.chevron_right,
-                        size: 18, color: cs.outlineVariant),
                   ],
                 ),
-              ],
-            ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444), size: 20),
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  const Icon(Icons.chevron_right, size: 18, color: Color(0xFFD1D5DB)),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -1344,42 +1550,63 @@ class _FeedbackTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final rating = (item['rating'] as num?)?.toInt() ?? 0;
     final stars = '\u2b50' * rating.clamp(0, 5);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Expanded(
-              child: Text(
-                item['category']?.toString() ?? 'General',
-                style: TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 14,
-                    color: cs.onSurface),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item['category']?.toString() ?? 'General',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                ),
+                Text(stars, style: const TextStyle(fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              item['feedback_message']?.toString() ?? '',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: Color(0xFF1F2937),
+                height: 1.4,
               ),
             ),
-            Text(stars, style: const TextStyle(fontSize: 13)),
-          ]),
-          const SizedBox(height: 6),
-          Text(
-            item['feedback_message']?.toString() ?? '',
-            style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${item['user_name'] ?? ''} \u00b7 ${(item['created_at']?.toString() ?? '').split('T').first}',
-            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Text(
+              '${item['user_name'] ?? ''} \u00b7 ${(item['created_at']?.toString() ?? '').split('T').first}',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1400,40 +1627,55 @@ class _SearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return TextField(
-      controller: controller,
-      onSubmitted: onSubmitted,
-      textInputAction: TextInputAction.search,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 14),
-        prefixIcon: Icon(Icons.search, color: cs.onSurfaceVariant),
-        suffixIcon: controller.text.isNotEmpty
-            ? IconButton(
-                icon: Icon(Icons.clear, size: 18),
-                onPressed: () {
-                  controller.clear();
-                  onSubmitted('');
-                },
-              )
-            : null,
-        filled: true,
-        fillColor: cs.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: cs.outlineVariant),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        onSubmitted: onSubmitted,
+        textInputAction: TextInputAction.search,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          color: Color(0xFF1F2937),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: cs.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: cs.primary, width: 1.5),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14, fontFamily: 'Inter'),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF), size: 22),
+          suffixIcon: controller.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18, color: Color(0xFF9CA3AF)),
+                  onPressed: () {
+                    controller.clear();
+                    onSubmitted('');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF4A90E2), width: 2),
+          ),
         ),
       ),
     );
@@ -1457,24 +1699,28 @@ class _PaginationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
             onPressed: onPrev,
             icon: const Icon(Icons.chevron_left),
-            color: onPrev != null ? cs.primary : cs.outlineVariant,
+            color: onPrev != null ? const Color(0xFF4A90E2) : const Color(0xFFD1D5DB),
           ),
-          Text('Page $page of $pages',
-              style: TextStyle(
-                  fontSize: 13, color: cs.onSurfaceVariant)),
+          Text(
+            'Page $page of $pages',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              color: Color(0xFF6B7280),
+            ),
+          ),
           IconButton(
             onPressed: onNext,
             icon: const Icon(Icons.chevron_right),
-            color: onNext != null ? cs.primary : cs.outlineVariant,
+            color: onNext != null ? const Color(0xFF4A90E2) : const Color(0xFFD1D5DB),
           ),
         ],
       ),

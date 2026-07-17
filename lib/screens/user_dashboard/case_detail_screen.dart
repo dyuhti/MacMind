@@ -115,42 +115,98 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final surface = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final text = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B);
-    final subtext = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final border = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    const surface = Colors.white;
+    const text = Color(0xFF1F2937);
+    const subtext = Color(0xFF6B7280);
+    const border = Color(0xFFE5E7EB);
 
     return Theme(
       data: Theme.of(context).copyWith(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          brightness: isDark ? Brightness.dark : Brightness.light,
+          seedColor: const Color(0xFF4A90E2),
+          brightness: Brightness.light,
         ),
       ),
       child: Scaffold(
-        backgroundColor: bg,
-        appBar: AppBar(
-          title: Text(
-            _case?['patient_name']?.toString() ?? 'Case Detail',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
-          ),
-          backgroundColor: const Color(0xFF1E293B),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: Column(
+          children: [
+            _buildHeader(context),
+            Expanded(child: _buildBody(surface, text, subtext, border)),
+          ],
         ),
-        body: _buildBody(surface, text, subtext, border, isDark),
         bottomNavigationBar: _buildBottomBar(surface, text, border),
       ),
     );
   }
 
-  Widget _buildBody(Color surface, Color text, Color subtext, Color border, bool isDark) {
+  Widget _buildHeader(BuildContext context) {
+    final name = _case?['patient_name']?.toString() ?? 'Case Detail';
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D3B66), Color(0xFF1E5F9A)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 8,
+          right: 8,
+          top: MediaQuery.of(context).padding.top + 4,
+          bottom: 20,
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Case Detail',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 12,
+                      color: Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'DM Sans',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(Color surface, Color text, Color subtext, Color border) {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
       return Center(
@@ -162,15 +218,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3)),
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFFECACA)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+                    const Icon(Icons.error_outline, color: Color(0xFFDC2626)),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 14))),
+                    Expanded(child: Text(_error!, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, color: Color(0xFF991B1B)))),
                   ],
                 ),
               ),
@@ -191,17 +247,16 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     if (_case == null) return const Center(child: Text('Case not found'));
 
     final c = _editing ? _editData : _case!;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      child: _editing ? _buildEditMode(c, surface, text, subtext, border, isDarkMode) : _buildViewMode(c, surface, text, subtext, border, isDarkMode),
+      child: _editing ? _buildEditMode(c, surface, text, subtext, border) : _buildViewMode(c, surface, text, subtext, border),
     );
   }
 
   // ── VIEW MODE ──────────────────────────────────────────────────────────────
 
-  Widget _buildViewMode(Map<String, dynamic> c, Color surface, Color text, Color subtext, Color border, bool isDark) {
+  Widget _buildViewMode(Map<String, dynamic> c, Color surface, Color text, Color subtext, Color border) {
     final cb = c['created_by'] as Map<String, dynamic>?;
     final name = c['patient_name']?.toString() ?? 'Unknown';
     final pid = c['patient_id']?.toString() ?? 'Not provided';
@@ -294,7 +349,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
 
   // ── EDIT MODE ──────────────────────────────────────────────────────────────
 
-  Widget _buildEditMode(Map<String, dynamic> c, Color surface, Color text, Color subtext, Color border, bool isDark) {
+  Widget _buildEditMode(Map<String, dynamic> c, Color surface, Color text, Color subtext, Color border) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -357,10 +412,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
       ),
       child: Row(
         children: [
@@ -368,8 +424,8 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             tag: 'case_avatar_${_case!['id']}',
             child: CircleAvatar(
               radius: 36,
-              backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.1),
-              child: Text(initial, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFF2563EB))),
+              backgroundColor: const Color(0xFF4A90E2).withValues(alpha: 0.1),
+              child: Text(initial, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Color(0xFF4A90E2))),
             ),
           ),
           const SizedBox(width: 16),
@@ -377,15 +433,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: text)),
+                Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
                 const SizedBox(height: 4),
-                Text('ID: $pid', style: TextStyle(fontSize: 13, color: subtext)),
+                Text('ID: $pid', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
                 const SizedBox(height: 2),
-                Text(createdAt, style: TextStyle(fontSize: 12, color: subtext.withValues(alpha: 0.8))),
+                Text(createdAt, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _statusChip('Case', const Color(0xFF2563EB), const Color(0xFFEFF6FF)),
+                    _statusChip('Case', const Color(0xFF4A90E2), const Color(0xFFEFF6FF)),
                     const SizedBox(width: 8),
                     _statusChip(surgery, const Color(0xFF0D9488), const Color(0xFFF0FDFB)),
                   ],
@@ -410,18 +466,20 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF2563EB)),
+              Icon(icon, size: 18, color: const Color(0xFF4A90E2)),
               const SizedBox(width: 8),
-              Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: text)),
+              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
             ],
           ),
           const SizedBox(height: 16),
@@ -437,15 +495,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
       child: Row(
         crossAxisAlignment: multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: subtext),
+          Icon(icon, size: 16, color: const Color(0xFF9CA3AF)),
           const SizedBox(width: 10),
-          SizedBox(width: 120, child: Text(label, style: TextStyle(fontSize: 13, color: subtext))),
+          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)))),
           Expanded(
             child: Text(
               value,
               maxLines: multiline ? 5 : 2,
               overflow: multiline ? TextOverflow.ellipsis : TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: text),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
             ),
           ),
         ],
@@ -462,9 +520,11 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,7 +533,7 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
             children: [
               const Icon(Icons.calculate_outlined, size: 18, color: Color(0xFF0D9488)),
               const SizedBox(width: 8),
-              Text('Results', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: text)),
+              const Text('Results', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
             ],
           ),
           const SizedBox(height: 16),
@@ -532,15 +592,15 @@ class _CaseDetailScreenState extends State<CaseDetailScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+          Text(label, style: const TextStyle(fontFamily: 'Inter', fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
           const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+          Text(value, style: TextStyle(fontFamily: 'DM Sans', fontSize: 20, fontWeight: FontWeight.w800, color: color)),
         ],
       ),
     );

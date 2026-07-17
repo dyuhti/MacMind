@@ -7,24 +7,24 @@ class ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cs.errorContainer,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFECACA)),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline,
-              color: cs.error, size: 20),
+          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 20),
           const SizedBox(width: 8),
           Expanded(
-              child: Text(message,
-                  style: TextStyle(
-                      color: cs.onErrorContainer, fontSize: 13))),
+            child: Text(
+              message,
+              style: const TextStyle(color: Color(0xFF991B1B), fontSize: 13, fontFamily: 'Inter'),
+            ),
+          ),
         ],
       ),
     );

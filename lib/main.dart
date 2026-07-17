@@ -13,7 +13,6 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/speech_smoke_test_screen.dart';
 import 'screens/delete_account_screen.dart';
-import 'screens/admin_login_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
@@ -85,7 +84,7 @@ class MyApp extends StatelessWidget {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           await AuthService.logout();
           if (context.mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil('/admin/login', (route) => false);
+            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('You are not authorized.')),
             );
@@ -97,30 +96,25 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  Future<bool> _bootstrapApp() async {
-    // Check if user should auto-login (has remember me flag)
+  Future<String?> _bootstrapApp() async {
     final shouldAutoLogin = await AuthService.shouldAutoLogin();
-    if (!shouldAutoLogin) {
-      return false;
-    }
+    if (!shouldAutoLogin) return null;
 
-    // Verify token is still valid
     final token = await AuthService.getToken();
     if (token == null) {
-      // No token found, logout
       await AuthService.logout();
-      return false;
+      return null;
     }
 
-    // Attempt to hydrate user session from stored data
     try {
       await ProfileService.hydrateUserSession();
-      debugPrint('✅ Auto-login successful - token validated');
-      return true;
+      final role = await AuthService.getRole();
+      debugPrint('✅ Auto-login successful - token validated, role: $role');
+      return role;
     } catch (e) {
       debugPrint('❌ Failed to hydrate user session: $e');
       await AuthService.logout();
-      return false;
+      return null;
     }
   }
 
@@ -139,7 +133,6 @@ class MyApp extends StatelessWidget {
           '/speech-smoke-test': (context) => const SpeechSmokeTestScreen(),
           '/delete-account': (context) => const DeleteAccountScreen(),
           '/login': (context) => const LoginScreen(),
-          '/admin/login': (context) => const AdminLoginScreen(),
           '/admin/dashboard': (context) => _adminRoute(AdminSection.dashboard),
           '/admin/users': (context) => _adminRoute(AdminSection.users),
           '/admin/calculators': (context) => _adminRoute(AdminSection.entries),
@@ -147,7 +140,7 @@ class MyApp extends StatelessWidget {
           '/admin/feedback': (context) => _adminRoute(AdminSection.feedback),
         },
         scrollBehavior: const AppScrollBehavior(),
-        home: FutureBuilder<bool>(
+        home: FutureBuilder<String?>(
           future: _bootstrapApp(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -157,13 +150,16 @@ class MyApp extends StatelessWidget {
               );
             }
 
-            if (snapshot.hasData && snapshot.data == true) {
+            final autoLoginRole = snapshot.data;
+            if (autoLoginRole != null) {
+              if (autoLoginRole == 'admin') {
+                return const AdminDashboardScreen(initialSection: AdminSection.dashboard);
+              }
               return PermissionLifecycleManager(
                 child: const HomeScreen(),
               );
             }
 
-            // Otherwise, show login screen
             return const LoginScreen();
           },
         ),

@@ -19,8 +19,6 @@ class UserHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isActive = user['is_active'] as bool? ?? true;
     final role = (user['role']?.toString() ?? 'user').toUpperCase();
     final status = user['status']?.toString() ?? 'active';
     final name = user['full_name']?.toString() ?? '\u2014';
@@ -40,21 +38,16 @@ class UserHeaderCard extends StatelessWidget {
     final isOnline = currentSessions > 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isOnline
-              ? cs.primary.withValues(alpha: 0.3)
-              : cs.outlineVariant,
-          width: isOnline ? 1.5 : 1,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: cs.shadow.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4))
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -64,18 +57,14 @@ class UserHeaderCard extends StatelessWidget {
               Stack(
                 children: [
                   CircleAvatar(
-                    radius: 32,
-                    backgroundColor: isActive
-                        ? cs.primaryContainer.withValues(alpha: 0.5)
-                        : cs.surfaceContainerHighest,
+                    radius: 36,
+                    backgroundColor: const Color(0xFF4A90E2),
                     child: Text(
                       initial,
-                      style: TextStyle(
-                        fontSize: 24,
+                      style: const TextStyle(
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
-                        color: isActive
-                            ? cs.primary
-                            : cs.onSurfaceVariant,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -84,16 +73,15 @@ class UserHeaderCard extends StatelessWidget {
                       bottom: 0, right: 0,
                       child: Container(
                         width: 14, height: 14,
-                        decoration: BoxDecoration(
-                          color: cs.primary,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF10B981),
                           shape: BoxShape.circle,
-                          border: Border.all(color: cs.surface, width: 2),
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,56 +89,62 @@ class UserHeaderCard extends StatelessWidget {
                     Row(
                       children: [
                         Flexible(
-                          child: Text(name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w700,
-                                  color: cs.onSurface)),
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
                         ),
                         if (isOnline) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: cs.primary.withValues(alpha: 0.1),
+                              color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(99),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.circle, size: 6, color: cs.primary),
+                                Container(
+                                  width: 6, height: 6,
+                                  decoration: const BoxDecoration(color: Color(0xFF10B981), shape: BoxShape.circle),
+                                ),
                                 const SizedBox(width: 4),
-                                Text('Online',
-                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: cs.primary)),
+                                const Text('Online',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF10B981))),
                               ],
                             ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 13, color: cs.onSurfaceVariant)),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: 8,
+                      runSpacing: 6,
                       children: [
-                        _chip(role,
-                            role == 'ADMIN'
-                                ? cs.primary
-                                : cs.secondary,
-                            role == 'ADMIN'
-                                ? cs.primaryContainer.withValues(alpha: 0.5)
-                                : cs.secondaryContainer.withValues(alpha: 0.5)),
-                        _statusChip(status, cs),
+                        _chip(role, role == 'ADMIN'),
+                        _statusChip(status),
                         if (currentSessions > 0)
-                          _chip('$currentSessions session${currentSessions == 1 ? '' : 's'}',
-                              cs.tertiary, cs.tertiaryContainer.withValues(alpha: 0.5)),
+                          _chip('$currentSessions session${currentSessions == 1 ? '' : 's'}', false),
                       ],
                     ),
                   ],
@@ -158,9 +152,9 @@ class UserHeaderCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: Color(0xFFE5E7EB)),
           const SizedBox(height: 16),
-          Divider(height: 1, color: cs.outlineVariant),
-          const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 400;
@@ -168,16 +162,16 @@ class UserHeaderCard extends StatelessWidget {
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _buildLeftColumn(createdAt, lastLogin, platform, cs)),
+                        Expanded(child: _buildLeftColumn(createdAt, lastLogin, platform)),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildRightColumn(device, accountAge, lastActivity, cs)),
+                        Expanded(child: _buildRightColumn(device, accountAge, lastActivity)),
                       ],
                     )
                   : Column(
                       children: [
-                        _buildLeftColumn(createdAt, lastLogin, platform, cs),
-                        const SizedBox(height: 8),
-                        _buildRightColumn(device, accountAge, lastActivity, cs),
+                        _buildLeftColumn(createdAt, lastLogin, platform),
+                        const SizedBox(height: 10),
+                        _buildRightColumn(device, accountAge, lastActivity),
                       ],
                     );
             },
@@ -187,65 +181,69 @@ class UserHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLeftColumn(String createdAt, String lastLogin, String platform, ColorScheme cs) {
+  Widget _buildLeftColumn(String createdAt, String lastLogin, String platform) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoRow(Icons.calendar_today_outlined, 'Registered', createdAt, cs),
-        const SizedBox(height: 6),
-        _infoRow(Icons.login_outlined, 'Last Login', lastLogin, cs),
-        const SizedBox(height: 6),
-        _infoRow(_platformIcon(platform), 'Platform', platform, cs),
+        _infoRow(Icons.calendar_today_outlined, 'Registered', createdAt),
+        const SizedBox(height: 8),
+        _infoRow(Icons.login_outlined, 'Last Login', lastLogin),
+        const SizedBox(height: 8),
+        _infoRow(_platformIcon(platform), 'Platform', platform),
       ],
     );
   }
 
-  Widget _buildRightColumn(String device, String accountAge, String lastActivity, ColorScheme cs) {
+  Widget _buildRightColumn(String device, String accountAge, String lastActivity) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoRow(Icons.devices_outlined, 'Device', device, cs),
-        const SizedBox(height: 6),
-        _infoRow(Icons.timer_outlined, 'Account Age', '$accountAge days', cs),
-        const SizedBox(height: 6),
-        _infoRow(Icons.circle_outlined, 'Last Active', lastActivity, cs),
+        _infoRow(Icons.devices_outlined, 'Device', device),
+        const SizedBox(height: 8),
+        _infoRow(Icons.timer_outlined, 'Account Age', '$accountAge days'),
+        const SizedBox(height: 8),
+        _infoRow(Icons.circle_outlined, 'Last Active', lastActivity),
       ],
     );
   }
 
-  Widget _chip(String label, Color color, Color bg) {
+  Widget _chip(String label, bool isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bg,
+        color: isAdmin ? const Color(0xFFEFF6FF) : const Color(0xFFF3F4F6),
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         label,
         style: TextStyle(
-            fontSize: 11, fontWeight: FontWeight.w700, color: color),
+          fontFamily: 'Inter',
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: isAdmin ? const Color(0xFF4A90E2) : const Color(0xFF6B7280),
+        ),
       ),
     );
   }
 
-  Widget _statusChip(String status, ColorScheme cs) {
+  Widget _statusChip(String status) {
     Color color;
     String label;
     switch (status) {
       case 'active':
-        color = cs.primary;
+        color = const Color(0xFF10B981);
         label = 'Active';
         break;
       case 'inactive':
-        color = cs.tertiary;
+        color = const Color(0xFFF59E0B);
         label = 'Inactive';
         break;
       case 'deactivated':
-        color = cs.error;
+        color = const Color(0xFFEF4444);
         label = 'Deactivated';
         break;
       default:
-        color = cs.onSurfaceVariant;
+        color = const Color(0xFF6B7280);
         label = status.toUpperCase();
     }
     return Container(
@@ -262,29 +260,45 @@ class UserHeaderCard extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value, ColorScheme cs) {
+  Widget _infoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: cs.onSurfaceVariant),
+        Icon(icon, size: 15, color: const Color(0xFF9CA3AF)),
         const SizedBox(width: 8),
-        Text('$label: ',
-            style: TextStyle(
-                fontSize: 12, color: cs.onSurfaceVariant)),
+        Text(
+          '$label: ',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
         Expanded(
-          child: Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600,
-                  color: cs.onSurface)),
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
+          ),
         ),
       ],
     );
