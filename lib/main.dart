@@ -19,6 +19,7 @@ import 'services/profile_service.dart';
 import 'services/notification_service.dart';
 // speech_input_service removed - replaced by self-contained widgets
 import 'providers/case_provider.dart';
+import 'providers/timer_provider.dart';
 import 'widgets/permission_lifecycle_manager.dart';
 
 class AppScrollBehavior extends MaterialScrollBehavior {
@@ -123,6 +124,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CaseProvider()),
+        ChangeNotifierProvider(create: (_) => TimerProvider()),
       ],
       child: MaterialApp(
         title: 'Anesthetic Consumption Calculator',

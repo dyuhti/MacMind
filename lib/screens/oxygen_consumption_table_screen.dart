@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/oxygen_timer_models.dart';
+import '../models/timer_data.dart';
+import '../providers/timer_provider.dart';
 import '../services/oxygen_timer_service.dart';
 import '../widgets/app_header.dart';
 import '../services/notification_service.dart';
@@ -13,12 +16,14 @@ class OxygenConsumptionTableScreen extends StatefulWidget {
   final String cylinderType;
   final double pressurePsi;
   final double totalContent;
+  final String? timerId;
 
   const OxygenConsumptionTableScreen({
     super.key,
     required this.cylinderType,
     required this.pressurePsi,
     required this.totalContent,
+    this.timerId,
   });
 
   @override
@@ -40,12 +45,24 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
 
   DateTime? _timerEndTime;
   int? _timerDurationSeconds;
+  String? _timerId;
+  bool _timerLoaded = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(_restorePersistedTimerState());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.timerId != null && !_timerLoaded) {
+      _timerLoaded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadTimerFromProvider();
+      });
+    }
   }
 
   @override
@@ -73,65 +90,48 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     }
   }
 
-  Future<void> _restorePersistedTimerState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final timerState = prefs.getString(NotificationService.oxygenTimerStateKey);
-    final endTimeMillis = prefs.getInt(NotificationService.oxygenTimerEndKey);
-    final remainingSeconds = prefs.getInt(NotificationService.oxygenTimerRemainingKey);
-    final durationSeconds = prefs.getInt(NotificationService.oxygenTimerDurationKey);
-    final activeRowIndex = prefs.getInt(NotificationService.oxygenTimerRowIndexKey);
-    final selectedFlowRate = prefs.getInt(NotificationService.oxygenTimerFlowRateKey);
-    final historyId = prefs.getInt(NotificationService.oxygenTimerHistoryIdKey);
+  void _loadTimerFromProvider() {
+    final provider = context.read<TimerProvider>();
+    final timer = provider.timers[widget.timerId];
+    if (timer == null) return;
 
-    if (!mounted) {
-      return;
-    }
-
-    if (timerState == NotificationService.timerStateRunning &&
-        endTimeMillis != null &&
-        durationSeconds != null &&
-        activeRowIndex != null) {
-      final savedEndTime = DateTime.fromMillisecondsSinceEpoch(endTimeMillis);
-      final restoredRemaining = savedEndTime.difference(DateTime.now()).inSeconds;
-
-      if (restoredRemaining <= 0) {
-        await _handleTimerCompletion();
+    if (timer.isRunning && timer.endTime != null) {
+      final remaining = timer.endTime!.difference(DateTime.now()).inSeconds;
+      if (remaining <= 0) {
+        unawaited(_handleTimerCompletion());
         return;
       }
-
       setState(() {
-        _timerEndTime = savedEndTime;
-        _timerDurationSeconds = durationSeconds;
-        _remainingTime = restoredRemaining;
+        _timerId = timer.timerId;
+        _timerEndTime = timer.endTime;
+        _timerDurationSeconds = timer.durationSeconds;
+        _remainingTime = remaining;
         _isTimerRunning = true;
         _isTimerPaused = false;
         _finalShown = false;
-        _activeRowIndex = activeRowIndex;
-        _selectedFlowRate = selectedFlowRate ?? activeRowIndex + 1;
-        _historyId = historyId;
+        _activeRowIndex = timer.activeRowIndex;
+        _selectedFlowRate = timer.flowRate;
+        selectedIndex = timer.activeRowIndex;
+        _historyId = timer.historyId;
       });
-
       _startTicker();
-      return;
-    }
-
-    if (timerState == NotificationService.timerStatePaused &&
-        remainingSeconds != null &&
-        durationSeconds != null &&
-        activeRowIndex != null) {
+    } else if (timer.isPaused) {
       setState(() {
-        _timerEndTime = null;
-        _timerDurationSeconds = durationSeconds;
-        _remainingTime = remainingSeconds;
+        _timerId = timer.timerId;
+        _timerDurationSeconds = timer.durationSeconds;
+        _remainingTime = timer.pausedRemainingSeconds ?? 0;
         _isTimerRunning = false;
         _isTimerPaused = true;
         _finalShown = false;
-        _activeRowIndex = activeRowIndex;
-        _selectedFlowRate = selectedFlowRate ?? activeRowIndex + 1;
-        _historyId = historyId;
+        _activeRowIndex = timer.activeRowIndex;
+        _selectedFlowRate = timer.flowRate;
+        selectedIndex = timer.activeRowIndex;
+        _historyId = timer.historyId;
       });
     }
   }
+
+
 
   void _syncRemainingTimeFromEndTime() {
     if (_timerEndTime == null || _timerDurationSeconds == null) {
@@ -237,7 +237,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
 
   Widget _buildTimerActionButton({
     required String label,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     required Color backgroundColor,
     required Color foregroundColor,
     bool outlined = false,
@@ -288,7 +288,10 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
   }
 
   Widget _buildTimerControls(List<_ConsumptionRowData> rows) {
-    if (_isTimerRunning) {
+    final isActiveRow = _activeRowIndex != null && _activeRowIndex == selectedIndex;
+    final hasLocalTimer = _isTimerRunning || _isTimerPaused;
+
+    if (hasLocalTimer && isActiveRow && _isTimerRunning) {
       return Row(
         children: [
           Expanded(
@@ -312,7 +315,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       );
     }
 
-    if (_isTimerPaused) {
+    if (hasLocalTimer && isActiveRow && _isTimerPaused) {
       return Row(
         children: [
           Expanded(
@@ -334,6 +337,18 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
             ),
           ),
         ],
+      );
+    }
+
+    if (selectedIndex < 0) {
+      return SizedBox(
+        width: double.infinity,
+        child: _buildTimerActionButton(
+          label: 'Start Timer',
+          onPressed: null,
+          backgroundColor: const Color(0xFFD1D5DB),
+          foregroundColor: const Color(0xFF9CA3AF),
+        ),
       );
     }
 
@@ -382,20 +397,6 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       return;
     }
 
-    if ((_isTimerRunning || _isTimerPaused) && _activeRowIndex != index) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Stop or reset the current timer before starting another one')),
-      );
-      return;
-    }
-
-    if (_isTimerRunning && _activeRowIndex == index) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Timer is already running for this row')),
-      );
-      return;
-    }
-
     _countdownTimer?.cancel();
 
     final now = DateTime.now();
@@ -413,7 +414,11 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     });
 
     _startTicker();
+    final timerId = 'timer_${DateTime.now().millisecondsSinceEpoch}';
+    _timerId = timerId;
     unawaited(_persistRunningTimerState(endTime: endTime, durationSeconds: durationInSeconds, row: row, index: index));
+    unawaited(_persistCylinderMetadata(timerId));
+    _notifyProviderAdd(timerId: timerId, endTime: endTime, durationSeconds: durationInSeconds, row: row, index: index);
     unawaited(NotificationService().scheduleTimerNotification(endTime));
     _pendingHistoryIdFuture = _createTimerHistoryRecord(
       row: row,
@@ -438,6 +443,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       _isTimerPaused = true;
     });
 
+    _notifyProviderPause();
     unawaited(NotificationService().cancelTimerNotification());
     unawaited(_persistPausedTimerState(remainingSeconds: _remainingTime));
     unawaited(_sendTimerPauseUpdate());
@@ -469,12 +475,15 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       ),
       index: _activeRowIndex ?? selectedIndex,
     ));
+    unawaited(_persistCylinderMetadata(_timerId ?? ''));
+    _notifyProviderResume(resumedEndTime);
     unawaited(NotificationService().scheduleTimerNotification(resumedEndTime));
     unawaited(_sendTimerResumeUpdate());
   }
 
   Future<void> _stopTimer() async {
     _countdownTimer?.cancel();
+    _notifyProviderRemove();
     unawaited(NotificationService().cancelAllNotifications());
     setState(() {
       _remainingTime = 0;
@@ -508,6 +517,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     _finalShown = true;
     _countdownTimer?.cancel();
     _timerEndTime = null;
+    _notifyProviderRemove();
 
     setState(() {
       _remainingTime = 0;
@@ -554,6 +564,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
 
   Future<void> _resetTimer({bool updateBackend = true}) async {
     _countdownTimer?.cancel();
+    _notifyProviderRemove();
     unawaited(NotificationService().cancelAllNotifications());
     setState(() {
       _remainingTime = 0;
@@ -569,6 +580,68 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       unawaited(_sendTimerStopUpdate());
     }
     unawaited(_clearPersistedTimerState());
+  }
+
+  Future<void> _persistCylinderMetadata(String timerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(NotificationService.oxygenTimerCylinderTypeKey, widget.cylinderType);
+    await prefs.setDouble(NotificationService.oxygenTimerPressurePsiKey, widget.pressurePsi);
+    await prefs.setDouble(NotificationService.oxygenTimerTotalContentKey, widget.totalContent);
+  }
+
+  void _notifyProviderAdd({
+    required String timerId,
+    required DateTime endTime,
+    required int durationSeconds,
+    required _ConsumptionRowData row,
+    required int index,
+  }) {
+    if (!mounted) return;
+    final provider = context.read<TimerProvider>();
+    provider.addTimer(TimerData(
+      timerId: timerId,
+      cylinderType: widget.cylinderType,
+      pressurePsi: widget.pressurePsi,
+      totalOxygenContent: widget.totalContent,
+      flowRate: row.flowRate,
+      durationSeconds: durationSeconds,
+      activeRowIndex: index,
+      startedAt: DateTime.now(),
+      durationText: _formatDuration(row.durationHr),
+      endTime: endTime,
+      status: TimerStatus.running,
+    ));
+  }
+
+  void _notifyProviderPause() {
+    if (!mounted || _timerId == null) return;
+    final provider = context.read<TimerProvider>();
+    final existing = provider.timers[_timerId];
+    if (existing != null) {
+      provider.updateTimer(existing.copyWith(
+        status: TimerStatus.paused,
+        endTime: null,
+        pausedRemainingSeconds: _remainingTime,
+      ));
+    }
+  }
+
+  void _notifyProviderResume(DateTime endTime) {
+    if (!mounted || _timerId == null) return;
+    final provider = context.read<TimerProvider>();
+    final existing = provider.timers[_timerId];
+    if (existing != null) {
+      provider.updateTimer(existing.copyWith(
+        status: TimerStatus.running,
+        endTime: endTime,
+        pausedRemainingSeconds: null,
+      ));
+    }
+  }
+
+  void _notifyProviderRemove() {
+    if (!mounted || _timerId == null) return;
+    context.read<TimerProvider>().removeTimer(_timerId!);
   }
 
   Future<void> _persistRunningTimerState({
@@ -609,6 +682,9 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     await prefs.remove(NotificationService.oxygenTimerRowIndexKey);
     await prefs.remove(NotificationService.oxygenTimerFlowRateKey);
     await prefs.remove(NotificationService.oxygenTimerHistoryIdKey);
+    await prefs.remove(NotificationService.oxygenTimerCylinderTypeKey);
+    await prefs.remove(NotificationService.oxygenTimerPressurePsiKey);
+    await prefs.remove(NotificationService.oxygenTimerTotalContentKey);
   }
 
   Future<void> _persistHistoryId(int historyId) async {
@@ -962,7 +1038,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
                               ),
                               child: _buildTimerControls(rows),
                             ),
-                            if (!_isTimerRunning && !_isTimerPaused) ...[
+                            if (selectedIndex < 0 && !_isTimerRunning && !_isTimerPaused) ...[
                               const SizedBox(height: 8),
                               const Text(
                                 'Select a row below, then start the countdown.',

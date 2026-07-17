@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../models/timer_data.dart';
+import '../providers/timer_provider.dart';
 import '../services/home_stats_service.dart';
 import '../services/user_session.dart';
 import '../widgets/app_header.dart';
 import '../widgets/macmind_design.dart';
 import 'case_history_screen.dart';
 import 'formulas_and_constants_module_screen.dart';
+import 'oxygen_consumption_table_screen.dart';
 import 'oxygen_cylinder_module_screen.dart';
 import 'settings_screen.dart';
 import 'volatile_anesthetic_module_screen.dart';
@@ -140,6 +144,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$greeting, $userName';
   }
 
+  void _openRunningTimer(BuildContext context, TimerData timer) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OxygenConsumptionTableScreen(
+          cylinderType: timer.cylinderType,
+          pressurePsi: timer.pressurePsi,
+          totalContent: timer.totalOxygenContent,
+          timerId: timer.timerId,
+        ),
+      ),
+    );
+  }
+
   void _handleModuleSelection(BuildContext context, String moduleId) {
     switch (moduleId) {
       case 'volatile':
@@ -201,6 +219,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     final stats = snapshot.data ?? const HomeStatsData.unavailable();
                     return _QuickStatsGrid(stats: stats);
+                  },
+                ),
+                const SizedBox(height: 22),
+                Consumer<TimerProvider>(
+                  builder: (context, timerProvider, _) {
+                    final activeTimers = timerProvider.activeTimers;
+                    if (activeTimers.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const MacMindSectionLabel(text: 'Running Timers'),
+                        const SizedBox(height: 12),
+                        ...activeTimers.map((timer) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _RunningTimerCard(
+                            timer: timer,
+                            onTap: () => _openRunningTimer(context, timer),
+                          ),
+                        )),
+                      ],
+                    );
                   },
                 ),
                 const SizedBox(height: 22),
@@ -511,4 +550,160 @@ class ModuleCard {
     required this.color,
     required this.iconBackground,
   });
+}
+
+class _RunningTimerCard extends StatelessWidget {
+  final TimerData timer;
+  final VoidCallback onTap;
+
+  const _RunningTimerCard({required this.timer, required this.onTap});
+
+  String _formatCountdown(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _formatStartedTime(DateTime dt) {
+    final hour = dt.hour;
+    final minute = dt.minute;
+    final amPm = hour < 12 ? 'AM' : 'PM';
+    final h = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '${h.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $amPm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isRunning = timer.isRunning;
+    final statusColor = isRunning ? const Color(0xFF16A34A) : const Color(0xFFF59E0B);
+    final statusBg = isRunning ? const Color(0xFFEAF8EF) : const Color(0xFFFFF7ED);
+    final statusBorder = isRunning ? const Color(0xFFCDE8D7) : const Color(0xFFFED7AA);
+    final statusLabel = isRunning ? 'Running' : 'Paused';
+    final statusIcon = isRunning ? Icons.play_circle_filled : Icons.pause_circle_filled;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: MacMindColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: MacMindColors.shadow,
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(statusIcon, size: 14, color: statusColor),
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: statusBg,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: statusBorder),
+                            ),
+                            child: Text(
+                              statusLabel,
+                              style: TextStyle(
+                                fontFamily: 'DM Sans',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: statusColor,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        timer.cylinderType,
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: MacMindColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        'Flow Rate: ${timer.flowRate} L/min',
+                        style: const TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: MacMindColors.gray400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Remaining',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: MacMindColors.gray400,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatCountdown(timer.remainingSeconds),
+                      style: const TextStyle(
+                        fontFamily: 'Roboto Mono',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: MacMindColors.textDark,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Started ${_formatStartedTime(timer.startedAt)}',
+                      style: const TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: MacMindColors.gray400,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, size: 20, color: MacMindColors.gray400),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

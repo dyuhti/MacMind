@@ -26,20 +26,18 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   int _selectedIndex = 0;
   late final TextEditingController _durationController;
   late final TextEditingController _concentrationController;
+  late final FocusNode _concentrationFocusNode;
   Timer? _aiDebounce;
 
-  double _surgeryDuration = 60;
-  double _concentration   = 2.0;
+  double _surgeryDuration = 0;
+  double _concentration   = 0;
   String _selectedAgent   = 'Isoflurane';
   bool   _isAiLoading     = false;
   List<String> _aiInsights = [];
   String? _aiWarning;
 
   // ── Graph interaction state ──
-  double? _selectedPointFGF;
-  double? _selectedPointConc;
   int? _selectedPointIndex;
-  bool _showDetailedTooltip = false;
 
   final Map<String, Map<String, dynamic>> agents = {
     'Isoflurane':  {'color': Colors.blue,   'mw': 184.5, 'k': 0.0765, 'minConc': 0.2, 'maxConc': 5.0},
@@ -59,8 +57,12 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   @override
   void initState() {
     super.initState();
-    _durationController      = TextEditingController(text: '60');
-    _concentrationController = TextEditingController(text: '2.0');
+    _durationController      = TextEditingController(text: '');
+    _concentrationController = TextEditingController(text: '');
+    _concentrationFocusNode = FocusNode()
+      ..addListener(() {
+        if (!_concentrationFocusNode.hasFocus) _finalizeConcentration();
+      });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scheduleEconomyInsightFetch();
     });
@@ -71,6 +73,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     _aiDebounce?.cancel();
     _durationController.dispose();
     _concentrationController.dispose();
+    _concentrationFocusNode.dispose();
     super.dispose();
   }
 
@@ -146,14 +149,6 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     return 'High';
   }
 
-  /// Get color for economy rating
-  Color _getEconomyColor(double consumption) {
-    if (consumption < 5) return const Color(0xFF10B981); // Green
-    if (consumption < 10) return const Color(0xFF3B82F6); // Blue
-    if (consumption < 15) return const Color(0xFFF59E0B); // Amber
-    return const Color(0xFFEF4444); // Red
-  }
-
   /// Delivered Concentration (%) varies clinically with FGF
   /// Low FGF: 85% of target | Medium FGF: 90% | High FGF: 95–100%
   List<FlSpot> _generateConcentrationData() {
@@ -178,21 +173,25 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
 
   void _updateConcentration(String v) {
     _clearGraphSelection();
+    final p = double.tryParse(v);
     setState(() {
-      final agentInfo = agents[_selectedAgent]!;
-      final minConc = (agentInfo['minConc'] as num).toDouble();
-      final maxConc = (agentInfo['maxConc'] as num).toDouble();
-      
-      final p = double.tryParse(v);
-      if (p == null || p.isNaN || p <= 0) {
-        _concentration = (p != null && p <= 0) ? minConc : 0;
-      } else {
-        _concentration = p.clamp(minConc, maxConc);
+      if (p != null && !p.isNaN && p > 0) {
+        _concentration = p;
+      } else if (v.isEmpty) {
+        _concentration = 0;
       }
     });
-    if (v.isNotEmpty && _concentrationController.text != _concentration.toStringAsFixed(1)) {
-      _concentrationController.text = _concentration.toStringAsFixed(1);
-    }
+    _scheduleEconomyInsightFetch();
+  }
+
+  void _finalizeConcentration() {
+    final agentInfo = agents[_selectedAgent]!;
+    final minConc = (agentInfo['minConc'] as num).toDouble();
+    final maxConc = (agentInfo['maxConc'] as num).toDouble();
+    setState(() {
+      _concentration = _concentration <= 0 ? 0 : _concentration.clamp(minConc, maxConc);
+      _concentrationController.text = _concentration == 0 ? '' : _concentration.toStringAsFixed(1);
+    });
     _scheduleEconomyInsightFetch();
   }
 
@@ -204,10 +203,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   }
 
   void _clearGraphSelection() {
-    _selectedPointFGF = null;
-    _selectedPointConc = null;
     _selectedPointIndex = null;
-    _showDetailedTooltip = false;
   }
 
   void _onItemTapped(int i) {
@@ -216,18 +212,17 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
   }
 
   void _resetState() {
-    _durationController.text = '0';
-    _concentrationController.text = '0';
-    _surgeryDuration = 0;
-    _concentration = 0;
-    _selectedAgent = 'Isoflurane';
-    _isAiLoading = false;
-    _aiInsights = [];
-    _aiWarning = null;
-    _selectedPointFGF = null;
-    _selectedPointConc = null;
-    _selectedPointIndex = null;
-    _showDetailedTooltip = false;
+    setState(() {
+      _durationController.text = '';
+      _concentrationController.text = '';
+      _surgeryDuration = 0;
+      _concentration = 0;
+      _selectedAgent = 'Isoflurane';
+      _isAiLoading = false;
+      _aiInsights = [];
+      _aiWarning = null;
+      _selectedPointIndex = null;
+    });
   }
 
   List<Widget> get _screens => [
@@ -344,6 +339,7 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     label: 'Agent Concentration (%)',
     child: TextField(
       controller:   _concentrationController,
+      focusNode:    _concentrationFocusNode,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       onChanged:    _updateConcentration,
       decoration:   InputDecoration(
@@ -636,14 +632,12 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                                       if (event is FlTapUpEvent && response?.lineBarSpots != null) {
                                         final spots = response!.lineBarSpots!;
                                         if (spots.isNotEmpty) {
-                                          final spot = spots[0];
                                           setState(() {
-                                            _selectedPointFGF = spot.x;
-                                            _selectedPointConc = spot.y;
-                                            _selectedPointIndex = spot.spotIndex;
-                                            _showDetailedTooltip = true;
+                                            _selectedPointIndex = spots[0].spotIndex;
                                           });
                                         }
+                                      } else if (event is FlTapUpEvent) {
+                                        setState(() => _selectedPointIndex = null);
                                       }
                                     },
                                     touchTooltipData: LineTouchTooltipData(
@@ -691,19 +685,6 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
                     ],
                   ),
                 ),
-                // Floating tooltip card for selected point
-                if (_showDetailedTooltip && 
-                    _selectedPointFGF != null && 
-                    _selectedPointConc != null)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: AnimatedOpacity(
-                      opacity: 1.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: _buildDetailedTooltipCard(color),
-                    ),
-                  ),
               ],
             ),
           ],
@@ -740,138 +721,6 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  /// Build detailed floating tooltip card
-  Widget _buildDetailedTooltipCard(Color agentColor) {
-    if (_selectedPointFGF == null || _selectedPointConc == null) {
-      return const SizedBox.shrink();
-    }
-
-    final consumption = _getPointConsumption(_selectedPointFGF!, _selectedPointConc!);
-    final economy = _getEconomyRating(consumption);
-    final economyColor = _getEconomyColor(consumption);
-
-    return GestureDetector(
-      onTap: () => setState(() => _showDetailedTooltip = false),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with close button
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Selected Point Details',
-                    style: const TextStyle(
-                      fontFamily: 'DM Sans',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => setState(() => _showDetailedTooltip = false),
-                    child: Icon(Icons.close, size: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              
-              // Divider
-              Container(
-                height: 1,
-                color: Colors.grey[200],
-              ),
-              const SizedBox(height: 10),
-
-              // FGF value
-              _buildTooltipRow('Fresh Gas Flow', '${_selectedPointFGF!.toStringAsFixed(1)} L/min', agentColor),
-              const SizedBox(height: 8),
-
-              // Concentration value
-              _buildTooltipRow('Concentration', '${_selectedPointConc!.toStringAsFixed(2)}%', agentColor),
-              const SizedBox(height: 8),
-
-              // Consumption value
-              _buildTooltipRow('Consumption', '${consumption.toStringAsFixed(2)} mL/hr', Colors.blue),
-              const SizedBox(height: 10),
-
-              // Economy rating with color indicator
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: economyColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Economy Rating',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 11,
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      economy,
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: economyColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Build a single row in the tooltip
-  Widget _buildTooltipRow(String label, String value, Color accentColor) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 11,
-            color: Colors.black54,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'DM Sans',
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: accentColor,
-          ),
-        ),
-      ],
     );
   }
 
