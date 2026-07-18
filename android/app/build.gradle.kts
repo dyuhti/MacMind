@@ -14,7 +14,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.med_calci_app"
+    namespace = "com.simats.macmind"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -38,7 +38,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.med_calci_app"
+        applicationId = "com.simats.macmind"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -49,7 +49,7 @@ class NativeTimerInfo {
 }
 
 class NativeTimerBridge {
-  static const _channel = MethodChannel('com.example.med_calci_app/timer_bridge');
+  static const _channel = MethodChannel('com.simats.macmind/timer_bridge');
 
   static Future<void> startTimer({
     required String timerId,

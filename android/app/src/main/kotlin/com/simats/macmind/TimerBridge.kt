@@ -1,4 +1,4 @@
-package com.example.med_calci_app
+package com.simats.macmind
 
 import android.content.Context
 import android.util.Log
@@ -155,6 +155,6 @@ class TimerBridge(context: Context, flutterEngine: FlutterEngine) {
 
     companion object {
         private const val TAG = "TimerBridge"
-        const val CHANNEL_NAME = "com.example.med_calci_app/timer_bridge"
+        const val CHANNEL_NAME = "com.simats.macmind/timer_bridge"
     }
 }

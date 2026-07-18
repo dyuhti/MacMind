@@ -1,4 +1,4 @@
-package com.example.med_calci_app
+package com.simats.macmind
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

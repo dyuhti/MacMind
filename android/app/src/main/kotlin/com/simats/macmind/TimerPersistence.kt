@@ -1,4 +1,4 @@
-package com.example.med_calci_app
+package com.simats.macmind
 
 import android.content.Context
 import android.content.SharedPreferences
