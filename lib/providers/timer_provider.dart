@@ -1,15 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/timer_data.dart';
-import '../services/notification_service.dart';
+import '../services/native_timer_bridge.dart';
 
 class TimerProvider extends ChangeNotifier {
-  static const String _activeTimersKey = 'active_timers';
-
   Map<String, TimerData> _timers = {};
   Timer? _ticker;
 
@@ -18,99 +14,59 @@ class TimerProvider extends ChangeNotifier {
       _timers.values.where((t) => t.isRunning || t.isPaused).toList();
   bool get hasActiveTimers => activeTimers.isNotEmpty;
 
-  TimerProvider() {
-    _loadTimers();
+  TimerData? getTimerForRow(int rowIndex) {
+    try {
+      return _timers.values.firstWhere((t) => t.activeRowIndex == rowIndex);
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<void> _loadTimers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_activeTimersKey);
-    if (raw != null && raw.isNotEmpty) {
-      try {
-        final List<dynamic> decoded = jsonDecode(raw) as List<dynamic>;
-        final map = <String, TimerData>{};
-        for (final item in decoded) {
-          final timer = TimerData.fromJson(item as Map<String, dynamic>);
-          if (timer.isRunning || timer.isPaused) {
-            map[timer.timerId] = timer;
-          }
-        }
-        _timers = map;
-      } catch (e) {
-        debugPrint('TimerProvider: failed to decode timers: $e');
-      }
-    }
+  TimerProvider() {
+    _loadTimersFromNative();
+  }
 
-    _migrateLegacyTimer();
+  Future<void> _loadTimersFromNative() async {
+    try {
+      final nativeTimers = await NativeTimerBridge.getAllTimers();
+      final now = DateTime.now();
+      final map = <String, TimerData>{};
+
+      for (final nt in nativeTimers) {
+        if (!nt.isActive) continue;
+
+        final startTime = DateTime.fromMillisecondsSinceEpoch(nt.startTimestamp);
+        final endTime = DateTime.fromMillisecondsSinceEpoch(nt.finishTimestamp);
+
+        if (nt.isRunning && endTime.isBefore(now)) continue;
+
+        map[nt.timerId] = TimerData(
+          timerId: nt.timerId,
+          cylinderType: nt.cylinderType,
+          pressurePsi: 0,
+          totalOxygenContent: 0,
+          flowRate: nt.flowRate,
+          durationSeconds: nt.durationSeconds,
+          activeRowIndex: nt.activeRowIndex,
+          startedAt: startTime,
+          durationText: _formatDuration(nt.durationSeconds),
+          endTime: nt.isRunning ? endTime : null,
+          pausedRemainingSeconds: nt.isPaused ? nt.remainingSeconds : null,
+          status: nt.isRunning ? TimerStatus.running : TimerStatus.paused,
+        );
+      }
+
+      _timers = map;
+    } catch (e) {
+      debugPrint('TimerProvider: failed to load timers from native: $e');
+    }
 
     _startTickerIfNeeded();
     notifyListeners();
   }
 
-  Future<void> _migrateLegacyTimer() async {
-    if (_timers.isNotEmpty) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final state = prefs.getString(NotificationService.oxygenTimerStateKey);
-    if (state == null) return;
-
-    final endTimeMillis = prefs.getInt(NotificationService.oxygenTimerEndKey);
-    final remainingSeconds = prefs.getInt(NotificationService.oxygenTimerRemainingKey);
-    final durationSeconds = prefs.getInt(NotificationService.oxygenTimerDurationKey);
-    final activeRowIndex = prefs.getInt(NotificationService.oxygenTimerRowIndexKey);
-    final flowRate = prefs.getInt(NotificationService.oxygenTimerFlowRateKey);
-    final historyId = prefs.getInt(NotificationService.oxygenTimerHistoryIdKey);
-    final cylinderType = prefs.getString(NotificationService.oxygenTimerCylinderTypeKey);
-    final pressurePsi = prefs.getDouble(NotificationService.oxygenTimerPressurePsiKey);
-    final totalContent = prefs.getDouble(NotificationService.oxygenTimerTotalContentKey);
-
-    if (cylinderType == null || durationSeconds == null) return;
-
-    final now = DateTime.now();
-    final timerId = _generateId();
-
-    if (state == NotificationService.timerStateRunning && endTimeMillis != null) {
-      final endTime = DateTime.fromMillisecondsSinceEpoch(endTimeMillis);
-      final remaining = endTime.difference(now).inSeconds;
-      if (remaining <= 0) return;
-
-      _timers[timerId] = TimerData(
-        timerId: timerId,
-        cylinderType: cylinderType,
-        pressurePsi: pressurePsi ?? 0,
-        totalOxygenContent: totalContent ?? 0,
-        flowRate: flowRate ?? (activeRowIndex ?? 0) + 1,
-        durationSeconds: durationSeconds,
-        historyId: historyId,
-        activeRowIndex: activeRowIndex ?? 0,
-        startedAt: endTime.subtract(Duration(seconds: durationSeconds)),
-        durationText: '',
-        endTime: endTime,
-        status: TimerStatus.running,
-      );
-      await _persist();
-    } else if (state == NotificationService.timerStatePaused && remainingSeconds != null) {
-      _timers[timerId] = TimerData(
-        timerId: timerId,
-        cylinderType: cylinderType,
-        pressurePsi: pressurePsi ?? 0,
-        totalOxygenContent: totalContent ?? 0,
-        flowRate: flowRate ?? (activeRowIndex ?? 0) + 1,
-        durationSeconds: durationSeconds,
-        historyId: historyId,
-        activeRowIndex: activeRowIndex ?? 0,
-        startedAt: now,
-        durationText: '',
-        pausedRemainingSeconds: remainingSeconds,
-        status: TimerStatus.paused,
-      );
-      await _persist();
-    }
-  }
-
   void addTimer(TimerData timer) {
     _timers[timer.timerId] = timer;
-    _persist();
     _startTickerIfNeeded();
     notifyListeners();
   }
@@ -118,7 +74,6 @@ class TimerProvider extends ChangeNotifier {
   void updateTimer(TimerData timer) {
     if (_timers.containsKey(timer.timerId)) {
       _timers[timer.timerId] = timer;
-      _persist();
       _startTickerIfNeeded();
       notifyListeners();
     }
@@ -126,29 +81,17 @@ class TimerProvider extends ChangeNotifier {
 
   void removeTimer(String timerId) {
     _timers.remove(timerId);
-    _persist();
-    if (_timers.isEmpty) {
-      _stopTicker();
-    }
+    if (_timers.isEmpty) _stopTicker();
     notifyListeners();
   }
 
   void clearCompleted() {
     _timers.removeWhere((_, t) => t.status == TimerStatus.completed);
-    _persist();
     notifyListeners();
   }
 
-  String _generateId() => 'timer_${DateTime.now().millisecondsSinceEpoch}_${_timers.length}';
-
-  Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = _timers.values
-        .where((t) => t.isRunning || t.isPaused)
-        .map((t) => t.toJson())
-        .toList();
-    await prefs.setString(_activeTimersKey, jsonEncode(list));
-  }
+  String generateTimerId() =>
+      'timer_${DateTime.now().millisecondsSinceEpoch}_${_timers.length}';
 
   void _startTickerIfNeeded() {
     if (_ticker != null) return;
@@ -170,22 +113,6 @@ class TimerProvider extends ChangeNotifier {
     if (!hasRunning) {
       _stopTicker();
     }
-
-    final completedIds = <String>[];
-    for (final entry in _timers.entries) {
-      if (entry.value.isRunning && entry.value.remainingSeconds <= 0) {
-        completedIds.add(entry.key);
-      }
-    }
-
-    if (completedIds.isNotEmpty) {
-      for (final id in completedIds) {
-        _timers.remove(id);
-      }
-      _persist();
-      if (_timers.isEmpty) _stopTicker();
-    }
-
     notifyListeners();
   }
 
@@ -193,5 +120,18 @@ class TimerProvider extends ChangeNotifier {
   void dispose() {
     _stopTicker();
     super.dispose();
+  }
+
+  String _formatDuration(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    if (hours > 0) {
+      final parts = <String>['${hours}h', '${minutes}m'];
+      if (seconds > 0) parts.add('${seconds}s');
+      return parts.join(' ');
+    }
+    if (seconds > 0) return '${minutes}m ${seconds}s';
+    return '${minutes}m';
   }
 }

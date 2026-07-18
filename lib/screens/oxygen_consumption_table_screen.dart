@@ -7,6 +7,7 @@ import '../models/oxygen_timer_models.dart';
 import '../models/timer_data.dart';
 import '../providers/timer_provider.dart';
 import '../services/oxygen_timer_service.dart';
+import '../services/native_timer_bridge.dart';
 import '../widgets/app_header.dart';
 import '../services/notification_service.dart';
 import 'settings_screen.dart';
@@ -131,7 +132,69 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     }
   }
 
+  void _selectRow(int index) {
+    final provider = context.read<TimerProvider>();
+    final rowTimer = provider.getTimerForRow(index);
 
+    if (rowTimer == null) {
+      _countdownTimer?.cancel();
+      setState(() {
+        selectedIndex = index;
+        _remainingTime = 0;
+        _isTimerRunning = false;
+        _isTimerPaused = false;
+        _finalShown = false;
+        _timerEndTime = null;
+        _activeRowIndex = null;
+        _selectedFlowRate = null;
+        _timerDurationSeconds = null;
+        _timerId = null;
+      });
+      return;
+    }
+
+    selectedIndex = index;
+    _populateFromTimer(rowTimer);
+  }
+
+  void _populateFromTimer(TimerData timer) {
+    _countdownTimer?.cancel();
+
+    if (timer.isRunning && timer.endTime != null) {
+      final remaining = timer.endTime!.difference(DateTime.now()).inSeconds;
+      if (remaining <= 0) {
+        unawaited(_handleTimerCompletion());
+        return;
+      }
+      setState(() {
+        _timerId = timer.timerId;
+        _timerEndTime = timer.endTime;
+        _timerDurationSeconds = timer.durationSeconds;
+        _remainingTime = remaining;
+        _isTimerRunning = true;
+        _isTimerPaused = false;
+        _finalShown = false;
+        _activeRowIndex = timer.activeRowIndex;
+        _selectedFlowRate = timer.flowRate;
+        _historyId = timer.historyId;
+        selectedIndex = timer.activeRowIndex;
+      });
+      _startTicker();
+    } else if (timer.isPaused) {
+      setState(() {
+        _timerId = timer.timerId;
+        _timerDurationSeconds = timer.durationSeconds;
+        _remainingTime = timer.pausedRemainingSeconds ?? 0;
+        _isTimerRunning = false;
+        _isTimerPaused = true;
+        _finalShown = false;
+        _activeRowIndex = timer.activeRowIndex;
+        _selectedFlowRate = timer.flowRate;
+        _historyId = timer.historyId;
+        selectedIndex = timer.activeRowIndex;
+      });
+    }
+  }
 
   void _syncRemainingTimeFromEndTime() {
     if (_timerEndTime == null || _timerDurationSeconds == null) {
@@ -419,7 +482,15 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     unawaited(_persistRunningTimerState(endTime: endTime, durationSeconds: durationInSeconds, row: row, index: index));
     unawaited(_persistCylinderMetadata(timerId));
     _notifyProviderAdd(timerId: timerId, endTime: endTime, durationSeconds: durationInSeconds, row: row, index: index);
-    unawaited(NotificationService().scheduleTimerNotification(endTime));
+    unawaited(NativeTimerBridge.startTimer(
+      timerId: timerId,
+      finishTimestamp: endTime.millisecondsSinceEpoch,
+      cylinderType: widget.cylinderType,
+      flowRate: row.flowRate,
+      durationSeconds: durationInSeconds,
+      startTimestamp: now.millisecondsSinceEpoch,
+      activeRowIndex: index,
+    ));
     _pendingHistoryIdFuture = _createTimerHistoryRecord(
       row: row,
       durationSeconds: durationInSeconds,
@@ -444,7 +515,10 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     });
 
     _notifyProviderPause();
-    unawaited(NotificationService().cancelTimerNotification());
+    unawaited(NativeTimerBridge.pauseTimer(
+      timerId: _timerId!,
+      remainingSeconds: _remainingTime,
+    ));
     unawaited(_persistPausedTimerState(remainingSeconds: _remainingTime));
     unawaited(_sendTimerPauseUpdate());
   }
@@ -477,14 +551,19 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
     ));
     unawaited(_persistCylinderMetadata(_timerId ?? ''));
     _notifyProviderResume(resumedEndTime);
-    unawaited(NotificationService().scheduleTimerNotification(resumedEndTime));
+    unawaited(NativeTimerBridge.resumeTimer(
+      timerId: _timerId!,
+      newFinishTimestamp: resumedEndTime.millisecondsSinceEpoch,
+    ));
     unawaited(_sendTimerResumeUpdate());
   }
 
   Future<void> _stopTimer() async {
     _countdownTimer?.cancel();
     _notifyProviderRemove();
-    unawaited(NotificationService().cancelAllNotifications());
+    if (_timerId != null) {
+      unawaited(NativeTimerBridge.markStopped(_timerId!));
+    }
     setState(() {
       _remainingTime = 0;
       _isTimerRunning = false;
@@ -525,8 +604,13 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
       _isTimerPaused = false;
     });
 
+    if (_timerId != null) {
+      unawaited(NativeTimerBridge.markStopped(_timerId!));
+    }
+
     await _sendTimerCompleteUpdate();
     unawaited(_clearPersistedTimerState());
+    unawaited(NotificationService().showTimerCompletionNotification());
     _showFinalAlert();
   }
 
@@ -565,7 +649,9 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
   Future<void> _resetTimer({bool updateBackend = true}) async {
     _countdownTimer?.cancel();
     _notifyProviderRemove();
-    unawaited(NotificationService().cancelAllNotifications());
+    if (_timerId != null) {
+      unawaited(NativeTimerBridge.deleteTimer(_timerId!));
+    }
     setState(() {
       _remainingTime = 0;
       _isTimerRunning = false;
@@ -864,10 +950,12 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
               title: 'Oxygen Consumption Table',
               subtitle: 'Total content: ${widget.totalContent.toStringAsFixed(1)} L',
               breadcrumb: _isTimerRunning
-                  ? 'Timer running in background'
+                  ? 'Timer running on row ${(_activeRowIndex ?? 0) + 1}'
                   : _isTimerPaused
-                      ? 'Timer paused'
-                      : 'Tap a row to highlight',
+                      ? 'Timer paused on row ${(_activeRowIndex ?? 0) + 1}'
+                      : selectedIndex >= 0
+                          ? 'Row ${selectedIndex + 1} selected — tap Start'
+                          : 'Tap a row to highlight',
               showBack: true,
               onBack: () => Navigator.pop(context),
               trailing: Row(
@@ -1058,8 +1146,13 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
                       ...List.generate(rows.length, (index) {
                         final row = rows[index];
                         final isSelected = index == selectedIndex;
+                        final hasRowTimer = context
+                            .read<TimerProvider>()
+                            .getTimerForRow(index) != null;
                         final isActiveTimerRow =
-                            (_isTimerRunning || _isTimerPaused) && _activeRowIndex == index;
+                            ((_isTimerRunning || _isTimerPaused) &&
+                                    _activeRowIndex == index) ||
+                                hasRowTimer;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Material(
@@ -1071,11 +1164,7 @@ class _OxygenConsumptionTableScreenState extends State<OxygenConsumptionTableScr
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                setState(() {
-                                  selectedIndex = index;
-                                });
-                              },
+                              onTap: () => _selectRow(index),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                 decoration: BoxDecoration(

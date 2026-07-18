@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/timer_data.dart';
 import '../providers/timer_provider.dart';
 import '../services/home_stats_service.dart';
+import '../services/native_timer_bridge.dart';
+
 import '../services/user_session.dart';
 import '../widgets/app_header.dart';
 import '../widgets/macmind_design.dart';
@@ -229,13 +231,64 @@ class _HomeScreenState extends State<HomeScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const MacMindSectionLabel(text: 'Running Timers'),
+                        Row(
+                          children: [
+                            const MacMindSectionLabel(text: 'Running Timers'),
+                            const Spacer(),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Text(
+                                '${activeTimers.length} active',
+                                style: const TextStyle(
+                                  fontFamily: 'DM Sans',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: MacMindColors.gray400,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 12),
                         ...activeTimers.map((timer) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _RunningTimerCard(
                             timer: timer,
                             onTap: () => _openRunningTimer(context, timer),
+                            onDelete: () {
+                              timerProvider.removeTimer(timer.timerId);
+                              NativeTimerBridge.deleteTimer(timer.timerId);
+                            },
+                            onPause: () {
+                              final remaining = timer.remainingSeconds;
+                              final updated = timer.copyWith(
+                                status: TimerStatus.paused,
+                                endTime: null,
+                                pausedRemainingSeconds: remaining,
+                              );
+                              timerProvider.updateTimer(updated);
+                              NativeTimerBridge.pauseTimer(
+                                timerId: timer.timerId,
+                                remainingSeconds: remaining,
+                              );
+                            },
+                            onResume: () {
+                              final remaining = timer.remainingSeconds;
+                              final newEnd = DateTime.now().add(
+                                Duration(seconds: remaining),
+                              );
+                              final updated = timer.copyWith(
+                                status: TimerStatus.running,
+                                endTime: newEnd,
+                                pausedRemainingSeconds: null,
+                              );
+                              timerProvider.updateTimer(updated);
+                              NativeTimerBridge.resumeTimer(
+                                timerId: timer.timerId,
+                                newFinishTimestamp:
+                                    newEnd.millisecondsSinceEpoch,
+                              );
+                            },
                           ),
                         )),
                       ],
@@ -555,8 +608,17 @@ class ModuleCard {
 class _RunningTimerCard extends StatelessWidget {
   final TimerData timer;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
+  final VoidCallback? onPause;
+  final VoidCallback? onResume;
 
-  const _RunningTimerCard({required this.timer, required this.onTap});
+  const _RunningTimerCard({
+    required this.timer,
+    required this.onTap,
+    this.onDelete,
+    this.onPause,
+    this.onResume,
+  });
 
   String _formatCountdown(int totalSeconds) {
     final hours = totalSeconds ~/ 3600;
@@ -576,14 +638,56 @@ class _RunningTimerCard extends StatelessWidget {
     return '${h.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $amPm';
   }
 
+  String _dynamicStatusLabel() {
+    if (timer.isPaused) return 'Paused';
+    final pct = timer.durationSeconds > 0
+        ? ((timer.remainingSeconds / timer.durationSeconds) * 100).round()
+        : 0;
+    if (pct > 50) return 'Running';
+    if (pct > 25) return 'Halfway';
+    if (pct > 10) return 'Running Low';
+    if (pct > 0) return 'Almost Empty';
+    return 'Expired';
+  }
+
+  Color _statusColor(String label) {
+    switch (label) {
+      case 'Paused': return const Color(0xFFF59E0B);
+      case 'Halfway': return const Color(0xFF3B82F6);
+      case 'Running Low': return const Color(0xFFF97316);
+      case 'Almost Empty': return const Color(0xFFDC2626);
+      case 'Expired': return const Color(0xFF991B1B);
+      default: return const Color(0xFF16A34A);
+    }
+  }
+
+  Color _statusBg(String label) {
+    switch (label) {
+      case 'Paused': return const Color(0xFFFFF7ED);
+      case 'Halfway': return const Color(0xFFEFF6FF);
+      case 'Running Low': return const Color(0xFFFFF7ED);
+      case 'Almost Empty': return const Color(0xFFFEE2E2);
+      case 'Expired': return const Color(0xFFFEE2E2);
+      default: return const Color(0xFFEAF8EF);
+    }
+  }
+
+  Color _statusBorder(String label) {
+    switch (label) {
+      case 'Paused': return const Color(0xFFFED7AA);
+      case 'Halfway': return const Color(0xFFBFDBFE);
+      case 'Running Low': return const Color(0xFFFED7AA);
+      case 'Almost Empty': return const Color(0xFFFCA5A5);
+      case 'Expired': return const Color(0xFFFCA5A5);
+      default: return const Color(0xFFCDE8D7);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isRunning = timer.isRunning;
-    final statusColor = isRunning ? const Color(0xFF16A34A) : const Color(0xFFF59E0B);
-    final statusBg = isRunning ? const Color(0xFFEAF8EF) : const Color(0xFFFFF7ED);
-    final statusBorder = isRunning ? const Color(0xFFCDE8D7) : const Color(0xFFFED7AA);
-    final statusLabel = isRunning ? 'Running' : 'Paused';
-    final statusIcon = isRunning ? Icons.play_circle_filled : Icons.pause_circle_filled;
+    final isPaused = timer.isPaused;
+    final statusLabel = _dynamicStatusLabel();
 
     return Material(
       color: Colors.transparent,
@@ -604,7 +708,7 @@ class _RunningTimerCard extends StatelessWidget {
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
             child: Row(
               children: [
                 Expanded(
@@ -614,46 +718,45 @@ class _RunningTimerCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(statusIcon, size: 14, color: statusColor),
-                          const SizedBox(width: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: statusBg,
+                              color: _statusBg(statusLabel),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: statusBorder),
+                              border: Border.all(color: _statusBorder(statusLabel)),
                             ),
-                            child: Text(
-                              statusLabel,
-                              style: TextStyle(
-                                fontFamily: 'DM Sans',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: statusColor,
-                                letterSpacing: 0.2,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isPaused ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                                  size: 10,
+                                  color: _statusColor(statusLabel),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    fontFamily: 'DM Sans',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: _statusColor(statusLabel),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         timer.cylinderType,
                         style: const TextStyle(
                           fontFamily: 'DM Sans',
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: MacMindColors.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 1),
-                      Text(
-                        'Flow Rate: ${timer.flowRate} L/min',
-                        style: const TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: MacMindColors.gray400,
                         ),
                       ),
                     ],
@@ -663,27 +766,72 @@ class _RunningTimerCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Remaining',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: MacMindColors.gray400,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatCountdown(timer.remainingSeconds),
-                      style: const TextStyle(
-                        fontFamily: 'Roboto Mono',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: MacMindColors.textDark,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                        letterSpacing: 0.2,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatCountdown(timer.remainingSeconds),
+                          style: const TextStyle(
+                            fontFamily: 'Roboto Mono',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: MacMindColors.textDark,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.more_vert, size: 18, color: MacMindColors.gray400),
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'pause':
+                                onPause?.call();
+                                break;
+                              case 'resume':
+                                onResume?.call();
+                                break;
+                              case 'delete':
+                                onDelete?.call();
+                                break;
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            if (isRunning)
+                              const PopupMenuItem(
+                                value: 'pause',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.pause, size: 18, color: MacMindColors.gray600),
+                                    SizedBox(width: 8),
+                                    Text('Pause'),
+                                  ],
+                                ),
+                              ),
+                            if (isPaused)
+                              const PopupMenuItem(
+                                value: 'resume',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.play_arrow, size: 18, color: MacMindColors.gray600),
+                                    SizedBox(width: 8),
+                                    Text('Resume'),
+                                  ],
+                                ),
+                              ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
+                                  SizedBox(width: 8),
+                                  Text('Delete', style: TextStyle(color: Color(0xFFDC2626))),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -697,8 +845,6 @@ class _RunningTimerCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, size: 20, color: MacMindColors.gray400),
               ],
             ),
           ),
