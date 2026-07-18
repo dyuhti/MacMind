@@ -170,7 +170,30 @@ class _TimerHistoryScreenState extends State<TimerHistoryScreen> {
     );
   }
 
+  String? _statusTimestampLabel(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'paused': return 'Paused';
+      case 'resumed': return 'Resumed';
+      case 'stopped': return 'Stopped';
+      case 'completed': return 'Completed';
+      default: return null;
+    }
+  }
+
+  String? _statusTimestampValue(OxygenTimerHistoryItem item) {
+    switch ((item.timerStatus ?? '').toLowerCase()) {
+      case 'paused': return _formatDateTime(item.pausedAt);
+      case 'resumed': return _formatDateTime(item.resumedAt);
+      case 'stopped': return _formatDateTime(item.stoppedAt);
+      case 'completed': return _formatDateTime(item.completedAt);
+      default: return null;
+    }
+  }
+
   Widget _buildRow(OxygenTimerHistoryItem item) {
+    final statusLabel = _statusTimestampLabel(item.timerStatus);
+    final statusValue = _statusTimestampValue(item);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -216,7 +239,8 @@ class _TimerHistoryScreenState extends State<TimerHistoryScreen> {
               _buildMetric('Flow Rate', '${item.selectedFlowRate?.toStringAsFixed(1) ?? '-'} L/min'),
               _buildMetric('Duration', item.durationText ?? _formatDuration(item.durationSeconds)),
               _buildMetric('Started', _formatDateTime(item.startedAt)),
-              _buildMetric('Completed', _formatDateTime(item.completedAt)),
+              if (statusLabel != null)
+                _buildMetric(statusLabel, statusValue ?? '-'),
             ],
           ),
         ],
