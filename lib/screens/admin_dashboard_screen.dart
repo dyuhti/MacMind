@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
+import 'timer_history_screen.dart';
 import 'user_dashboard_screen.dart';
 import 'user_dashboard/case_detail_screen.dart';
 import 'user_dashboard/oxygen_detail_screen.dart';
@@ -1519,6 +1520,28 @@ class _EntryTile extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (!isCase && entry['user_id'] != null) ...[
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => TimerHistoryScreen(userId: entry['user_id'] as int),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            const Icon(Icons.timer_outlined, size: 13, color: Color(0xFF0D9488)),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'View Timer History',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0D9488), fontFamily: 'Inter'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

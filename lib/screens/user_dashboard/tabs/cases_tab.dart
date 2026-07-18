@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../timer_history_screen.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -242,6 +243,24 @@ class _CaseCard extends StatelessWidget {
                         maxLines: 1, overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
+                    const SizedBox(height: 4),
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => TimerHistoryScreen(userId: userId),
+                          ),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.timer_outlined, size: 12, color: Color(0xFF0D9488)),
+                          const SizedBox(width: 4),
+                          Text('View Timer History',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF0D9488))),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

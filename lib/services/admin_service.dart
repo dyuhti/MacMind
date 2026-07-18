@@ -286,6 +286,13 @@ class AdminService {
   ) =>
       _get('/api/admin/users/$userId/oxygen/$oxygenId');
 
+  // ── Timer History ────────────────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> getUserTimerHistory(
+    int userId,
+  ) =>
+      _get('/api/admin/users/$userId/timer-history');
+
   // ── Favorites ────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> getUserFavorites(int userId) =>

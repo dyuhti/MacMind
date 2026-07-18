@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/oxygen_timer_models.dart';
+import '../services/admin_service.dart';
 import '../services/oxygen_timer_service.dart';
 import '../widgets/app_header.dart';
 import 'settings_screen.dart';
 
 class TimerHistoryScreen extends StatefulWidget {
-  const TimerHistoryScreen({super.key});
+  final int? userId;
+
+  const TimerHistoryScreen({super.key, this.userId});
 
   @override
   State<TimerHistoryScreen> createState() => _TimerHistoryScreenState();
@@ -22,6 +25,16 @@ class _TimerHistoryScreenState extends State<TimerHistoryScreen> {
   }
 
   Future<List<OxygenTimerHistoryItem>> _loadHistory() async {
+    if (widget.userId != null) {
+      final result = await AdminService.getUserTimerHistory(widget.userId!);
+      if (result['success'] == true) {
+        final rawHistory = result['history'] as List<dynamic>? ?? [];
+        return rawHistory
+            .map((e) => OxygenTimerHistoryItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    }
     return OxygenTimerApiService.fetchHistory();
   }
 

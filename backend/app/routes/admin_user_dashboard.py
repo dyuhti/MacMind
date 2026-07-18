@@ -379,6 +379,21 @@ def delete_user_oxygen(current_user, user_id, oxygen_id):
 
 
 # ---------------------------------------------------------------------------
+# Timer History
+# ---------------------------------------------------------------------------
+
+@admin_user_bp.route('/admin/users/<int:user_id>/timer-history', methods=['GET'])
+@admin_required
+def get_user_timer_history(current_user, user_id):
+    try:
+        from app.services.oxygen_timer_service import OxygenTimerService
+        response_body, status_code = OxygenTimerService.get_history(user_id)
+        return jsonify(response_body), status_code
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
 # Favorites
 # ---------------------------------------------------------------------------
 
