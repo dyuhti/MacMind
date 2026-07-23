@@ -1,5 +1,8 @@
 import sys
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -9,7 +12,7 @@ from app.models.user import User
 app = create_app('development')
 
 with app.app_context():
-    existing = User.query.filter_by(email='admin@example.com').first()
+    existing = User.query.filter_by(email='admin123@macmind.com').first()
     if existing:
         if existing.role != User.ROLE_ADMIN:
             existing.role = User.ROLE_ADMIN
@@ -20,8 +23,8 @@ with app.app_context():
     else:
         result = User.create(
             full_name='Admin',
-            email='admin@example.com',
-            password='1234',
+            email='admin123@macmind.com',
+            password='12345Dyu!',
             role=User.ROLE_ADMIN
         )
         if result.get('success'):

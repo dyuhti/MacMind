@@ -42,11 +42,6 @@ def _paginate_query(query, page: int, per_page: int):
     return items, total, pages
 
 
-def _admin_id(current_user):
-    """Extract admin user ID from the current_user dict."""
-    return int(current_user.get('user_id') or current_user.get('id', 0))
-
-
 def _log_action(current_user, action: str, detail: str = ''):
     """Log an admin action without sensitive data."""
     admin_email = current_user.get('email', 'unknown')
