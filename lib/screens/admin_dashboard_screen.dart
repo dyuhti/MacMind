@@ -1089,9 +1089,19 @@ class _EntriesBarChart extends StatelessWidget {
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final d = limited[groupIndex] as Map<String, dynamic>;
-                      final label = rodIndex == 0 ? 'Cases' : 'Oxygen';
+                      final rawDate = d['date']?.toString() ?? '';
+                      final parts = rawDate.split('-');
+                      final months = [
+                        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                      ];
+                      final formatted = parts.length == 3
+                          ? '${int.tryParse(parts[2]) ?? parts[2]} ${months[int.tryParse(parts[1]) ?? 0]} ${parts[0]}'
+                          : rawDate;
+                      final cases = d['cases']?.toString() ?? '0';
+                      final oxygen = d['oxygen']?.toString() ?? '0';
                       return BarTooltipItem(
-                        '${d['date']}\n$label: ${rod.toY.toInt()}',
+                        '$formatted\nCases: $cases  O\u2082: $oxygen',
                         const TextStyle(color: Colors.white, fontSize: 11),
                       );
                     },
@@ -1195,7 +1205,7 @@ class _UserTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = user['is_active'] as bool? ?? true;
+    final isDeactivated = user['is_active'] == false;
     final isAdmin = (user['role']?.toString() ?? 'user') == 'admin';
 
     return Padding(
@@ -1265,24 +1275,6 @@ class _UserTile extends StatelessWidget {
                     Row(
                       children: [
                         _RoleBadge(role: user['role']?.toString() ?? 'user'),
-                        if (!isActive) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF2F2),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: const Text(
-                              'INACTIVE',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFEF4444),
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ],
@@ -1306,12 +1298,12 @@ class _UserTile extends StatelessWidget {
                       child: Row(
                         children: [
                           Icon(
-                            isActive ? Icons.block_outlined : Icons.check_circle_outline,
-                            color: isActive ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
+                            isDeactivated ? Icons.check_circle_outline : Icons.block_outlined,
+                            color: isDeactivated ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                             size: 18,
                           ),
                           const SizedBox(width: 8),
-                          Text(isActive ? 'Deactivate' : 'Reactivate'),
+                          Text(isDeactivated ? 'Reactivate' : 'Deactivate'),
                         ],
                       ),
                     ),

@@ -24,7 +24,7 @@ with app.app_context():
         result = User.create(
             full_name='Admin',
             email='admin123@macmind.com',
-            password='12345Dyu!',
+x            password='12345Dyu!',
             role=User.ROLE_ADMIN
         )
         if result.get('success'):

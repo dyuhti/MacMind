@@ -16,6 +16,7 @@ from sqlalchemy import func
 from app import db
 from app.models.case import Case
 from app.models.feedback import Feedback
+from app.models.login_history import LoginHistory
 from app.models.oxygen_calculation import OxygenCalculation
 from app.models.user import User
 from app.models.audit_log import AuditLog
@@ -72,9 +73,15 @@ def get_admin_dashboard(current_user):
         users_count = User.query.count()
         admins_count = User.query.filter_by(role=User.ROLE_ADMIN).count()
         regular_users_count = User.query.filter_by(role=User.ROLE_USER).count()
-        active_users_count = User.query.filter(
-            User.is_active.isnot(False)
-        ).count()
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        active_users_count = (
+            db.session.query(func.count(func.distinct(LoginHistory.user_id)))
+            .filter(
+                LoginHistory.status == 'success',
+                LoginHistory.login_time >= thirty_days_ago,
+            )
+            .scalar()
+        ) or 0
         cases_count = Case.query.count()
         oxygen_calculations_count = OxygenCalculation.query.count()
         feedback_count = Feedback.query.count()
@@ -119,7 +126,14 @@ def get_analytics_summary(current_user):
         since = datetime.utcnow() - timedelta(days=days)
 
         total_users = User.query.count()
-        active_users = User.query.filter(User.is_active.isnot(False)).count()
+        active_users = (
+            db.session.query(func.count(func.distinct(LoginHistory.user_id)))
+            .filter(
+                LoginHistory.status == 'success',
+                LoginHistory.login_time >= since,
+            )
+            .scalar()
+        ) or 0
         total_cases = Case.query.count()
         total_oxygen = OxygenCalculation.query.count()
 
@@ -212,6 +226,20 @@ def get_admin_users(current_user):
             )
 
         users, total, pages = _paginate_query(query, page, per_page)
+        one_day_ago = datetime.utcnow() - timedelta(days=1)
+
+        def _user_status(u):
+            if u.is_active is False:
+                return 'inactive'
+            last_login = (
+                LoginHistory.query
+                .filter_by(user_id=u.id, status='success')
+                .order_by(LoginHistory.login_time.desc())
+                .first()
+            )
+            if last_login and last_login.login_time >= one_day_ago:
+                return 'active'
+            return 'inactive'
 
         return jsonify({
             'success': True,
@@ -222,6 +250,7 @@ def get_admin_users(current_user):
                     'email': u.email,
                     'role': u.role,
                     'is_active': u.is_active if u.is_active is not None else True,
+                    'status': _user_status(u),
                     'created_at': u.created_at.isoformat() if u.created_at else None,
                 }
                 for u in users

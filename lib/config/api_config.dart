@@ -7,18 +7,18 @@ class ApiConfig {
   //static const String productionBaseUrl = "https://med-calci-backend.onrender.com";
   // Local backend (optional, opt-in)
   // Enable with: `--dart-define=USE_LOCAL_API=true`
-  // Override URL with: `--dart-define=LOCAL_API_URL=http://192.168.0.191:5000`
+  // Override URL with: `--dart-define=LOCAL_API_URL=http://180.235.121.253:8190`
   // static const bool useLocalApi = bool.fromEnvironment(
   //   'USE_LOCAL_API',
   //   defaultValue: true,
   // );
   // static const String localApiUrl = String.fromEnvironment(
   //   'LOCAL_API_URL',
-  //   defaultValue: 'http://192.168.1.103:5000',
+  //   defaultValue: 'http://180.235.121.253:8190',
   // );
 
   /// Base URL (hardcoded to production for APKs)
-  static const String baseUrl = "https://med-calci-backend-new.onrender.com";
+  static const String baseUrl = "http://180.235.121.253:8190";
 
   /// Groq Whisper API Configuration
   static const String groqApiUrl = "https://api.groq.com/openai/v1/audio/transcriptions";

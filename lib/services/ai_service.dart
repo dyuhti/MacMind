@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
 class AIService {
-  static const String _baseUrl = 'https://med-calci-backend-new.onrender.com';
+  static const String _baseUrl = 'http://180.235.121.253:8190';
   static const Duration _timeout = Duration(seconds: 15);
   static const String _fallbackMessage =
       'AI clinical insights are temporarily unavailable.';

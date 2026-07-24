@@ -76,12 +76,12 @@ def get_user_dashboard(current_user, user_id):
 
         most_used = _get_most_used_calculator(user_id)
 
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        one_day_ago = datetime.utcnow() - timedelta(days=1)
         has_recent_activity = False
         if last_activity:
             try:
                 last_dt = datetime.fromisoformat(last_activity)
-                has_recent_activity = last_dt >= seven_days_ago
+                has_recent_activity = last_dt >= one_day_ago
             except Exception:
                 pass
 
@@ -564,13 +564,13 @@ def get_user_security(current_user, user_id):
             current_device = last_successful_login.device or 'Unknown'
             current_platform = last_successful_login.platform or 'Unknown'
 
-        seven_days_ago = datetime.utcnow() - timedelta(days=7)
+        one_day_ago = datetime.utcnow() - timedelta(days=1)
         last_activity = _get_latest_activity(user_id)
         has_recent_activity = False
         if last_activity:
             try:
                 last_dt = datetime.fromisoformat(last_activity)
-                has_recent_activity = last_dt >= seven_days_ago
+                has_recent_activity = last_dt >= one_day_ago
             except Exception:
                 pass
 
