@@ -2,11 +2,11 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../config/api_config.dart';
+import 'auth_service.dart';
 
-/// Exception for Groq Whisper API errors
+/// Exception for voice transcription API errors
 class GroqWhisperException implements Exception {
   final String message;
   final int? statusCode;
@@ -22,7 +22,7 @@ class GroqWhisperException implements Exception {
   String toString() => 'GroqWhisperException: $message (statusCode: $statusCode, errorCode: $errorCode)';
 }
 
-/// Response model for Groq Whisper transcription
+/// Response model for voice transcription
 class TranscriptionResponse {
   final String text;
   final String language;
@@ -36,24 +36,22 @@ class TranscriptionResponse {
 
   factory TranscriptionResponse.fromJson(Map<String, dynamic> json) {
     return TranscriptionResponse(
-      text: json['text'] ?? '',
-      language: json['language'] ?? 'unknown',
+      text: (json['transcription'] ?? json['text'] ?? '').toString(),
+      language: json['language']?.toString() ?? 'unknown',
       duration: (json['duration'] ?? 0).toDouble(),
     );
   }
 }
 
-/// Service for transcribing audio using Groq Whisper API
-/// 
-/// Handles:
-/// - Audio file uploads
-/// - Multipart form data encoding
-/// - API authentication
-/// - Error handling and retries
-/// - Response parsing
+/// Service for transcribing audio through the Med_Calci Flask backend.
+///
+/// The Flutter app never holds the Groq API key and never calls Groq directly.
+/// The recorded audio is POSTed to the backend, which reads GROQ_API_KEY from
+/// its own environment, forwards the audio to the Groq Whisper API, and returns
+/// the transcription (or a clean error).
 class GroqWhisperService {
   static const String _debugTag = '[GroqWhisperService]';
-  
+
   late final Dio _dio;
   final int _timeoutSeconds = 60;
 
@@ -68,7 +66,6 @@ class GroqWhisperService {
         connectTimeout: Duration(seconds: _timeoutSeconds),
         receiveTimeout: Duration(seconds: _timeoutSeconds),
         sendTimeout: Duration(seconds: _timeoutSeconds),
-        contentType: 'multipart/form-data',
       ),
     );
 
@@ -78,9 +75,9 @@ class GroqWhisperService {
         LogInterceptor(
           request: true,
           requestHeader: true,
-          requestBody: true,
+          requestBody: false,
           responseHeader: true,
-          responseBody: false, // Don't log full response body
+          responseBody: false, // Don't log response bodies
           error: true,
           logPrint: (object) {
             debugPrint('$_debugTag ${object.toString()}');
@@ -90,22 +87,22 @@ class GroqWhisperService {
     }
   }
 
-  /// Transcribe audio file using Groq Whisper API
-  /// 
+  /// Transcribe audio file through the Med_Calci backend.
+  ///
   /// Parameters:
-  /// - [audioFilePath]: Path to the audio file (.wav, .m4a, etc.)
-  /// 
+  /// - [audioFilePath]: Path to the recorded audio file (.wav, .m4a, etc.)
+  ///
   /// Returns: [TranscriptionResponse] with transcribed text
-  /// 
+  ///
   /// Throws: [GroqWhisperException] on error
   Future<TranscriptionResponse> transcribeAudio(String audioFilePath) async {
     try {
-      // Validate API key
-      final apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
-      if (apiKey.isEmpty) {
+      // The backend handles Groq authentication; the app only needs its own token.
+      final token = await AuthService.getToken();
+      if (token == null || token.isEmpty) {
         throw GroqWhisperException(
-          message: 'Groq API key not configured. Set GROQ_API_KEY environment variable.',
-          errorCode: 'MISSING_API_KEY',
+          message: 'Authentication required for voice transcription.',
+          errorCode: 'MISSING_TOKEN',
         );
       }
 
@@ -118,6 +115,8 @@ class GroqWhisperService {
         );
       }
 
+      final endpoint = '${ApiConfig.baseUrl}/api/ai/transcribe';
+
       debugPrint('$_debugTag Uploading audio file: $audioFilePath (${file.lengthSync()} bytes)');
 
       // Prepare multipart request
@@ -126,19 +125,17 @@ class GroqWhisperService {
           audioFilePath,
           filename: _getFileName(audioFilePath),
         ),
-        'model': ApiConfig.groqModel,
-        'language': 'en', // You can make this configurable
       });
 
-      debugPrint('$_debugTag Sending transcription request to ${ApiConfig.groqApiUrl}');
+      debugPrint('$_debugTag Sending transcription request to backend: $endpoint');
 
       // Send request
       final response = await _dio.post(
-        ApiConfig.groqApiUrl,
+        endpoint,
         data: formData,
         options: Options(
           headers: {
-            'Authorization': 'Bearer $apiKey',
+            'Authorization': 'Bearer $token',
           },
         ),
         onSendProgress: (int sent, int total) {
@@ -147,21 +144,28 @@ class GroqWhisperService {
         },
       );
 
-      debugPrint('$_debugTag Response status: ${response.statusCode}');
-      debugPrint('$_debugTag Response data: ${response.data}');
+      debugPrint('$_debugTag Backend response status: ${response.statusCode}');
 
-      // Handle successful response
-      if (response.statusCode == 200) {
-        final transcription = TranscriptionResponse.fromJson(response.data);
+      // Handle response
+      final data = response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : <String, dynamic>{};
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final transcription = TranscriptionResponse.fromJson(data);
         debugPrint('$_debugTag Transcription successful: "${transcription.text}"');
         return transcription;
-      } else {
-        throw GroqWhisperException(
-          message: 'Unexpected response status: ${response.statusCode}',
-          statusCode: response.statusCode,
-          errorCode: 'UNEXPECTED_STATUS',
-        );
       }
+
+      final errorMessage =
+          data['error']?.toString() ?? 'Voice transcription failed. Please try again.';
+      throw GroqWhisperException(
+        message: errorMessage,
+        statusCode: response.statusCode,
+        errorCode: 'BAD_RESPONSE',
+      );
+    } on GroqWhisperException {
+      rethrow;
     } on DioException catch (e) {
       debugPrint('$_debugTag Dio error: ${e.message}');
       debugPrint('$_debugTag Error type: ${e.type}');
@@ -212,7 +216,7 @@ class GroqWhisperService {
     }
   }
 
-  /// Parse error response from API
+  /// Parse error response from backend
   String _parseErrorResponse(Response? response) {
     if (response == null) return 'Unknown error';
 
@@ -221,9 +225,10 @@ class GroqWhisperService {
       if (data is Map) {
         final error = data['error'];
         if (error is Map) {
-          return error['message'] ?? error['type'] ?? 'API error';
+          return error['message'] ?? error['type'] ?? 'Voice transcription failed';
         }
-        return data['message'] ?? 'API error';
+        if (error != null) return error.toString();
+        return data['message']?.toString() ?? 'Voice transcription failed';
       }
       return 'HTTP ${response.statusCode}';
     } catch (_) {

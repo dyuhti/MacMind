@@ -8,7 +8,6 @@ import 'timer_history_screen.dart';
 import 'user_dashboard_screen.dart';
 import 'user_dashboard/case_detail_screen.dart';
 import 'user_dashboard/oxygen_detail_screen.dart';
-
 // ── Section enum ─────────────────────────────────────────────────────────────
 
 enum AdminSection { dashboard, users, entries, feedback }

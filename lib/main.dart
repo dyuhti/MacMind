@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -42,7 +41,6 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
   tz.initializeTimeZones();
   try {
     final dynamic localTimeZoneResult = await FlutterTimezone.getLocalTimezone();
@@ -57,7 +55,6 @@ Future<void> main() async {
   }
   await NotificationService().initialize();
   await NotificationService().requestPermissions();
-  debugPrint('🔐 GROQ_API_KEY loaded: ${(dotenv.env['GROQ_API_KEY'] ?? '').isNotEmpty}');
 
   // Log startup configuration
   debugPrint('🚀 MacMind App Starting...');

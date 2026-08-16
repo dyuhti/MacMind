@@ -116,7 +116,6 @@ def create_app(config_name='development'):
             _ensure_feedback_columns()
         except Exception as e:
             print(f"[WARN] Feedback migration warning: {str(e)}")
-
     # Register blueprints (route modules)
     from app.routes.health import health_bp
     from app.routes.auth import auth_bp
@@ -128,7 +127,7 @@ def create_app(config_name='development'):
     from app.routes.oxygen import oxygen_bp
     from app.routes.admin import admin_bp
     from app.routes.admin_user_dashboard import admin_user_bp
-    
+
     app.register_blueprint(health_bp, url_prefix='/api')
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(calculator_bp, url_prefix='/api/calculator')

@@ -3,5 +3,5 @@
     "email": "testuser@example.com",
     "password": "P@ssw0rd123"
   },
-  "backend_url": "http://180.235.121.253:8190"
+  "backend_url": "http://180.235.121.253:8150"
 }

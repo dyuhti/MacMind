@@ -321,8 +321,8 @@ class _VoiceInputMicButtonState extends State<VoiceInputMicButton> {
         return 'Connection timeout. Please check your internet connection.';
       case 'NETWORK_ERROR':
         return 'Network error. Please check your internet connection.';
-      case 'GROQ_ERROR_MISSING_API_KEY':
-        return 'Voice transcription is not configured. Please contact support.';
+      case 'GROQ_ERROR_MISSING_TOKEN':
+        return 'Please log in to use voice input.';
       case 'GROQ_ERROR_BAD_RESPONSE':
         return 'Transcription service error. Please try again.';
       default:

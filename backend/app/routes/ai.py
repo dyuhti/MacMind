@@ -1,14 +1,51 @@
 """
-AI routes blueprint - clinical insights via Groq
+AI routes blueprint - clinical insights and voice transcription via Groq
 """
 import logging
 
 from flask import Blueprint, request, jsonify
 from app.utils.decorators import require_json, require_token
-from app.utils.groq_service import generate_clinical_insight
+from app.utils.groq_service import generate_clinical_insight, transcribe_audio
+import os
 
 ai_bp = Blueprint('ai', __name__)
 logger = logging.getLogger(__name__)
+
+
+@ai_bp.route('/transcribe', methods=['POST'])
+@require_token
+def voice_transcribe(current_user):
+    """
+    POST /api/ai/transcribe
+
+    Multipart form-data with an 'file' field containing the audio file.
+
+    Returns:
+        Success: { "success": true, "transcription": "..." }
+        Failure: { "success": false, "error": "Voice transcription failed" }
+
+    The Groq API key is only read server-side from the environment and is
+    never returned to the client or logged.
+    """
+    try:
+        audio = request.files.get('file')
+        if audio is None or not audio.filename:
+            logger.warning("Voice transcription request missing audio file")
+            return jsonify({"success": False, "error": "Voice transcription failed"}), 400
+
+        result = transcribe_audio(audio.read(), audio.filename)
+        if result.get('success'):
+            transcription = result.get('transcription') or ''
+            logger.info("Voice transcription success for user_id=%s", current_user.get('user_id'))
+            return jsonify({"success": True, "transcription": transcription}), 200
+
+        logger.error("Voice transcription upstream failure for user_id=%s",
+                     current_user.get('user_id'))
+        return jsonify({"success": False, "error": "Voice transcription failed"}), 502
+
+    except Exception as e:
+        logger.exception("Voice transcription route error: %s", str(e))
+        return jsonify({"success": False, "error": "Voice transcription failed"}), 500
 
 
 @ai_bp.route('/clinical-insight', methods=['POST'])
@@ -95,3 +132,25 @@ def clinical_insight(current_user):
     except Exception as e:
         logger.exception("AI route unexpected error: %s", str(e))
         return jsonify({"success": False, "message": f"Error: {str(e)}", "insights": []}), 500
+
+
+@ai_bp.route('/groq-token', methods=['GET'])
+@require_token
+def get_groq_token(current_user):
+    """
+    GET /api/ai/groq-token
+
+    Returns a server-side Groq API key for use by authenticated clients.
+    The key is read from the `GROQ_API_KEY` environment variable. Only
+    authenticated requests (via `require_token`) may retrieve it.
+    """
+    try:
+        api_key = os.getenv('GROQ_API_KEY')
+        if not api_key:
+            logger.error("Groq token requested but GROQ_API_KEY is not set")
+            return jsonify({"success": False, "token": None, "message": "Groq API key not configured"}), 500
+
+        return jsonify({"success": True, "token": api_key, "expires_in": 3600}), 200
+    except Exception as e:
+        logger.exception("Error returning Groq token: %s", str(e))
+        return jsonify({"success": False, "token": None, "message": "Internal error"}), 500

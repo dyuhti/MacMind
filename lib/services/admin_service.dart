@@ -420,4 +420,5 @@ class AdminService {
 
   static Future<Map<String, dynamic>> exportUserData(int userId) =>
       _get('/api/admin/users/$userId/export');
+
 }

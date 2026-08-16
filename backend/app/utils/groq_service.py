@@ -3,15 +3,16 @@ Groq API service wrapper
 Provides generate_clinical_insight(prompt) to request concise clinical insights
 """
 import logging
-import os
 import json
+import os
 import re
 import traceback
 
 import requests
 
-GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+GROQ_TRANSCRIBE_URL = 'https://api.groq.com/openai/v1/audio/transcriptions'
+GROQ_TRANSCRIBE_MODEL = 'whisper-large-v3'
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,10 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
     Returns: {"success": True, "insights": [...]}
     On failure: {"success": False, "insights": [], "message": "Groq API error <status>"}
     """
-    if not GROQ_API_KEY:
-        logger.error("Groq API key missing (GROQ_API_KEY not set)")
-        print("[GROQ DEBUG] Missing API key: GROQ_API_KEY is not set")
+    api_key = os.getenv('GROQ_API_KEY')
+    if not api_key:
+        logger.error("Groq API key missing in database")
+        print("[GROQ DEBUG] Missing API key: GROQ_API_KEY not found in database")
         return _failure_response(500)
 
     # Ensure prompt is always plain text string.
@@ -52,8 +54,6 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
         prompt = str(prompt)
 
     url = GROQ_API_URL
-
-    api_key = GROQ_API_KEY
 
     system_message = (
         "You are a clinical anesthesia assistant generating concise inference-based insights for medical calculator results. "
@@ -146,3 +146,105 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
         logger.exception("Groq unexpected exception: %s", str(e))
         traceback.print_exc()
         return _failure_response(500)
+
+
+def transcribe_audio(audio_bytes: bytes, filename: str):
+    """
+    Transcribe an audio file using the Groq Whisper transcription API.
+
+    The Groq API key is read from the GROQ_API_KEY environment variable.
+    The key is never included in returned data or logged.
+
+    Returns: {"success": True, "transcription": "<text>", "message": None}
+    On failure: {"success": False, "transcription": "", "message": "Voice transcription failed"}
+    """
+    api_key = os.getenv('GROQ_API_KEY')
+    if not api_key:
+        logger.error("Groq API key missing (GROQ_API_KEY not set)")
+        return {
+            "success": False,
+            "transcription": "",
+            "message": "Voice transcription failed",
+        }
+
+    if not audio_bytes:
+        logger.error("Groq transcription received empty audio")
+        return {
+            "success": False,
+            "transcription": "",
+            "message": "Voice transcription failed",
+        }
+
+    try:
+        encodings = ['utf-8', 'latin-1', 'ascii']
+        safe_filename = filename or 'audio.wav'
+        for enc in encodings:
+            try:
+                safe_filename.encode(enc)
+                break
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+        else:
+            safe_filename = 'audio.wav'
+
+        headers = {'Authorization': f'Bearer {api_key}'}
+        files = {'file': (safe_filename, audio_bytes, 'audio/wav')}
+        data = {'model': GROQ_TRANSCRIBE_MODEL, 'language': 'en'}
+
+        logger.info("Sending audio '%s' to Groq transcription", safe_filename)
+
+        response = requests.post(
+            GROQ_TRANSCRIBE_URL,
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=60,
+        )
+
+        if response.status_code != 200:
+            logger.error("Groq transcription error status=%s", response.status_code)
+            return {
+                "success": False,
+                "transcription": "",
+                "message": "Voice transcription failed",
+            }
+
+        try:
+            body = response.json()
+        except ValueError:
+            logger.error("Groq transcription malformed JSON status=%s", response.status_code)
+            return {
+                "success": False,
+                "transcription": "",
+                "message": "Voice transcription failed",
+            }
+
+        text = body.get("text") if isinstance(body, dict) else None
+        if not isinstance(text, str) or not text.strip():
+            logger.error("Groq transcription missing text content")
+            return {
+                "success": False,
+                "transcription": "",
+                "message": "Voice transcription failed",
+            }
+
+        return {
+            "success": True,
+            "transcription": text.strip(),
+            "message": None,
+        }
+
+    except requests.RequestException:
+        logger.exception("Groq transcription request exception")
+        return {
+            "success": False,
+            "transcription": "",
+            "message": "Voice transcription failed",
+        }
+    except Exception:
+        logger.exception("Groq transcription unexpected exception")
+        return {
+            "success": False,
+            "transcription": "",
+            "message": "Voice transcription failed",
+        }

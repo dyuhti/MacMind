@@ -37,18 +37,18 @@ if __name__ == '__main__':
     debug = flask_env == 'development'
     
     print(f"""
-    ╔════════════════════════════════════════════╗
-    ║     MacMind Medical Calculator Backend     ║
-    ╚════════════════════════════════════════════╝
-    
-    🚀 Server starting on http://{host}:{port}
-    🔧 Environment: {flask_env.upper()}
-    🐛 Debug Mode: {'ON' if debug else 'OFF'}
-    📦 Database: SQLAlchemy (DATABASE_URL)
-    🔐 CORS: Enabled
-    🌐 Accepting connections from: ALL INTERFACES
-    
-    ✅ Server is ready!
+    ==============================================
+     MacMind Medical Calculator Backend
+    ==============================================
+
+    Server starting on http://{host}:{port}
+    Environment: {flask_env.upper()}
+    Debug Mode: {'ON' if debug else 'OFF'}
+    Database: SQLAlchemy (DATABASE_URL)
+    CORS: Enabled
+    Accepting connections from: ALL INTERFACES
+
+    Server is ready!
     Press CTRL+C to stop.
     """)
     

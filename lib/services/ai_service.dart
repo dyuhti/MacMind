@@ -4,9 +4,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'auth_service.dart';
+import '../config/api_config.dart';
 
 class AIService {
-  static const String _baseUrl = 'http://180.235.121.253:8190';
+  static String get _baseUrl => ApiConfig.baseUrl;
   static const Duration _timeout = Duration(seconds: 15);
   static const String _fallbackMessage =
       'AI clinical insights are temporarily unavailable.';
