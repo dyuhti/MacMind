@@ -59,6 +59,25 @@ class _EconomyCalculatorScreenState extends State<EconomyCalculatorScreen> {
     super.initState();
     _durationController      = TextEditingController(text: '');
     _concentrationController = TextEditingController(text: '');
+    // Ensure programmatic controller changes (from voice input) trigger
+    // the same update pipeline as manual typing.
+    _durationController.addListener(() {
+      final txt = _durationController.text;
+      // Only update if parsed value differs from current state to avoid
+      // redundant work during repeated notifications.
+      final parsed = double.tryParse(txt) ?? 0;
+      if (parsed != _surgeryDuration) {
+        _updateDuration(txt);
+      }
+    });
+    _concentrationController.addListener(() {
+      final txt = _concentrationController.text;
+      final parsed = double.tryParse(txt);
+      final cur = _concentration;
+      if ((parsed ?? 0) != cur) {
+        _updateConcentration(txt);
+      }
+    });
     _concentrationFocusNode = FocusNode()
       ..addListener(() {
         if (!_concentrationFocusNode.hasFocus) _finalizeConcentration();

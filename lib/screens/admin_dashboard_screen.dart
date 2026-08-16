@@ -641,18 +641,27 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       children: [
         _sectionHeader('Overview', 'Last 30 days'),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: stats
-              .map((s) => _StatCard(
-                    label: s.$1,
-                    value: s.$2.toString(),
-                    icon: s.$3,
-                    color: s.$4,
-                    background: s.$5,
-                  ))
-              .toList(),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final spacing = 12.0;
+            final itemWidth = (constraints.maxWidth - spacing) / 2;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: stats
+                  .map((s) => SizedBox(
+                        width: itemWidth,
+                        child: _StatCard(
+                          label: s.$1,
+                          value: s.$2.toString(),
+                          icon: s.$3,
+                          color: s.$4,
+                          background: s.$5,
+                        ),
+                      ))
+                  .toList(),
+            );
+          },
         ),
         const SizedBox(height: 24),
         if (epd.isNotEmpty) ...[
@@ -940,7 +949,6 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
