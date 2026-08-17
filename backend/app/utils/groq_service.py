@@ -13,6 +13,7 @@ import requests
 GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 GROQ_TRANSCRIBE_URL = 'https://api.groq.com/openai/v1/audio/transcriptions'
 GROQ_TRANSCRIBE_MODEL = 'whisper-large-v3'
+GROQ_CHAT_MODEL = 'openai/gpt-oss-120b'  # Updated from deprecated llama-3.1-8b-instant to available model
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
     }
 
     payload = {
-        'model': 'llama-3.1-8b-instant',
+        'model': GROQ_CHAT_MODEL,
         'messages': [
             {'role': 'system', 'content': system_message},
             {'role': 'user', 'content': prompt},
@@ -79,9 +80,9 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
     }
 
     try:
-        logger.info("Groq request payload=%s", json.dumps(payload, ensure_ascii=True))
+        logger.info("Groq chat request model=%s endpoint=%s", GROQ_CHAT_MODEL, url)
         print(f"[GROQ DEBUG] Endpoint URL: {url}")
-        print(f"[GROQ DEBUG] Model: {payload.get('model')}")
+        print(f"[GROQ DEBUG] Model: {GROQ_CHAT_MODEL}")
         print(f"[GROQ DEBUG] Payload JSON: {json.dumps(payload, ensure_ascii=True)}")
 
         response = requests.post(
@@ -91,10 +92,17 @@ def generate_clinical_insight(prompt: str, max_insights: int = 5):
             timeout=15
         )
 
-        logger.info("Groq response status_code=%s", response.status_code)
-        logger.info("Groq response text=%s", response.text)
+        logger.info("Groq chat response status_code=%s", response.status_code)
         print(f"[GROQ DEBUG] Response status_code: {response.status_code}")
-        print(f"[GROQ DEBUG] Response text: {response.text}")
+        
+        # Log response body for debugging (safe - no secrets exposed)
+        if response.status_code != 200:
+            logger.error("Groq chat error status=%s response_body=%s model=%s endpoint=%s", 
+                         response.status_code, response.text, GROQ_CHAT_MODEL, url)
+            print(f"[GROQ DEBUG] Error response body: {response.text}")
+        else:
+            logger.info("Groq chat response text=%s", response.text)
+            print(f"[GROQ DEBUG] Success response text: {response.text}")
 
         if response.status_code != 200:
             logger.error("Groq non-200 response status=%s text=%s", response.status_code, response.text)
