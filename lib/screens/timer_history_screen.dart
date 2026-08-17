@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/oxygen_timer_models.dart';
 import '../services/admin_service.dart';
 import '../services/oxygen_timer_service.dart';
+import '../utils/datetime_utils.dart';
 import '../widgets/app_header.dart';
 import 'settings_screen.dart';
 
@@ -50,11 +51,7 @@ class _TimerHistoryScreenState extends State<TimerHistoryScreen> {
       return '-';
     }
 
-    final local = dateTime.toLocal();
-    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
-    final minute = local.minute.toString().padLeft(2, '0');
-    final amPm = local.hour >= 12 ? 'PM' : 'AM';
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')} $hour:$minute $amPm';
+    return DateTimeUtils.formatDateTime(dateTime);
   }
 
   String _formatDuration(int? seconds) {

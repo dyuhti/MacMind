@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../services/admin_service.dart';
 import '../services/auth_service.dart';
+import '../utils/datetime_utils.dart';
 import 'timer_history_screen.dart';
 import 'user_dashboard_screen.dart';
 import 'user_dashboard/case_detail_screen.dart';
@@ -1378,14 +1379,10 @@ class _EntryTile extends StatelessWidget {
   String _formatDate(String? iso) {
     if (iso == null || iso.isEmpty) return '\u2014';
     try {
-      final parts = iso.split('T');
-      if (parts.length == 2) {
-        final dp = parts[0].split('-');
-        final tp = parts[1].substring(0, 8);
-        if (dp.length == 3) return '${dp[2]}/${dp[1]}/${dp[0]} $tp';
-      }
-      return iso.substring(0, 16);
-    } catch (_) { return iso; }
+      return DateTimeUtils.formatISTFromUTC(iso);
+    } catch (_) {
+      return iso;
+    }
   }
 
   @override
@@ -1620,7 +1617,7 @@ class _FeedbackTile extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              '${item['user_name'] ?? ''} \u00b7 ${(item['created_at']?.toString() ?? '').split('T').first}',
+              '${item['user_name'] ?? ''} \u00b7 ${DateTimeUtils.formatISTDateOnly(item['created_at']?.toString())}',
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,

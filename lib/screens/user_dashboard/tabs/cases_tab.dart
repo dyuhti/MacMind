@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -191,7 +192,7 @@ class _CaseCard extends StatelessWidget {
     final name = c['patient_name']?.toString() ?? 'Unknown';
     final surgery = c['surgery_type']?.toString() ?? '';
     final agent = c['anesthetic_agent']?.toString() ?? '';
-    final date = (c['created_at']?.toString() ?? '').split('T').first;
+    final date = DateTimeUtils.formatISTDateOnly(c['created_at']?.toString());
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

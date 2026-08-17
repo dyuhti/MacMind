@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from app import db
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 
 class LoginHistory(db.Model):
@@ -24,13 +25,13 @@ class LoginHistory(db.Model):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'login_time': self.login_time.isoformat() if self.login_time else None,
-            'logout_time': self.logout_time.isoformat() if self.logout_time else None,
+            'login_time': datetime_to_ist_isoformat(self.login_time) if self.login_time else None,
+            'logout_time': datetime_to_ist_isoformat(self.logout_time) if self.logout_time else None,
             'session_duration': self.session_duration,
             'platform': self.platform,
             'device': self.device,
             'browser': self.browser,
             'ip_address': self.ip_address,
             'status': self.status,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_at': datetime_to_ist_isoformat(self.created_at) if self.created_at else None,
         }

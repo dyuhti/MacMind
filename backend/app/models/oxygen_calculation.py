@@ -5,6 +5,7 @@ Stores cylinder type, pressure, and computed oxygen content.
 from datetime import datetime
 
 from app import db
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 
 class OxygenCalculation(db.Model):
@@ -31,7 +32,7 @@ class OxygenCalculation(db.Model):
             'cylinder_type': self.cylinder_type,
             'pressure_psi': self.pressure_psi,
             'total_oxygen_content': self.total_oxygen_content,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_at': datetime_to_ist_isoformat(self.created_at) if self.created_at else None,
             'created_by': {
                 'id': self.user.id,
                 'name': self.user.full_name,

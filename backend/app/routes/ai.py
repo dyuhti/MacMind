@@ -124,14 +124,15 @@ def clinical_insight(current_user):
                 return jsonify({"success": False, "message": "No insights generated", "insights": []}), 200
             return jsonify({"success": True, "insights": insights}), 200
 
-        # Failure - forward service message (do not mask with generic fallback)
-        failure_message = result.get('message') or result.get('error') or 'AI unavailable'
-        logger.error("AI route upstream failure type=%s message=%s", calc_type, failure_message)
-        return jsonify({"success": False, "message": failure_message, "insights": []}), 200
+        # Failure - log detailed error, return generic message to user
+        detailed_message = result.get('message') or result.get('error') or 'AI unavailable'
+        logger.error("AI route upstream failure type=%s detailed_message=%s", calc_type, detailed_message)
+        # Return generic error to user (detailed error is in server logs)
+        return jsonify({"success": False, "message": "Error. Please try again.", "insights": []}), 200
 
     except Exception as e:
         logger.exception("AI route unexpected error: %s", str(e))
-        return jsonify({"success": False, "message": f"Error: {str(e)}", "insights": []}), 500
+        return jsonify({"success": False, "message": "Error. Please try again.", "insights": []}), 500
 
 
 @ai_bp.route('/groq-token', methods=['GET'])

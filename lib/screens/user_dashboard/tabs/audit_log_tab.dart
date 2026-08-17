@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -110,10 +111,9 @@ class _AuditCard extends StatelessWidget {
     final oldVal = log['old_value']?.toString();
     final newVal = log['new_value']?.toString();
     final ts = log['timestamp']?.toString() ?? '';
-    final date = ts.split('T').first;
-    final time = ts.contains('T')
-        ? ts.split('T').last.substring(0, 8)
-        : '';
+    final components = DateTimeUtils.parseDateTimeComponents(ts);
+    final date = components['date'] ?? '';
+    final time = components['time'] ?? '';
 
     Color chipColor;
     String displayAction;

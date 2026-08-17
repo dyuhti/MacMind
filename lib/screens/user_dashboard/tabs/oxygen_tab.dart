@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../../timer_history_screen.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
@@ -191,7 +192,7 @@ class _OxygenCard extends StatelessWidget {
     final type = o['cylinder_type']?.toString() ?? 'Unknown';
     final psi = o['pressure_psi']?.toString() ?? '\u2014';
     final content = o['total_oxygen_content']?.toString() ?? '\u2014';
-    final date = (o['created_at']?.toString() ?? '').split('T').first;
+    final date = DateTimeUtils.formatISTDateOnly(o['created_at']?.toString());
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

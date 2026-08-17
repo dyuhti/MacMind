@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
+import '../../utils/datetime_utils.dart';
 import 'widgets/confirm_dialog.dart';
 
 class OxygenDetailScreen extends StatefulWidget {
@@ -650,13 +651,7 @@ class _OxygenDetailScreenState extends State<OxygenDetailScreen> {
   String _formatDateTime(String? iso) {
     if (iso == null || iso.isEmpty) return '\u2014';
     try {
-      final parts = iso.split('T');
-      if (parts.length == 2) {
-        final dp = parts[0].split('-');
-        final tp = parts[1].substring(0, 8);
-        if (dp.length == 3) return '${dp[2]}/${dp[1]}/${dp[0]} $tp';
-      }
-      return iso.substring(0, 16);
+      return DateTimeUtils.formatISTFromUTC(iso);
     } catch (_) { return iso; }
   }
 }

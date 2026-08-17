@@ -4,6 +4,7 @@ Handles user creation, validation, and password operations
 """
 from app import db
 from app.utils.security import hash_password, verify_password
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 from datetime import datetime, timedelta
 import random
 import string
@@ -49,8 +50,8 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'is_active': self.is_active if self.is_active is not None else True,
-            'password_changed_at': self.password_changed_at.isoformat() if self.password_changed_at else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'password_changed_at': datetime_to_ist_isoformat(self.password_changed_at) if self.password_changed_at else None,
+            'created_at': datetime_to_ist_isoformat(self.created_at) if self.created_at else None
         }
         
         if include_password:

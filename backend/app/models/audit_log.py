@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from app import db
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 
 class AuditLog(db.Model):
@@ -27,5 +28,5 @@ class AuditLog(db.Model):
             'action': self.action,
             'old_value': self.old_value,
             'new_value': self.new_value,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'timestamp': datetime_to_ist_isoformat(self.timestamp) if self.timestamp else None,
         }

@@ -3,8 +3,7 @@ Feedback model for database interactions using SQLAlchemy
 Handles feedback submission and storage
 """
 from app import db
-from datetime import datetime
-
+from datetime import datetimefrom app.utils.timezone_utils import datetime_to_ist_isoformat
 
 class Feedback(db.Model):
     """Feedback model for managing feedback data with SQLAlchemy"""
@@ -43,7 +42,7 @@ class Feedback(db.Model):
             'feedback_message': self.feedback_message,
             'status': self.status,
             'admin_reply': self.admin_reply,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': datetime_to_ist_isoformat(self.created_at) if self.created_at else None
         }
     
     @staticmethod

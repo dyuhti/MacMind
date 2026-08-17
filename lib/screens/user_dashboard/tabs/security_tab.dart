@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -183,9 +184,7 @@ class _SecurityTabState extends State<SecurityTab> {
   String _formatDate(String? iso) {
     if (iso == null || iso.isEmpty) return 'Never';
     try {
-      final parts = iso.split('T');
-      if (parts.length != 2) return iso;
-      return '${parts[0]} ${parts[1].substring(0, 8)}';
+      return DateTimeUtils.formatISTFromUTC(iso);
     } catch (_) {
       return iso;
     }

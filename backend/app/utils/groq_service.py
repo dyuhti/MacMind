@@ -22,7 +22,7 @@ def _failure_response(status_code: int):
     return {
         "success": False,
         "insights": [],
-        "message": f"Groq API error {status_code}",
+        "message": "Error. Please try again.",  # Simplified user-facing message; detailed error is logged separately
     }
 
 

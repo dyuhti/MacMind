@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -150,7 +151,7 @@ class _FeedbackItem extends StatelessWidget {
     final message = item['feedback_message']?.toString() ?? '';
     final status = item['status']?.toString() ?? 'pending';
     final reply = item['admin_reply']?.toString();
-    final date = (item['created_at']?.toString() ?? '').split('T').first;
+    final date = DateTimeUtils.formatISTDateOnly(item['created_at']?.toString());
     final stars = '\u2b50' * rating.clamp(0, 5);
 
     return Container(

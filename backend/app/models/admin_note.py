@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from app import db
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 
 class AdminNote(db.Model):
@@ -23,6 +24,6 @@ class AdminNote(db.Model):
             'admin_id': self.admin_id,
             'admin_name': self.admin.full_name if self.admin else None,
             'note': self.note,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'created_at': datetime_to_ist_isoformat(self.created_at) if self.created_at else None,
+            'updated_at': datetime_to_ist_isoformat(self.updated_at) if self.updated_at else None,
         }

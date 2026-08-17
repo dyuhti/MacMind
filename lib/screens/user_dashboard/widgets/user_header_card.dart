@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../utils/datetime_utils.dart';
+
 IconData _platformIcon(String? platform) {
   switch (platform?.toLowerCase()) {
     case 'android': return Icons.android_outlined;
@@ -307,14 +309,7 @@ class UserHeaderCard extends StatelessWidget {
   String _formatDate(String? iso) {
     if (iso == null || iso.isEmpty) return '\u2014';
     try {
-      final parts = iso.split('T');
-      if (parts.isNotEmpty) {
-        final dateParts = parts[0].split('-');
-        if (dateParts.length == 3) {
-          return '${dateParts[2]}/${dateParts[1]}/${dateParts[0]}';
-        }
-      }
-      return iso.substring(0, 10);
+      return DateTimeUtils.formatISTDateOnly(iso);
     } catch (_) {
       return iso;
     }
@@ -323,14 +318,7 @@ class UserHeaderCard extends StatelessWidget {
   String _formatDateTime(String? iso) {
     if (iso == null || iso.isEmpty) return '\u2014';
     try {
-      final parts = iso.split('T');
-      if (parts.length == 2) {
-        final dateParts = parts[0].split('-');
-        if (dateParts.length == 3) {
-          return '${dateParts[2]}/${dateParts[1]}/${dateParts[0]} ${parts[1].substring(0, 8)}';
-        }
-      }
-      return iso.substring(0, 16);
+      return DateTimeUtils.formatISTFromUTC(iso);
     } catch (_) {
       return iso;
     }

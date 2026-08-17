@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -180,8 +181,9 @@ class _LoginCard extends StatelessWidget {
     final ip = h['ip_address']?.toString();
 
     final isSuccess = status == 'success';
-    final date = loginTime.contains('T') ? loginTime.split('T').first : loginTime;
-    final time = loginTime.contains('T') ? loginTime.split('T').last.substring(0, 8) : '';
+    final loginParts = DateTimeUtils.parseDateTimeComponents(loginTime);
+    final date = loginParts['date'] ?? '—';
+    final time = loginParts['time'] ?? '—';
 
     final cs = Theme.of(context).colorScheme;
     return Container(
@@ -277,7 +279,7 @@ class _LoginCard extends StatelessWidget {
                 _detailChip(Icons.info_outlined, 'Status', isSuccess ? 'Success' : 'Failed', cs),
                 if (logoutTime.isNotEmpty)
                   _detailChip(Icons.logout_outlined, 'Logged Out',
-                      logoutTime.contains('T') ? logoutTime.split('T').last.substring(0, 8) : '', cs),
+                      DateTimeUtils.parseDateTimeComponents(logoutTime)['time'] ?? '—', cs),
               ],
             ),
           ],

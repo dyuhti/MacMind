@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/admin_service.dart';
+import '../../../utils/datetime_utils.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_banner.dart';
 import '../widgets/loading_skeleton.dart';
@@ -193,7 +194,7 @@ class _NoteCardState extends State<_NoteCard> {
     final cs = Theme.of(context).colorScheme;
     final content = widget.note['note']?.toString() ?? '';
     final author = widget.note['admin_name']?.toString() ?? 'Admin';
-    final date = (widget.note['created_at']?.toString() ?? '').split('T').first;
+    final date = DateTimeUtils.formatISTDateOnly(widget.note['created_at']?.toString());
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),

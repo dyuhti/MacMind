@@ -5,6 +5,7 @@ Maps the existing oxygen_timer_history PostgreSQL table exactly.
 from datetime import datetime
 
 from app import db
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 
 class OxygenTimerHistory(db.Model):
@@ -48,10 +49,10 @@ class OxygenTimerHistory(db.Model):
             'duration_seconds': self.duration_seconds,
             'duration_text': self.duration_text,
             'timer_status': self.timer_status,
-            'started_at': self.started_at.isoformat() if self.started_at else None,
-            'paused_at': self.paused_at.isoformat() if self.paused_at else None,
-            'resumed_at': self.resumed_at.isoformat() if self.resumed_at else None,
-            'stopped_at': self.stopped_at.isoformat() if self.stopped_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'started_at': datetime_to_ist_isoformat(self.started_at) if self.started_at else None,
+            'paused_at': datetime_to_ist_isoformat(self.paused_at) if self.paused_at else None,
+            'resumed_at': datetime_to_ist_isoformat(self.resumed_at) if self.resumed_at else None,
+            'stopped_at': datetime_to_ist_isoformat(self.stopped_at) if self.stopped_at else None,
+            'completed_at': datetime_to_ist_isoformat(self.completed_at) if self.completed_at else None,
+            'created_at': datetime_to_ist_isoformat(self.created_at) if self.created_at else None,
         }
