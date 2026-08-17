@@ -5,7 +5,8 @@ Links to User model via user_id foreign key.
 """
 from datetime import datetime
 
-from app import dbfrom app.utils.timezone_utils import datetime_to_ist_isoformat
+from app import db
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 class Profile(db.Model):
     __tablename__ = 'profiles'

@@ -3,7 +3,8 @@ Feedback model for database interactions using SQLAlchemy
 Handles feedback submission and storage
 """
 from app import db
-from datetime import datetimefrom app.utils.timezone_utils import datetime_to_ist_isoformat
+from datetime import datetime
+from app.utils.timezone_utils import datetime_to_ist_isoformat
 
 class Feedback(db.Model):
     """Feedback model for managing feedback data with SQLAlchemy"""
